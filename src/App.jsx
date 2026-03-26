@@ -5,6 +5,9 @@ import Dashboard from './pages/dashboard';
 import ReportsList from './pages/reports/reportsList';
 import NewReport from './pages/reports/newReport';
 import ReportDetails from './pages/reports/reportDetails';
+import MeetingsList from './pages/meetings/meetingsList';
+import NewMeeting from './pages/meetings/newMeeting';
+import MeetingRoom from './pages/meetings/meetingRoom';
 
 
 function App() {
@@ -28,6 +31,9 @@ function App() {
                     <Route path="/reports" element={<ReportsList />} />
                     <Route path="/reports/new" element={<NewReport />} />
                     <Route path="/reports/:id" element={<ReportDetails />} />
+                    <Route path="/meetings" element={<MeetingsList />} />
+                    <Route path="/meetings/new" element={<NewMeeting />} />
+                    <Route path="/meetings/:id" element={<MeetingRoom />} />
                 </Routes>
             </main>
         </div>
