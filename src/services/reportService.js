@@ -1,6 +1,6 @@
 import keycloak from "../Keycloak";
 
-const API_URL = 'http://localhost:8081/api/v1'; //Will use .env
+const API_URL = import.meta.env.VITE_API_URL;
 
 const getAuthHeaders = () => ({
     Authorization: `Bearer ${keycloak.token}`,
