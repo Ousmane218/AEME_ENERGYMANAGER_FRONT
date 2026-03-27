@@ -8,6 +8,7 @@ import ReportDetails from './pages/reports/reportDetails';
 import MeetingsList from './pages/meetings/meetingsList';
 import NewMeeting from './pages/meetings/newMeeting';
 import MeetingRoom from './pages/meetings/meetingRoom';
+import Chat from './pages/chat/Chat';
 
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/meetings" element={<MeetingsList />} />
                     <Route path="/meetings/new" element={<NewMeeting />} />
                     <Route path="/meetings/:id" element={<MeetingRoom />} />
+                    <Route path="/chat" element={<Chat />} />
                 </Routes>
             </main>
         </div>
