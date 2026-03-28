@@ -5,12 +5,11 @@ import { getMyReports, deleteReport, downloadReport } from '../../services/repor
 
 const Badge = ({ status }) => {
     const styles = {
-        DRAFT:     'bg-yellow-100 text-yellow-800',
         SUBMITTED: 'bg-blue-100 text-blue-800',
         APPROVED:  'bg-green-100 text-green-800',
     };
     return (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || styles.DRAFT}`}>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
             {status}
         </span>
     );
@@ -40,7 +39,8 @@ const ReportsList = () => {
         }
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
         if (!window.confirm('Supprimer ce rapport ?')) return;
         try {
             await deleteReport(id);
@@ -50,7 +50,8 @@ const ReportsList = () => {
         }
     };
 
-    const handleDownload = async (id, fileName) => {
+    const handleDownload = async (e, id, fileName) => {
+        e.stopPropagation();
         try {
             await downloadReport(id, fileName);
         } catch (err) {
@@ -61,8 +62,8 @@ const ReportsList = () => {
     const filteredReports = reports.filter(report => {
         const matchFilter =
             filter === 'All' ||
-            (filter === 'Draft' && report.reportStatus === 'DRAFT') ||
-            (filter === 'Submitted' && report.reportStatus === 'SUBMITTED');
+            (filter === 'Submitted' && report.reportStatus === 'SUBMITTED') ||
+            (filter === 'Approved' && report.reportStatus === 'APPROVED');
         const matchSearch =
             report.reportType?.toLowerCase().includes(search.toLowerCase()) ||
             report.reportLocation?.toLowerCase().includes(search.toLowerCase()) ||
@@ -96,7 +97,7 @@ const ReportsList = () => {
             {/* Filters & Search */}
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex bg-gray-100 p-1 rounded-md">
-                    {['All', 'Submitted', 'Draft'].map((status) => (
+                    {['All', 'Submitted', 'Approved'].map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
@@ -141,7 +142,11 @@ const ReportsList = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {filteredReports.map((report) => (
-                                <tr key={report.id} onClick={() => navigate(`/reports/${report.id}`)} className="duration-200 hover:bg-gray-100 transition-colors cursor-pointer">
+                                <tr
+                                    key={report.id}
+                                    onClick={() => navigate(`/reports/${report.id}`)}
+                                    className="duration-200 hover:bg-gray-100 transition-colors cursor-pointer"
+                                >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
                                             <div className="h-10 w-10 bg-blue-50 rounded flex items-center justify-center text-[#003366]">
@@ -163,16 +168,16 @@ const ReportsList = () => {
                                         <Badge status={report.reportStatus} />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                        <div className="flex items-center justify-end gap-3">
+                                        <div className="flex items-center justify-end gap-3" onClick={e => e.stopPropagation()}>
                                             <button
-                                                onClick={() => handleDownload(report.id, report.fileName)}
+                                                onClick={(e) => handleDownload(e, report.id, report.fileName)}
                                                 className="text-gray-400 hover:text-[#003366] transition-colors"
                                                 title="Télécharger"
                                             >
                                                 <Download size={18} />
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(report.id)}
+                                                onClick={(e) => handleDelete(e, report.id)}
                                                 className="text-gray-400 hover:text-red-500 transition-colors"
                                                 title="Supprimer"
                                             >

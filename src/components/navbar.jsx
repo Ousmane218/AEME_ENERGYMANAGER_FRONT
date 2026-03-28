@@ -24,12 +24,10 @@ const Navbar = () => {
                 <div className="flex items-center justify-between h-16">
 
                     {/* Logo */}
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 bg-[#FFCC00] rounded flex items-center justify-center">
-                            <span className="text-[#003366] font-bold text-xs">AEME</span>
-                        </div>
-                        <span className="font-bold text-lg tracking-wide">Energy Platform</span>
-                    </div>
+                    <Link to="/dashboard" className="flex items-center gap-3">
+                        <img src="/logo.png" alt="AEME Logo" className="h-10 w-auto" />
+                        <span className="font-bold text-xl tracking-tight text-white">AEME</span>
+                    </Link>
 
                     {/* Desktop Nav */}
                     <div className="hidden md:block">

@@ -40,9 +40,7 @@ export const getReportById = async (id) => {
     const response = await fetch(`${API_URL}/reports/${id}`, {
         headers: getAuthHeaders(),
     });
-
     if (!response.ok) throw new Error('Erreur lors du chargement du rapport');
-
     return response.json();
 };
 
@@ -58,4 +56,17 @@ export const downloadReport = async (id, fileName) => {
     a.download = fileName;
     a.click();
     window.URL.revokeObjectURL(url);
+};
+
+export const updateReportStatus = async (id, status) => {
+    const response = await fetch(`${API_URL}/reports/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+    });
+    if (!response.ok) throw new Error('Erreur lors de la mise à jour du statut');
+    return response.json();
 };
