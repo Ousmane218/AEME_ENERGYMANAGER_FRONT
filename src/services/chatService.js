@@ -32,3 +32,20 @@ export const getMessages = async (conversationId) => {
     if (!response.ok) throw new Error('Erreur lors du chargement des messages');
     return response.json();
 };
+
+export const deleteConversation = async (id) => {
+    const response = await fetch(`${API_URL}/chat/conversations/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Erreur lors de la suppression');
+    return response.json();
+};
+
+export const getUserById = async (userId) => {
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) return { fullName: 'Utilisateur' };
+    return response.json();
+};

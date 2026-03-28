@@ -4,7 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import {
     getMyConversations,
     getMessages,
-    getOrCreateConversation
+    getOrCreateConversation,
+    deleteConversation,
+    getUserById
 } from '../../services/chatService';
 import {
     connectWebSocket,
@@ -22,6 +24,7 @@ const Chat = () => {
     const [newUserId, setNewUserId] = useState('');
     const [showNewConv, setShowNewConv] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [userNames, setUserNames] = useState({});
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -34,17 +37,22 @@ const Chat = () => {
 
     useEffect(() => {
         if (!selectedConv) return;
-
-        // Charge l'historique
         fetchMessages(selectedConv.id);
-
-        // Connecte le WebSocket
         connectWebSocket(selectedConv.id, (newMessage) => {
             setMessages(prev => [...prev, newMessage]);
         });
-
         return () => disconnectWebSocket();
     }, [selectedConv]);
+
+    const fetchUserName = async (userId) => {
+        if (!userId || userNames[userId]) return;
+        try {
+            const data = await getUserById(userId);
+            setUserNames(prev => ({ ...prev, [userId]: data.fullName || 'Utilisateur' }));
+        } catch (err) {
+            setUserNames(prev => ({ ...prev, [userId]: 'Utilisateur' }));
+        }
+    };
 
     const fetchConversations = async () => {
         try {
@@ -52,6 +60,7 @@ const Chat = () => {
             const data = await getMyConversations();
             setConversations(data);
             if (data.length > 0) setSelectedConv(data[0]);
+            data.forEach(conv => fetchUserName(getOtherUserIdFromConv(conv)));
         } catch (err) {
             console.error(err);
         } finally {
@@ -89,6 +98,7 @@ const Chat = () => {
                 const exists = prev.find(c => c.id === conv.id);
                 return exists ? prev : [conv, ...prev];
             });
+            fetchUserName(newUserId.trim());
             setSelectedConv(conv);
             setShowNewConv(false);
             setNewUserId('');
@@ -97,7 +107,23 @@ const Chat = () => {
         }
     };
 
-    const getOtherUserId = (conv) => {
+    const handleDeleteConversation = async (e, convId) => {
+        e.stopPropagation();
+        if (!window.confirm('Supprimer cette conversation ?')) return;
+        try {
+            await deleteConversation(convId);
+            setConversations(prev => prev.filter(c => c.id !== convId));
+            if (selectedConv?.id === convId) {
+                setSelectedConv(null);
+                setMessages([]);
+                disconnectWebSocket();
+            }
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
+    const getOtherUserIdFromConv = (conv) => {
         return conv.userOneId === user?.id ? conv.userTwoId : conv.userOneId;
     };
 
@@ -105,16 +131,18 @@ const Chat = () => {
         hour: '2-digit', minute: '2-digit'
     });
 
-    const filteredConversations = conversations.filter(conv =>
-        getOtherUserId(conv).toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredConversations = conversations.filter(conv => {
+        const otherUserId = getOtherUserIdFromConv(conv);
+        const name = userNames[otherUserId] || '';
+        return name.toLowerCase().includes(search.toLowerCase()) ||
+               otherUserId.toLowerCase().includes(search.toLowerCase());
+    });
 
     return (
         <div className="flex h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
 
             {/* Sidebar */}
             <div className="w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col">
-                {/* Header sidebar */}
                 <div className="p-4 border-b border-gray-200 bg-[#003366] text-white flex items-center justify-between">
                     <h2 className="font-bold">Conversations</h2>
                     <button
@@ -126,7 +154,6 @@ const Chat = () => {
                     </button>
                 </div>
 
-                {/* Nouvelle conversation */}
                 {showNewConv && (
                     <div className="p-3 border-b border-gray-200 bg-white">
                         <p className="text-xs text-gray-500 mb-2">ID de l'utilisateur :</p>
@@ -154,7 +181,6 @@ const Chat = () => {
                     </div>
                 )}
 
-                {/* Search */}
                 <div className="p-2">
                     <div className="relative">
                         <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
@@ -168,7 +194,6 @@ const Chat = () => {
                     </div>
                 </div>
 
-                {/* Liste conversations */}
                 <div className="flex-1 overflow-y-auto">
                     {loading ? (
                         <div className="p-4 text-center text-sm text-gray-400">Chargement...</div>
@@ -177,31 +202,41 @@ const Chat = () => {
                             Aucune conversation.
                         </div>
                     ) : (
-                        filteredConversations.map((conv) => (
-                            <div
-                                key={conv.id}
-                                onClick={() => handleSelectConversation(conv)}
-                                className={`p-3 cursor-pointer hover:bg-gray-200 transition-colors ${
-                                    selectedConv?.id === conv.id
-                                        ? 'bg-blue-100 border-l-4 border-[#003366]'
-                                        : 'border-l-4 border-transparent'
-                                }`}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <div className="h-8 w-8 rounded-full bg-[#003366] text-white flex items-center justify-center flex-shrink-0">
-                                        <User size={16} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="font-medium text-sm text-gray-800 truncate">
-                                            Conv #{conv.id}
-                                        </p>
-                                        <p className="text-xs text-gray-500 truncate">
-                                            {getOtherUserId(conv).substring(0, 16)}...
-                                        </p>
+                        filteredConversations.map((conv) => {
+                            const otherUserId = getOtherUserIdFromConv(conv);
+                            return (
+                                <div
+                                    key={conv.id}
+                                    onClick={() => handleSelectConversation(conv)}
+                                    className={`p-3 cursor-pointer hover:bg-gray-200 transition-colors relative group ${
+                                        selectedConv?.id === conv.id
+                                            ? 'bg-blue-100 border-l-4 border-[#003366]'
+                                            : 'border-l-4 border-transparent'
+                                    }`}
+                                >
+                                    <div className="flex items-center gap-2 w-full">
+                                        <div className="h-8 w-8 rounded-full bg-[#003366] text-white flex items-center justify-center flex-shrink-0">
+                                            <User size={16} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-medium text-sm text-gray-800 truncate">
+                                                {userNames[otherUserId] || 'Chargement...'}
+                                            </p>
+                                            <p className="text-xs text-gray-500 truncate">
+                                                {otherUserId.substring(0, 16)}...
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => handleDeleteConversation(e, conv.id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-400 hover:text-red-600 flex-shrink-0 ml-auto"
+                                            title="Supprimer"
+                                        >
+                                            <X size={16} />
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     )}
                 </div>
             </div>
@@ -214,19 +249,17 @@ const Chat = () => {
                     </div>
                 ) : (
                     <>
-                        {/* Chat Header */}
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white">
                             <div>
                                 <h3 className="font-bold text-[#003366]">
-                                    Conversation #{selectedConv.id}
+                                    {userNames[getOtherUserIdFromConv(selectedConv)] || 'Chargement...'}
                                 </h3>
                                 <p className="text-xs text-gray-500">
-                                    {getOtherUserId(selectedConv).substring(0, 24)}...
+                                    {getOtherUserIdFromConv(selectedConv).substring(0, 24)}...
                                 </p>
                             </div>
                         </div>
 
-                        {/* Messages */}
                         <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50">
                             {messages.length === 0 ? (
                                 <div className="text-center text-gray-400 text-sm mt-8">
@@ -246,13 +279,11 @@ const Chat = () => {
                                                 <User size={16} />
                                             </div>
                                             <div className={`p-3 rounded-lg shadow-sm max-w-md ${
-                                                isMe
-                                                    ? 'bg-[#003366] text-white'
-                                                    : 'bg-white text-gray-800'
+                                                isMe ? 'bg-[#003366] text-white' : 'bg-white text-gray-800'
                                             }`}>
                                                 {!isMe && (
                                                     <p className="text-xs font-bold text-gray-500 mb-1">
-                                                        {msg.senderId.substring(0, 8)}...
+                                                        {userNames[msg.senderId] || msg.senderId.substring(0, 8) + '...'}
                                                     </p>
                                                 )}
                                                 <p className="text-sm">{msg.content}</p>
@@ -269,7 +300,6 @@ const Chat = () => {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input */}
                         <div className="p-4 border-t border-gray-200 bg-white">
                             <form onSubmit={handleSend} className="flex gap-2 items-center">
                                 <div className="flex-1 relative">
