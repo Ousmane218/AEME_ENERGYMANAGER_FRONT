@@ -143,11 +143,11 @@ const Chat = () => {
 
             {/* Sidebar */}
             <div className="w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col">
-                <div className="p-4 border-b border-gray-200 bg-[#003366] text-white flex items-center justify-between">
+                <div className="p-4 border-b border-gray-200 bg-primary text-white flex items-center justify-between">
                     <h2 className="font-bold">Conversations</h2>
                     <button
                         onClick={() => setShowNewConv(!showNewConv)}
-                        className="p-1 hover:bg-[#002244] rounded transition-colors"
+                        className="p-1 hover:bg-primary-dark rounded transition-colors"
                         title="Nouvelle conversation"
                     >
                         <Plus size={18} />
@@ -163,11 +163,11 @@ const Chat = () => {
                                 value={newUserId}
                                 onChange={(e) => setNewUserId(e.target.value)}
                                 placeholder="UUID du user..."
-                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                             <button
                                 onClick={handleNewConversation}
-                                className="px-3 py-1 bg-[#003366] text-white rounded text-sm hover:bg-[#002244]"
+                                className="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary-dark"
                             >
                                 OK
                             </button>
@@ -189,7 +189,7 @@ const Chat = () => {
                             placeholder="Search..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-9 pr-2 py-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-[#003366]"
+                            className="w-full pl-9 pr-2 py-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                         />
                     </div>
                 </div>
@@ -210,12 +210,12 @@ const Chat = () => {
                                     onClick={() => handleSelectConversation(conv)}
                                     className={`p-3 cursor-pointer hover:bg-gray-200 transition-colors relative group ${
                                         selectedConv?.id === conv.id
-                                            ? 'bg-blue-100 border-l-4 border-[#003366]'
+                                            ? 'bg-blue-100 border-l-4 border-primary'
                                             : 'border-l-4 border-transparent'
                                     }`}
                                 >
                                     <div className="flex items-center gap-2 w-full">
-                                        <div className="h-8 w-8 rounded-full bg-[#003366] text-white flex items-center justify-center flex-shrink-0">
+                                        <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
                                             <User size={16} />
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -251,7 +251,7 @@ const Chat = () => {
                     <>
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white">
                             <div>
-                                <h3 className="font-bold text-[#003366]">
+                                <h3 className="font-bold text-primary">
                                     {userNames[getOtherUserIdFromConv(selectedConv)] || 'Chargement...'}
                                 </h3>
                                 <p className="text-xs text-gray-500">
@@ -274,12 +274,12 @@ const Chat = () => {
                                             className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}
                                         >
                                             <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                                isMe ? 'bg-[#003366] text-white' : 'bg-gray-300 text-gray-600'
+                                                isMe ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'
                                             }`}>
                                                 <User size={16} />
                                             </div>
                                             <div className={`p-3 rounded-lg shadow-sm max-w-md ${
-                                                isMe ? 'bg-[#003366] text-white' : 'bg-white text-gray-800'
+                                                isMe ? 'bg-primary text-white' : 'bg-white text-gray-800'
                                             }`}>
                                                 {!isMe && (
                                                     <p className="text-xs font-bold text-gray-500 mb-1">
@@ -308,12 +308,12 @@ const Chat = () => {
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
                                         placeholder="Type your message..."
-                                        className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#003366] transition-shadow"
+                                        className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
                                     />
                                 </div>
                                 <button
                                     type="submit"
-                                    className="bg-[#003366] text-white p-3 rounded-full hover:bg-[#002244] transition-colors shadow-md flex-shrink-0"
+                                    className="bg-primary text-white p-3 rounded-full hover:bg-primary-dark transition-colors shadow-md flex-shrink-0"
                                 >
                                     <Send size={20} />
                                 </button>

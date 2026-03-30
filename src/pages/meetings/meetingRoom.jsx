@@ -124,7 +124,7 @@ const MeetingRoom = () => {
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-[#003366]">
+                        <h1 className="text-xl font-bold text-primary">
                             Meeting #{meeting?.id}
                         </h1>
                         <div className="flex items-center gap-3 text-sm text-gray-500">

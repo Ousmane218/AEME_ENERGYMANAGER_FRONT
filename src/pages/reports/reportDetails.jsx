@@ -38,7 +38,7 @@ const ReportDetails = () => {
             e.stopPropagation();
             navigate("/reports")
         }}
-          className="flex items-center gap-2 text-gray-500 hover:text-[#003366]"
+          className="flex items-center gap-2 text-gray-500 hover:text-primary"
         >
           <ArrowLeft size={18} /> Back
         </button>
@@ -48,7 +48,7 @@ const ReportDetails = () => {
             e.stopPropagation();
             downloadReport(report.id, report.fileName)
         }}
-          className="flex items-center gap-2 bg-[#003366] text-white px-4 py-2 rounded-md hover:bg-[#002244]"
+          className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark"
         >
           <Download size={18} /> Telecharger
         </button>
@@ -57,7 +57,7 @@ const ReportDetails = () => {
       {/* Card */}
       <div className="bg-white p-6 rounded-xl shadow border border-gray-100 space-y-4">
 
-        <h1 className="text-2xl font-bold text-[#003366]">
+        <h1 className="text-2xl font-bold text-primary">
           {report.reportType}
         </h1>
 

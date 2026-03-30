@@ -35,7 +35,7 @@ const NewMeeting = () => {
                 >
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="text-2xl font-bold text-[#003366]">New Meeting</h1>
+                <h1 className="text-2xl font-bold text-primary">New Meeting</h1>
             </div>
 
             {error && (
@@ -55,7 +55,7 @@ const NewMeeting = () => {
                             value={scheduledAt}
                             onChange={(e) => setScheduledAt(e.target.value)}
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003366]"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                     </div>
 
@@ -67,7 +67,7 @@ const NewMeeting = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex items-center gap-2 bg-[#003366] text-white px-8 py-2 rounded-md hover:bg-[#002244] transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 bg-primary text-white px-8 py-2 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
                         >
                             <Video size={18} />
                             {loading ? 'Création...' : 'Créer le meeting'}

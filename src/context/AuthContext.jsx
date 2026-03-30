@@ -17,12 +17,19 @@ export const AuthProvider = ({ children }) => {
       .then((authenticated) => {
         if (authenticated && keycloak.tokenParsed) {
           const parsed = keycloak.tokenParsed;
+          const realmRoles = parsed.realm_access?.roles || [];
+          const isAdmin = realmRoles.includes('admin');
+
           setUser({
             id:        parsed.sub,
             email:     parsed.email,
             firstName: parsed.given_name,
             lastName:  parsed.family_name,
             fullName:  parsed.name,
+            username:  parsed.preferred_username,
+            role:      isAdmin ? 'admin' : 'user',
+            membershipService: parsed.membershipService,
+            isAdmin,
           });
           setToken(keycloak.token);
         }

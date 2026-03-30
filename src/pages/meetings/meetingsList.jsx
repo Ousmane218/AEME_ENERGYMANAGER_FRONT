@@ -31,7 +31,7 @@ const MeetingCard = ({ meeting, onJoin, onCopy, onDelete, copiedId, userId }) =>
     });
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 border-l-4 border-l-[#FFCC00] p-5">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 border-l-4 border-l-accent p-5">
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="font-bold text-gray-800">Meeting #{meeting.id}</h3>
@@ -61,7 +61,7 @@ const MeetingCard = ({ meeting, onJoin, onCopy, onDelete, copiedId, userId }) =>
             <div className="mt-4 flex flex-col gap-2">
                 <button
                     onClick={() => onJoin(meeting.id)}
-                    className="w-full bg-[#003366] text-white py-2 rounded-md text-sm font-medium hover:bg-[#002244] transition-colors"
+                    className="w-full bg-primary text-white py-2 rounded-md text-sm font-medium hover:bg-primary-dark transition-colors"
                 >
                     Join Meeting
                 </button>
@@ -136,14 +136,14 @@ const MeetingsList = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#003366]">Meetings</h1>
+                    <h1 className="text-2xl font-bold text-primary">Meetings</h1>
                     <p className="text-sm text-gray-500">
                         Schedule and join your energy coordination meetings.
                     </p>
                 </div>
                 <button
                     onClick={() => navigate('/meetings/new')}
-                    className="flex items-center gap-2 bg-[#003366] text-white px-4 py-2 rounded-md hover:bg-[#002244] transition-colors"
+                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
                 >
                     <Plus size={18} /> Schedule Meeting
                 </button>
@@ -157,7 +157,7 @@ const MeetingsList = () => {
                 <>
                     {/* Upcoming Meetings */}
                     <div>
-                        <h2 className="text-lg font-semibold text-[#003366] mb-4">
+                        <h2 className="text-lg font-semibold text-primary mb-4">
                             Upcoming Meetings
                         </h2>
                         {upcomingMeetings.length === 0 ? (
@@ -183,7 +183,7 @@ const MeetingsList = () => {
 
                     {/* Past Meetings */}
                     <div>
-                        <h2 className="text-lg font-semibold text-[#003366] mb-4">
+                        <h2 className="text-lg font-semibold text-primary mb-4">
                             Past Meetings
                         </h2>
                         {pastMeetings.length === 0 ? (

@@ -9,7 +9,16 @@ import MeetingsList from './pages/meetings/meetingsList';
 import NewMeeting from './pages/meetings/newMeeting';
 import MeetingRoom from './pages/meetings/meetingRoom';
 import Chat from './pages/chat/Chat';
+import Profile from './pages/Profile';
+import Users from './pages/admin/Users';
+import AdminUserDetail from './pages/admin/AdminUserDetail';
+import UserReports from './pages/admin/UserReports';
 
+const AdminRoute = ({ children }) => {
+    const { user, isLoading } = useAuth();
+    if (isLoading) return null;
+    return user?.isAdmin ? children : <Navigate to="/dashboard" replace />;
+};
 
 function App() {
     const { isLoading } = useAuth();
@@ -17,7 +26,7 @@ function App() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-100">
-                <p className="text-[#003366] font-semibold text-lg">Chargement...</p>
+                <p className="text-primary font-semibold text-lg">Chargement...</p>
             </div>
         );
     }
@@ -36,6 +45,18 @@ function App() {
                     <Route path="/meetings/new" element={<NewMeeting />} />
                     <Route path="/meetings/:id" element={<MeetingRoom />} />
                     <Route path="/chat" element={<Chat />} />
+                    <Route path="/profile" element={<Profile />} />
+
+                    {/* Admin Routes */}
+                    <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+                    <Route 
+                        path="/admin/users" 
+                        element={<AdminRoute><Users /></AdminRoute>} 
+                    />
+                    <Route 
+                        path="/admin/users/:userId" 
+                        element={<AdminRoute><AdminUserDetail /></AdminRoute>} 
+                    />
                 </Routes>
             </main>
         </div>

@@ -57,7 +57,7 @@ const NewReport = () => {
                 >
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="text-2xl font-bold text-[#003366]">New Report</h1>
+                <h1 className="text-2xl font-bold text-primary">New Report</h1>
             </div>
 
             {error && (
@@ -77,7 +77,7 @@ const NewReport = () => {
                                 name="reportType"
                                 value={formData.reportType}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003366]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             >
                                 <option value="MONTHLY">Monthly Consumption</option>
                                 <option value="ANNUAL">Annual Audit</option>
@@ -91,7 +91,7 @@ const NewReport = () => {
                                 value={formData.reportDate}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003366]"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         </div>
                     </div>
@@ -106,7 +106,7 @@ const NewReport = () => {
                             value={formData.reportLocation}
                             onChange={handleChange}
                             required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003366]"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                     </div>
 
@@ -120,7 +120,7 @@ const NewReport = () => {
                             rows="5"
                             value={formData.reportDesc}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003366]"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             placeholder="Enter report summary..."
                         />
                     </div>
@@ -134,7 +134,7 @@ const NewReport = () => {
                             <div className="space-y-1 text-center">
                                 <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
                                 <div className="flex text-sm text-gray-600 justify-center">
-                                    <label htmlFor="file-upload" className="cursor-pointer font-medium text-[#003366] hover:text-[#002244]">
+                                    <label htmlFor="file-upload" className="cursor-pointer font-medium text-primary hover:text-primary-dark">
                                         <span>Upload a file</span>
                                         <input
                                             id="file-upload"
@@ -170,7 +170,7 @@ const NewReport = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex items-center gap-2 bg-[#003366] text-white px-8 py-2 rounded-md hover:bg-[#002244] transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 bg-primary text-white px-8 py-2 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
                         >
                             <Save size={18} />
                             {loading ? 'Création...' : 'Create Report'}

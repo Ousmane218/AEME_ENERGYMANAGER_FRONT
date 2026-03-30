@@ -7,6 +7,7 @@ const Badge = ({ status }) => {
     const styles = {
         SUBMITTED: 'bg-blue-100 text-blue-800',
         APPROVED:  'bg-green-100 text-green-800',
+        REJECTED:  'bg-red-100 text-red-800',
     };
     return (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
@@ -83,12 +84,12 @@ const ReportsList = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-[#003366]">Reports Archive</h1>
+                    <h1 className="text-2xl font-bold text-primary">Reports Archive</h1>
                     <p className="text-sm text-gray-500">Manage and track your energy consumption reports.</p>
                 </div>
                 <button
                     onClick={() => navigate('/reports/new')}
-                    className="flex items-center gap-2 bg-[#003366] text-white px-4 py-2 rounded-md hover:bg-[#002244] transition-colors"
+                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
                 >
                     <Plus size={18} /> New Report
                 </button>
@@ -103,7 +104,7 @@ const ReportsList = () => {
                             onClick={() => setFilter(status)}
                             className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
                                 filter === status
-                                    ? 'bg-white text-[#003366] shadow-sm'
+                                    ? 'bg-white text-primary shadow-sm'
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >
@@ -118,7 +119,7 @@ const ReportsList = () => {
                         placeholder="Search reports..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#003366] text-sm"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
                     />
                 </div>
             </div>
@@ -149,7 +150,7 @@ const ReportsList = () => {
                                 >
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center">
-                                            <div className="h-10 w-10 bg-blue-50 rounded flex items-center justify-center text-[#003366]">
+                                            <div className="h-10 w-10 bg-blue-50 rounded flex items-center justify-center text-primary">
                                                 <FileText size={20} />
                                             </div>
                                             <div className="ml-4">
@@ -171,7 +172,7 @@ const ReportsList = () => {
                                         <div className="flex items-center justify-end gap-3" onClick={e => e.stopPropagation()}>
                                             <button
                                                 onClick={(e) => handleDownload(e, report.id, report.fileName)}
-                                                className="text-gray-400 hover:text-[#003366] transition-colors"
+                                                className="text-gray-400 hover:text-primary transition-colors"
                                                 title="Télécharger"
                                             >
                                                 <Download size={18} />
