@@ -1,43 +1,127 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, UploadCloud, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Send, UploadCloud, X, CheckCircle } from 'lucide-react';
 import { createReport } from '../../services/reportService';
+
+const CAMPAGNES_OPTIONS = [
+    "Diffusion d'affiches / Flyers",
+    "Envoi de newsletters énergie",
+    "Publication d'infographies interactives",
+    "Sessions de formations / Ateliers pratiques",
+    "Campagne sur les réseaux sociaux",
+    "Sensibilisation à l'utilisation rationnelle de l'énergie auprès des collègues",
+    "Autre(s)"
+];
+
+const AUTRES_ACTIVITES_OPTIONS = [
+    "Réglage de la température de consigne de climatisation",
+    "Extinction des équipements en dehors des horaires",
+    "Repérage des consommations anormales via les factures",
+    "Affichage d'écogestes simples dans les lieux stratégiques (WC, cuisines, ascenseurs, bureaux etc.)",
+    "Sensibilisation rapide lors des réunions d'équipe",
+    "Autre(s)"
+];
+
+const inputClass = "w-full px-4 py-3 border border-[#d0e8c0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00897b] bg-white text-sm";
+const labelClass = "block text-sm font-semibold text-gray-700 mb-2";
 
 const NewReport = () => {
     const navigate = useNavigate();
+    const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
     const [formData, setFormData] = useState({
-        reportType: 'MONTHLY',
+        // Section 1
         reportDate: '',
-        reportLocation: '',
-        reportDesc: '',
-        file: null,
+        // Section 2
+        nomGestionnaire: '',
+        serviceAppartenance: '',
+        nombreBatiments: '',
+        numeroPoliceSenelec: '',
+        // Section 3
+        campagnesCommunication: [],
+        guidePartageCommande: null,
+        guidePartagePerformance: null,
+        procedureResiliation: null,
+        modificationPuissance: null,
+        consommationsNullesIdentifiees: null,
+        estimationsRecensees: null,
+        batteriesCondensateursInstallees: null,
+        cadastreEnergetiqueRealise: null,
+        indexTransmis: null,
+        plateformeDigitale: null,
+        autresActivites: [],
+        contraintes: '',
+        recommandations: '',
+        // Section 4
+        illustrations: null,
+        autresDocuments: null,
     });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleFileChange = (e) => {
-        setFormData({ ...formData, file: e.target.files[0] });
+    const handleBoolean = (field, value) => {
+        setFormData({ ...formData, [field]: value });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!formData.file) {
-            setError('Veuillez sélectionner un fichier');
-            return;
-        }
+    const handleCheckbox = (field, value) => {
+        const current = formData[field];
+        const updated = current.includes(value)
+            ? current.filter(v => v !== value)
+            : [...current, value];
+        setFormData({ ...formData, [field]: updated });
+    };
+
+    const handleFile = (field, file) => {
+        setFormData({ ...formData, [field]: file });
+    };
+
+    const handleSubmit = async () => {
         try {
             setLoading(true);
             setError(null);
             const data = new FormData();
-            data.append('reportType', formData.reportType);
             data.append('reportDate', `${formData.reportDate}T00:00:00`);
-            data.append('reportLocation', formData.reportLocation);
-            data.append('reportDesc', formData.reportDesc);
-            data.append('file', formData.file);
+            data.append('nomGestionnaire', formData.nomGestionnaire);
+            data.append('serviceAppartenance', formData.serviceAppartenance);
+            data.append('nombreBatiments', formData.nombreBatiments);
+            data.append('numeroPoliceSenelec', formData.numeroPoliceSenelec);
+            if (formData.campagnesCommunication.length > 0)
+                data.append('campagnesCommunication', JSON.stringify(formData.campagnesCommunication));
+            if (formData.guidePartageCommande !== null)
+                data.append('guidePartageCommande', formData.guidePartageCommande);
+            if (formData.guidePartagePerformance !== null)
+                data.append('guidePartagePerformance', formData.guidePartagePerformance);
+            if (formData.procedureResiliation !== null)
+                data.append('procedureResiliation', formData.procedureResiliation);
+            if (formData.modificationPuissance !== null)
+                data.append('modificationPuissance', formData.modificationPuissance);
+            if (formData.consommationsNullesIdentifiees !== null)
+                data.append('consommationsNullesIdentifiees', formData.consommationsNullesIdentifiees);
+            if (formData.estimationsRecensees !== null)
+                data.append('estimationsRecensees', formData.estimationsRecensees);
+            if (formData.batteriesCondensateursInstallees !== null)
+                data.append('batteriesCondensateursInstallees', formData.batteriesCondensateursInstallees);
+            if (formData.cadastreEnergetiqueRealise !== null)
+                data.append('cadastreEnergetiqueRealise', formData.cadastreEnergetiqueRealise);
+            if (formData.indexTransmis !== null)
+                data.append('indexTransmis', formData.indexTransmis);
+            if (formData.plateformeDigitale !== null)
+                data.append('plateformeDigitale', formData.plateformeDigitale);
+            if (formData.autresActivites.length > 0)
+                data.append('autresActivites', JSON.stringify(formData.autresActivites));
+            if (formData.contraintes)
+                data.append('contraintes', formData.contraintes);
+            if (formData.recommandations)
+                data.append('recommandations', formData.recommandations);
+            if (formData.illustrations)
+                data.append('illustrations', formData.illustrations);
+            if (formData.autresDocuments)
+                data.append('autresDocuments', formData.autresDocuments);
+
             await createReport(data);
             navigate('/reports');
         } catch (err) {
@@ -47,136 +131,303 @@ const NewReport = () => {
         }
     };
 
+    // Composants réutilisables
+    const OuiNon = ({ field, label }) => (
+        <div className="mb-6">
+            <p className="text-sm font-medium text-gray-700 mb-3">{label}</p>
+            <div className="flex gap-6">
+                {[true, false].map(val => (
+                    <label key={String(val)} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name={field}
+                            checked={formData[field] === val}
+                            onChange={() => handleBoolean(field, val)}
+                            className="accent-[#00897b] w-4 h-4"
+                        />
+                        <span className="text-sm text-gray-700">{val ? 'Oui' : 'Non'}</span>
+                    </label>
+                ))}
+            </div>
+        </div>
+    );
+
+    const FileZone = ({ field, label, accept }) => (
+        <div className="mb-6">
+            <p className={labelClass}>{label}</p>
+            <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-[#d0e8c0] rounded-lg cursor-pointer hover:bg-[#f0f7e6] transition-colors">
+                <input
+                    type="file"
+                    accept={accept}
+                    className="sr-only"
+                    onChange={e => handleFile(field, e.target.files[0])}
+                />
+                {formData[field] ? (
+                    <div className="flex items-center gap-2 text-[#00897b]">
+                        <CheckCircle size={20} />
+                        <span className="text-sm font-medium">{formData[field].name}</span>
+                        <button
+                            type="button"
+                            onClick={e => { e.preventDefault(); handleFile(field, null); }}
+                            className="text-red-400 hover:text-red-600 ml-2"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        <UploadCloud size={32} className="text-[#00897b] mb-2" />
+                        <span className="text-sm text-gray-500">Parcourir les fichiers</span>
+                        <span className="text-xs text-gray-400 mt-1">Drag and drop files here</span>
+                    </>
+                )}
+            </label>
+        </div>
+    );
+
+    const SectionHeader = ({ title }) => (
+        <div className="border-b border-[#d0e8c0] mb-6 pb-3">
+            <h2 className="text-lg font-bold text-gray-800 tracking-wide uppercase">{title}</h2>
+        </div>
+    );
+
+    const NavButtons = ({ onNext, onSubmit }) => (
+        <div className="flex justify-between mt-8 pt-6 border-t border-[#d0e8c0]">
+            {step > 1 ? (
+                <button
+                    type="button"
+                    onClick={() => setStep(step - 1)}
+                    className="px-6 py-2.5 bg-[#00897b] text-white rounded-lg font-medium hover:bg-[#00796b] transition-colors"
+                >
+                    Retour
+                </button>
+            ) : <div />}
+            {onNext && (
+                <button
+                    type="button"
+                    onClick={onNext}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-[#00897b] text-white rounded-lg font-medium hover:bg-[#00796b] transition-colors"
+                >
+                    Suivant <ArrowRight size={18} />
+                </button>
+            )}
+            {onSubmit && (
+                <button
+                    type="button"
+                    onClick={onSubmit}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-[#00897b] text-white rounded-lg font-medium hover:bg-[#00796b] transition-colors disabled:opacity-50"
+                >
+                    <Send size={18} />
+                    {loading ? 'Envoi...' : 'Soumettre'}
+                </button>
+            )}
+        </div>
+    );
+
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-2xl mx-auto">
             {/* Header */}
-            <div className="flex items-center gap-4 mb-6">
+            <div className="flex items-center gap-3 mb-6">
                 <button
                     onClick={() => navigate(-1)}
-                    className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
                 >
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="text-2xl font-bold text-primary">New Report</h1>
+                <h1 className="text-xl font-bold text-gray-800">Nouveau rapport</h1>
+            </div>
+
+            {/* Stepper */}
+            <div className="flex items-center justify-center gap-2 mb-8">
+                {[1, 2, 3, 4].map(s => (
+                    <div key={s} className="flex items-center gap-2">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                            step >= s ? 'bg-[#00897b] text-white' : 'bg-[#d0e8c0] text-gray-500'
+                        }`}>
+                            {s}
+                        </div>
+                        {s < 4 && <div className={`h-1 w-8 rounded ${step > s ? 'bg-[#00897b]' : 'bg-[#d0e8c0]'}`} />}
+                    </div>
+                ))}
             </div>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
                     {error}
                 </div>
             )}
 
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
-                <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-[#f0f7e6] rounded-2xl p-8 border border-[#d0e8c0]">
 
-                    {/* Row 1: Type & Date */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Report Type</label>
-                            <select
-                                name="reportType"
-                                value={formData.reportType}
-                                onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                            >
-                                <option value="MONTHLY">Monthly Consumption</option>
-                                <option value="ANNUAL">Annual Audit</option>
-                            </select>
+                {/* ── SECTION 1 : Date ── */}
+                {step === 1 && (
+                    <div>
+                        {/* Logo + Titre */}
+                        <div className="bg-white rounded-xl p-6 mb-8 flex flex-col items-center text-center border border-[#d0e8c0]">
+                            <div className="h-16 w-16 bg-[#003366] rounded-full flex items-center justify-center mb-3">
+                                <span className="text-[#FFCC00] font-bold text-lg">AEME</span>
+                            </div>
+                            <h2 className="text-xl font-bold text-gray-800">
+                                Rapport mensuel d'activités - Gestionnaires de l'énergie
+                            </h2>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Report Date</label>
+                            <label className={labelClass}>Date de saisie du rapport :</label>
                             <input
                                 type="date"
                                 name="reportDate"
                                 value={formData.reportDate}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                className={inputClass}
                             />
+                            <p className="text-xs text-gray-400 mt-1">Date</p>
                         </div>
+                        <NavButtons onNext={() => {
+                            if (!formData.reportDate) { setError('La date est requise'); return; }
+                            setError(null);
+                            setStep(2);
+                        }} />
                     </div>
+                )}
 
-                    {/* Row 2: Location */}
+                {/* ── SECTION 2 : Identification ── */}
+                {step === 2 && (
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Location / Department</label>
-                        <input
-                            type="text"
-                            name="reportLocation"
-                            placeholder="e.g. Dakar - Ministry of Energy"
-                            value={formData.reportLocation}
-                            onChange={handleChange}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                    </div>
-
-                    {/* Row 3: Description */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Summary
-                        </label>
-                        <textarea
-                            name="reportDesc"
-                            rows="5"
-                            value={formData.reportDesc}
-                            onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="Enter report summary..."
-                        />
-                    </div>
-
-                    {/* Row 4: File Upload */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            File <span className="text-red-500">*</span>
-                        </label>
-                        <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:bg-gray-50 transition-colors">
-                            <div className="space-y-1 text-center">
-                                <UploadCloud className="mx-auto h-12 w-12 text-gray-400" />
-                                <div className="flex text-sm text-gray-600 justify-center">
-                                    <label htmlFor="file-upload" className="cursor-pointer font-medium text-primary hover:text-primary-dark">
-                                        <span>Upload a file</span>
-                                        <input
-                                            id="file-upload"
-                                            type="file"
-                                            className="sr-only"
-                                            accept=".pdf,.xlsx,.xls,.png,.jpg"
-                                            onChange={handleFileChange}
-                                        />
-                                    </label>
-                                    <p className="pl-1">or drag and drop</p>
-                                </div>
-                                <p className="text-xs text-gray-500">PDF, Excel, PNG, JPG up to 10MB</p>
-                                {formData.file && (
-                                    <div className="flex items-center justify-center gap-2 mt-2">
-                                        <p className="text-sm font-medium text-green-600">
-                                            {formData.file.name}
-                                        </p>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, file: null })}
-                                            className="text-red-400 hover:text-red-600"
-                                        >
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                )}
+                        <SectionHeader title="Identification" />
+                        <div className="space-y-5">
+                            <div>
+                                <label className={labelClass}>Prénom(s) et nom du gestionnaire de l'énergie :</label>
+                                <input type="text" name="nomGestionnaire" value={formData.nomGestionnaire}
+                                    onChange={handleChange} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Service d'appartenance :</label>
+                                <input type="text" name="serviceAppartenance" value={formData.serviceAppartenance}
+                                    onChange={handleChange} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Nombre de bâtiments d'intervention :</label>
+                                <input type="number" name="nombreBatiments" value={formData.nombreBatiments}
+                                    onChange={handleChange} className={inputClass} min="0" />
+                            </div>
+                            <div>
+                                <label className={labelClass}>N° de Police Senelec :</label>
+                                <input type="text" name="numeroPoliceSenelec" value={formData.numeroPoliceSenelec}
+                                    onChange={handleChange} className={inputClass} />
                             </div>
                         </div>
+                        <NavButtons onNext={() => {
+                            if (!formData.nomGestionnaire || !formData.serviceAppartenance) {
+                                setError('Nom et service sont requis');
+                                return;
+                            }
+                            setError(null);
+                            setStep(3);
+                        }} />
                     </div>
+                )}
 
-                    {/* Submit */}
-                    <div className="flex justify-end pt-4">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex items-center gap-2 bg-primary text-white px-8 py-2 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
-                        >
-                            <Save size={18} />
-                            {loading ? 'Création...' : 'Create Report'}
-                        </button>
+                {/* ── SECTION 3 : Activités ── */}
+                {step === 3 && (
+                    <div>
+                        <SectionHeader title="Activités et réalisations" />
+
+                        {/* Campagnes */}
+                        <div className="mb-6">
+                            <p className={labelClass}>Campagne de communication et de sensibilisation sur l'économie d'énergie :</p>
+                            <div className="space-y-2">
+                                {CAMPAGNES_OPTIONS.map(opt => (
+                                    <label key={opt} className="flex items-start gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.campagnesCommunication.includes(opt)}
+                                            onChange={() => handleCheckbox('campagnesCommunication', opt)}
+                                            className="accent-[#00897b] mt-0.5 w-4 h-4"
+                                        />
+                                        <span className="text-sm text-gray-700">{opt}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <OuiNon field="guidePartageCommande"
+                            label="Avez-vous partagé le guide bâtiment avec les services en charge de la commande au niveau de la structure ?" />
+                        <OuiNon field="guidePartagePerformance"
+                            label="Avez-vous partagé le guide pour l'amélioration de la performance énergétique des équipements avec les services en charge de la commande au niveau de la structure ?" />
+                        <OuiNon field="procedureResiliation"
+                            label="Avez-vous effectué une procédure de résiliation d'un ou plusieurs contrats d'électricité ?" />
+                        <OuiNon field="modificationPuissance"
+                            label="Avez-vous effectué une démarche de modification de la puissance souscrite sur un ou plusieurs contrats d'électricité ?" />
+                        <OuiNon field="consommationsNullesIdentifiees"
+                            label="Avez-vous identifié les consommations nulles ?" />
+                        <OuiNon field="estimationsRecensees"
+                            label="Avez-vous recensé les estimations ?" />
+                        <OuiNon field="batteriesCondensateursInstallees"
+                            label="Avez-vous installé les batteries de condensateurs ?" />
+                        <OuiNon field="cadastreEnergetiqueRealise"
+                            label="Avez-vous réalisé le cadastre énergétique de votre bâtiment ?" />
+                        <OuiNon field="indexTransmis"
+                            label="Avez-vous relevé et transmis les index de consommation d'énergie pour le suivi des factures ?" />
+                        <OuiNon field="plateformeDigitale"
+                            label="Disposez-vous d'une plateforme digitale ?" />
+
+                        {/* Autres activités */}
+                        <div className="mb-6">
+                            <p className={labelClass}>Quelles sont les autres activités réalisées ?</p>
+                            <div className="space-y-2">
+                                {AUTRES_ACTIVITES_OPTIONS.map(opt => (
+                                    <label key={opt} className="flex items-start gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.autresActivites.includes(opt)}
+                                            onChange={() => handleCheckbox('autresActivites', opt)}
+                                            className="accent-[#00897b] mt-0.5 w-4 h-4"
+                                        />
+                                        <span className="text-sm text-gray-700">{opt}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Contraintes */}
+                        <div className="mb-5">
+                            <label className={labelClass}>Quelles sont vos contraintes ?</label>
+                            <textarea name="contraintes" rows={4} value={formData.contraintes}
+                                onChange={handleChange} className={inputClass} />
+                        </div>
+
+                        {/* Recommandations */}
+                        <div className="mb-5">
+                            <label className={labelClass}>Quelles sont vos recommandations ?</label>
+                            <textarea name="recommandations" rows={4} value={formData.recommandations}
+                                onChange={handleChange} className={inputClass} />
+                        </div>
+
+                        <NavButtons onNext={() => { setError(null); setStep(4); }} />
                     </div>
-                </form>
+                )}
+
+                {/* ── SECTION 4 : Illustrations ── */}
+                {step === 4 && (
+                    <div>
+                        <SectionHeader title="Illustrations (images, tableaux, etc.)" />
+
+                        <FileZone
+                            field="illustrations"
+                            label="Images de la journée consacrée à la sensibilisation avec les collègues sur l'économie d'énergie :"
+                            accept="image/*"
+                        />
+                        <FileZone
+                            field="autresDocuments"
+                            label="Autres documents à fournir :"
+                            accept=".pdf,.xlsx,.xls,.doc,.docx"
+                        />
+
+                        <NavButtons onSubmit={handleSubmit} />
+                    </div>
+                )}
             </div>
         </div>
     );

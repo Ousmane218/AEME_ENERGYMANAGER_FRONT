@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Plus, Search, Download, Trash2 } from 'lucide-react';
-import { getMyReports, deleteReport, downloadReport } from '../../services/reportService';
+import { FileText, Plus, Search, Trash2 } from 'lucide-react';
+import { getMyReports, deleteReport } from '../../services/reportService';
 
 const Badge = ({ status }) => {
     const styles = {
@@ -51,24 +51,15 @@ const ReportsList = () => {
         }
     };
 
-    const handleDownload = async (e, id, fileName) => {
-        e.stopPropagation();
-        try {
-            await downloadReport(id, fileName);
-        } catch (err) {
-            alert(err.message);
-        }
-    };
-
     const filteredReports = reports.filter(report => {
         const matchFilter =
             filter === 'All' ||
             (filter === 'Submitted' && report.reportStatus === 'SUBMITTED') ||
-            (filter === 'Approved' && report.reportStatus === 'APPROVED');
+            (filter === 'Approved'  && report.reportStatus === 'APPROVED')  ||
+            (filter === 'Rejected'  && report.reportStatus === 'REJECTED');
         const matchSearch =
-            report.reportType?.toLowerCase().includes(search.toLowerCase()) ||
-            report.reportLocation?.toLowerCase().includes(search.toLowerCase()) ||
-            report.reportDesc?.toLowerCase().includes(search.toLowerCase());
+            report.nomGestionnaire?.toLowerCase().includes(search.toLowerCase()) ||
+            report.serviceAppartenance?.toLowerCase().includes(search.toLowerCase());
         return matchFilter && matchSearch;
     });
 
@@ -84,21 +75,21 @@ const ReportsList = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-primary">Reports Archive</h1>
-                    <p className="text-sm text-gray-500">Manage and track your energy consumption reports.</p>
+                    <h1 className="text-2xl font-bold text-primary">Mes rapports</h1>
+                    <p className="text-sm text-gray-500">Suivez et gérez vos rapports d'activités.</p>
                 </div>
                 <button
                     onClick={() => navigate('/reports/new')}
                     className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
                 >
-                    <Plus size={18} /> New Report
+                    <Plus size={18} /> Nouveau rapport
                 </button>
             </div>
 
             {/* Filters & Search */}
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex bg-gray-100 p-1 rounded-md">
-                    {['All', 'Submitted', 'Approved'].map((status) => (
+                    {['All', 'Submitted', 'Approved', 'Rejected'].map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilter(status)}
@@ -116,7 +107,7 @@ const ReportsList = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                     <input
                         type="text"
-                        placeholder="Search reports..."
+                        placeholder="Rechercher..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary text-sm"
@@ -134,10 +125,10 @@ const ReportsList = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gestionnaire</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
                                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -146,21 +137,23 @@ const ReportsList = () => {
                                 <tr
                                     key={report.id}
                                     onClick={() => navigate(`/reports/${report.id}`)}
-                                    className="duration-200 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    className="hover:bg-gray-50 transition-colors cursor-pointer"
                                 >
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
+                                        <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 bg-blue-50 rounded flex items-center justify-center text-primary">
                                                 <FileText size={20} />
                                             </div>
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-gray-900">{report.reportType}</div>
-                                                <div className="text-xs text-gray-500">#{report.id} · {report.fileName}</div>
+                                            <div>
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {report.nomGestionnaire || '—'}
+                                                </div>
+                                                <div className="text-xs text-gray-400">#{report.id}</div>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {report.reportLocation}
+                                        {report.serviceAppartenance || '—'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {formatDate(report.reportDate)}
@@ -170,13 +163,6 @@ const ReportsList = () => {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                         <div className="flex items-center justify-end gap-3" onClick={e => e.stopPropagation()}>
-                                            <button
-                                                onClick={(e) => handleDownload(e, report.id, report.fileName)}
-                                                className="text-gray-400 hover:text-primary transition-colors"
-                                                title="Télécharger"
-                                            >
-                                                <Download size={18} />
-                                            </button>
                                             <button
                                                 onClick={(e) => handleDelete(e, report.id)}
                                                 className="text-gray-400 hover:text-red-500 transition-colors"
@@ -192,9 +178,7 @@ const ReportsList = () => {
                     </table>
                 )}
                 {!loading && !error && filteredReports.length === 0 && (
-                    <div className="p-12 text-center text-gray-500">
-                        No reports found.
-                    </div>
+                    <div className="p-12 text-center text-gray-500">Aucun rapport trouvé.</div>
                 )}
             </div>
         </div>

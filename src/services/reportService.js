@@ -16,14 +16,19 @@ export const createReport = async (formData) => {
     return response.json();
 };
 
-export const getMyReports = async (reportType = '') => {
-    const url = reportType
-        ? `${API_URL}/reports?reportType=${reportType}`
-        : `${API_URL}/reports`;
-    const response = await fetch(url, {
+export const getMyReports = async () => {
+    const response = await fetch(`${API_URL}/reports`, {
         headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Erreur lors du chargement des rapports');
+    return response.json();
+};
+
+export const getReportById = async (id) => {
+    const response = await fetch(`${API_URL}/reports/${id}`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Erreur lors du chargement du rapport');
     return response.json();
 };
 
@@ -36,16 +41,8 @@ export const deleteReport = async (id) => {
     return response.json();
 };
 
-export const getReportById = async (id) => {
-    const response = await fetch(`${API_URL}/reports/${id}`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement du rapport');
-    return response.json();
-};
-
-export const downloadReport = async (id, fileName) => {
-    const response = await fetch(`${API_URL}/reports/${id}/download`, {
+export const downloadReport = async (id, fileType = 'illustrations', fileName) => {
+    const response = await fetch(`${API_URL}/reports/${id}/download/${fileType}`, {
         headers: getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Erreur lors du téléchargement');
@@ -56,17 +53,4 @@ export const downloadReport = async (id, fileName) => {
     a.download = fileName;
     a.click();
     window.URL.revokeObjectURL(url);
-};
-
-export const updateReportStatus = async (id, status) => {
-    const response = await fetch(`${API_URL}/reports/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-            ...getAuthHeaders(),
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la mise à jour du statut');
-    return response.json();
 };
