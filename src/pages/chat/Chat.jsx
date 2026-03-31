@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, Send, User, Plus, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -16,6 +17,7 @@ import {
 
 const Chat = () => {
     const { user } = useAuth();
+    const location = useLocation();
     const [conversations, setConversations] = useState([]);
     const [selectedConv, setSelectedConv] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -59,8 +61,20 @@ const Chat = () => {
             setLoading(true);
             const data = await getMyConversations();
             setConversations(data);
-            if (data.length > 0) setSelectedConv(data[0]);
             data.forEach(conv => fetchUserName(getOtherUserIdFromConv(conv)));
+
+            const targetConvId = location.state?.conversationId;
+
+            if (targetConvId) {
+                const target = data.find(c => c.id === targetConvId);
+                if (target) {
+                    setSelectedConv(target);
+                } else if (data.length > 0) {
+                    setSelectedConv(data[0]);
+                }
+            } else if (data.length > 0) {
+                setSelectedConv(data[0]);
+            }
         } catch (err) {
             console.error(err);
         } finally {

@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     User, ArrowLeft, Trash2, MessageSquare, 
-    FileText, Download, CheckCircle, XCircle, Loader2 
+    FileText, Download, CheckCircle, XCircle, Loader2, TrendingUp
 } from 'lucide-react';
 import { getReportsByUser, deleteUser, approveReport, rejectReport, getAllUsers } from '../../services/adminService';
 import { downloadReport } from '../../services/reportService';
+import { getOrCreateConversation } from '../../services/chatService';
 
 const AdminUserDetail = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [reports, setReports] = useState([]);
+    const [score, setScore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -29,10 +31,22 @@ const AdminUserDetail = () => {
             const userData = allUsers.find(u => u.id === userId);
             setUser(userData);
             setReports(reportsData);
+            const approved = reportsData.filter(r => r.reportStatus === 'APPROVED').length;
+            const rejected = reportsData.filter(r => r.reportStatus === 'REJECTED').length;
+            setScore(approved * 4 - rejected * 5);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleChat = async () => {
+        try {
+            const conv = await getOrCreateConversation(userId);
+            navigate('/chat', { state: { conversationId: conv.id } });
+        } catch (err) {
+            alert('Erreur lors de la création de la conversation');
         }
     };
 
@@ -49,7 +63,11 @@ const AdminUserDetail = () => {
     const handleApprove = async (reportId) => {
         try {
             await approveReport(reportId);
-            setReports(reports.map(r => r.id === reportId ? { ...r, reportStatus: 'APPROVED' } : r));
+            const updated = reports.map(r => r.id === reportId ? { ...r, reportStatus: 'APPROVED' } : r);
+            setReports(updated);
+            const approved = updated.filter(r => r.reportStatus === 'APPROVED').length;
+            const rejected = updated.filter(r => r.reportStatus === 'REJECTED').length;
+            setScore(approved * 4 - rejected * 5);
         } catch (err) {
             alert(err.message);
         }
@@ -58,7 +76,11 @@ const AdminUserDetail = () => {
     const handleReject = async (reportId) => {
         try {
             await rejectReport(reportId);
-            setReports(reports.map(r => r.id === reportId ? { ...r, reportStatus: 'REJECTED' } : r));
+            const updated = reports.map(r => r.id === reportId ? { ...r, reportStatus: 'REJECTED' } : r);
+            setReports(updated);
+            const approved = updated.filter(r => r.reportStatus === 'APPROVED').length;
+            const rejected = updated.filter(r => r.reportStatus === 'REJECTED').length;
+            setScore(approved * 4 - rejected * 5);
         } catch (err) {
             alert(err.message);
         }
@@ -71,6 +93,9 @@ const AdminUserDetail = () => {
     );
 
     if (error) return <div className="p-4 text-red-600">{error}</div>;
+
+    const scoreColor = score >= 0 ? 'text-green-700' : 'text-red-700';
+    const scoreBg    = score >= 0 ? 'bg-green-50'    : 'bg-red-50';
 
     return (
         <div className="space-y-6">
@@ -94,7 +119,7 @@ const AdminUserDetail = () => {
                             </div>
                             <h2 className="text-xl font-bold text-gray-900">{user?.fullName || '—'}</h2>
                             <p className="text-gray-500 text-sm mb-6">{user?.email || '—'}</p>
-                            
+
                             <div className="w-full space-y-3 mb-6">
                                 <div className="flex justify-between text-sm py-2 border-b border-gray-50">
                                     <span className="text-gray-500">Service</span>
@@ -110,11 +135,24 @@ const AdminUserDetail = () => {
                                         {user?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
                                     </span>
                                 </div>
+                                <div className="flex justify-between text-sm py-2 border-b border-gray-50">
+                                    <span className="text-gray-500">Score</span>
+                                    <div className="flex items-center gap-2">
+                                        <div className={`h-6 w-6 rounded-md flex items-center justify-center ${scoreBg}`}>
+                                            <TrendingUp size={12} className={scoreColor} />
+                                        </div>
+                                        <span className={`font-bold ${scoreColor}`}>
+                                            {score !== null
+                                                ? `${score >= 0 ? '+' : ''}${score} pts`
+                                                : '—'}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="w-full grid grid-cols-2 gap-3">
                                 <button
-                                    onClick={() => navigate('/chat')}
+                                    onClick={handleChat}
                                     className="flex items-center justify-center gap-2 p-2.5 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors text-sm font-medium"
                                 >
                                     <MessageSquare size={18} />
@@ -140,7 +178,11 @@ const AdminUserDetail = () => {
                         </div>
                         <div className="space-y-2 p-2">
                             {reports.length > 0 ? reports.map(report => (
-                                <div key={report.id} className="p-6 hover:bg-gray-50/50 transition-colors border border-gray-100 rounded-xl m-4 shadow-sm">
+                                <div
+                                    key={report.id}
+                                    onClick={() => navigate(`/reports/${report.id}`)}
+                                    className="p-6 hover:bg-gray-50/50 transition-colors border border-gray-100 rounded-xl m-4 shadow-sm cursor-pointer"
+                                >
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex gap-4">
                                             <div className="h-12 w-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
@@ -166,17 +208,15 @@ const AdminUserDetail = () => {
                                         </span>
                                     </div>
 
-                                    {/* Contraintes */}
                                     <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                                         {report.contraintes || "Aucune contrainte fournie."}
                                     </p>
 
-                                    {/* Fichiers */}
                                     <div className="flex items-center justify-between">
                                         <div className="flex gap-3">
                                             {report.illustrationsName && (
                                                 <button
-                                                    onClick={() => downloadReport(report.id, 'illustrations', report.illustrationsName)}
+                                                    onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'illustrations', report.illustrationsName); }}
                                                     className="flex items-center gap-2 text-sm text-primary font-medium hover:underline"
                                                 >
                                                     <Download size={16} />
@@ -185,7 +225,7 @@ const AdminUserDetail = () => {
                                             )}
                                             {report.autresDocumentsName && (
                                                 <button
-                                                    onClick={() => downloadReport(report.id, 'autresDocuments', report.autresDocumentsName)}
+                                                    onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'autresDocuments', report.autresDocumentsName); }}
                                                     className="flex items-center gap-2 text-sm text-primary font-medium hover:underline"
                                                 >
                                                     <Download size={16} />
@@ -200,14 +240,14 @@ const AdminUserDetail = () => {
                                         {report.reportStatus === 'SUBMITTED' && (
                                             <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => handleApprove(report.id)}
+                                                    onClick={(e) => { e.stopPropagation(); handleApprove(report.id); }}
                                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-md hover:bg-green-100 transition-colors text-xs font-semibold"
                                                 >
                                                     <CheckCircle size={14} />
                                                     Approuver
                                                 </button>
                                                 <button
-                                                    onClick={() => handleReject(report.id)}
+                                                    onClick={(e) => { e.stopPropagation(); handleReject(report.id); }}
                                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 rounded-md hover:bg-red-100 transition-colors text-xs font-semibold"
                                                 >
                                                     <XCircle size={14} />

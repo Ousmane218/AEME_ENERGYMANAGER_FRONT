@@ -29,7 +29,7 @@ const Navbar = () => {
 
                     {/* Logo */}
                     <Link to="/dashboard" className="flex items-center gap-3">
-                        <img src="/logo.png" alt="AEME Logo" className="h-10 w-auto" />
+                        <img src="/logo.png" alt="AEME Logo" className="h-12 w-auto" />
                     </Link>
 
                     {/* Desktop Nav */}

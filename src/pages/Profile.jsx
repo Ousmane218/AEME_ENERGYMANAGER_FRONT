@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     ArrowLeft, Mail, User, Building2, Shield, 
     Star, LogOut, FileText, ExternalLink, Calendar, 
-    MapPin, Loader2 
+    Loader2, Hash, Copy, Check
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile } from '../services/profileService';
@@ -16,6 +16,7 @@ const Profile = () => {
     const [reports, setReports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         fetchProfileData();
@@ -41,6 +42,12 @@ const Profile = () => {
         if (profile?.firstName) return profile.firstName.charAt(0).toUpperCase();
         if (profile?.username) return profile.username.charAt(0).toUpperCase();
         return '?';
+    };
+
+    const handleCopyId = () => {
+        navigator.clipboard.writeText(profile?.id);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const ScoreBadge = ({ score }) => {
@@ -70,7 +77,9 @@ const Profile = () => {
     };
 
     const getDisplayService = (u) => {
-        return (u?.membershipService && u.membershipService.trim() !== "") ? u.membershipService : "Aucun service assigné";
+        return (u?.membershipService && u.membershipService.trim() !== "") 
+            ? u.membershipService 
+            : "Aucun service assigné";
     };
 
     if (loading) {
@@ -114,7 +123,6 @@ const Profile = () => {
                             </div>
                             <h2 className="text-xl font-bold text-gray-900">{displayName}</h2>
                             <p className="text-sm text-gray-500 mb-6">{displayService}</p>
-                            
                             <div className="flex items-center justify-center gap-2">
                                 <ScoreBadge score={profile?.score ?? 0} />
                                 <RoleBadge role={profile?.role} />
@@ -122,17 +130,39 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {/* Quick Stats Grid */}
+                    {/* Infos détaillées */}
                     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-6">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">Infos détaillées</h3>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 pb-2">
+                            Infos détaillées
+                        </h3>
+                        {/* Mon ID avec bouton copier */}
+                        <div className="flex items-center gap-4">
+                            <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 text-primary">
+                                <Hash size={16} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[10px] text-gray-400 uppercase font-bold">Mon ID</p>
+                                <p className="text-sm font-medium text-gray-800 truncate">{profile?.id || '—'}</p>
+                            </div>
+                            <button
+                                onClick={handleCopyId}
+                                className="flex-shrink-0 p-1.5 rounded-lg hover:bg-primary/5 transition-colors"
+                                title="Copier l'ID"
+                            >
+                                {copied
+                                    ? <Check size={15} className="text-green-500" />
+                                    : <Copy size={15} className="text-gray-400 hover:text-primary" />
+                                }
+                            </button>
+                        </div>
                         <div className="space-y-4">
                             {[
                                 { label: 'Username', value: profile?.username, icon: User },
-                                { label: 'Email', value: profile?.email, icon: Mail },
-                                { label: 'Prénom', value: profile?.firstName, icon: User },
-                                { label: 'Nom', value: profile?.lastName, icon: User },
-                                { label: 'Service', value: displayService, icon: Building2 },
-                                { label: 'Score', value: `${profile?.score ?? 0} points`, icon: Star }
+                                { label: 'Email',    value: profile?.email,    icon: Mail },
+                                { label: 'Prénom',   value: profile?.firstName, icon: User },
+                                { label: 'Nom',      value: profile?.lastName,  icon: User },
+                                { label: 'Service',  value: displayService,     icon: Building2 },
+                                { label: 'Score',    value: `${profile?.score ?? 0} points`, icon: Star },
                             ].map((info, i) => (
                                 <div key={i} className="flex items-center gap-4">
                                     <div className="h-9 w-9 rounded-xl bg-primary/5 flex items-center justify-center flex-shrink-0 text-primary">
@@ -147,7 +177,7 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {/* Logout Button */}
+                    {/* Logout */}
                     <button
                         onClick={logout}
                         className="w-full flex items-center gap-4 px-6 py-4 bg-white text-red-500 hover:bg-red-50 transition-colors rounded-3xl shadow-sm border border-gray-100 group"
@@ -176,8 +206,8 @@ const Profile = () => {
 
                     <div className="space-y-3">
                         {reports.length > 0 ? reports.map(report => (
-                            <div 
-                                key={report.id} 
+                            <div
+                                key={report.id}
                                 onClick={() => navigate(`/reports/${report.id}`)}
                                 className="bg-white p-4 rounded-2xl border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group flex justify-between items-center"
                             >
