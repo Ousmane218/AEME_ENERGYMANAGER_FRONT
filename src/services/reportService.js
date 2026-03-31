@@ -54,3 +54,11 @@ export const downloadReport = async (id, fileType = 'illustrations', fileName) =
     a.click();
     window.URL.revokeObjectURL(url);
 };
+
+export const getAllReports = async () => {
+    const response = await fetch(`${API_URL}/reports/all`, {
+        headers: getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Erreur lors du chargement des rapports');
+    return response.json();
+};

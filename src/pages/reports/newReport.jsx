@@ -265,12 +265,7 @@ const NewReport = () => {
                     <div>
                         {/* Logo + Titre */}
                         <div className="bg-white rounded-xl p-6 mb-8 flex flex-col items-center text-center border border-[#d0e8c0]">
-                            <div className="h-16 w-16 bg-[#003366] rounded-full flex items-center justify-center mb-3">
-                                <span className="text-[#FFCC00] font-bold text-lg">AEME</span>
-                            </div>
-                            <h2 className="text-xl font-bold text-gray-800">
-                                Rapport mensuel d'activités - Gestionnaires de l'énergie
-                            </h2>
+                            <img src="/logo.png" alt="AEME Logo" className="h-12 w-auto" />
                         </div>
                         <div>
                             <label className={labelClass}>Date de saisie du rapport :</label>
