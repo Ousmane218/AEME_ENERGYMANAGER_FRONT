@@ -138,18 +138,22 @@ const AdminUserDetail = () => {
                         <div className="p-6 border-b border-gray-100 italic text-gray-500 text-sm">
                             Rapports soumis par l'utilisateur
                         </div>
-                        <div className="divide-y divide-gray-50">
+                        <div className="space-y-2 p-2">
                             {reports.length > 0 ? reports.map(report => (
-                                <div key={report.id} className="p-6 hover:bg-gray-50/50 transition-colors">
+                                <div key={report.id} className="p-6 hover:bg-gray-50/50 transition-colors border border-gray-100 rounded-xl m-4 shadow-sm">
                                     <div className="flex justify-between items-start mb-4">
                                         <div className="flex gap-4">
                                             <div className="h-12 w-12 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
                                                 <FileText size={24} />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-gray-900">{report.reportType}</h4>
+                                                <h4 className="font-bold text-gray-900">
+                                                    {report.nomGestionnaire || 'Sans nom'}
+                                                </h4>
                                                 <p className="text-xs text-gray-500">
-                                                    {new Date(report.reportDate).toLocaleDateString('fr-FR')} · {report.reportLocation}
+                                                    {report.reportDate
+                                                        ? new Date(report.reportDate).toLocaleDateString('fr-FR')
+                                                        : '—'} · {report.serviceAppartenance || '—'}
                                                 </p>
                                             </div>
                                         </div>
@@ -161,18 +165,38 @@ const AdminUserDetail = () => {
                                             {report.reportStatus}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-gray-600 mb-6 line-clamp-2">
-                                        {report.reportDesc || "Aucune description fournie."}
+
+                                    {/* Contraintes */}
+                                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+                                        {report.contraintes || "Aucune contrainte fournie."}
                                     </p>
+
+                                    {/* Fichiers */}
                                     <div className="flex items-center justify-between">
-                                        <button
-                                            onClick={() => downloadReport(report.id, report.fileName)}
-                                            className="flex items-center gap-2 text-sm text-primary font-medium hover:underline"
-                                        >
-                                            <Download size={16} />
-                                            {report.fileName}
-                                        </button>
-                                        
+                                        <div className="flex gap-3">
+                                            {report.illustrationsName && (
+                                                <button
+                                                    onClick={() => downloadReport(report.id, 'illustrations', report.illustrationsName)}
+                                                    className="flex items-center gap-2 text-sm text-primary font-medium hover:underline"
+                                                >
+                                                    <Download size={16} />
+                                                    {report.illustrationsName}
+                                                </button>
+                                            )}
+                                            {report.autresDocumentsName && (
+                                                <button
+                                                    onClick={() => downloadReport(report.id, 'autresDocuments', report.autresDocumentsName)}
+                                                    className="flex items-center gap-2 text-sm text-primary font-medium hover:underline"
+                                                >
+                                                    <Download size={16} />
+                                                    {report.autresDocumentsName}
+                                                </button>
+                                            )}
+                                            {!report.illustrationsName && !report.autresDocumentsName && (
+                                                <span className="text-xs text-gray-400">Aucun fichier joint</span>
+                                            )}
+                                        </div>
+
                                         {report.reportStatus === 'SUBMITTED' && (
                                             <div className="flex gap-2">
                                                 <button

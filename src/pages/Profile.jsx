@@ -186,15 +186,19 @@ const Profile = () => {
                                         <FileText size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-sm font-bold text-gray-800">{report.reportType}</h3>
+                                        <h3 className="text-sm font-bold text-gray-800">
+                                            {report.nomGestionnaire || 'Sans nom'}
+                                        </h3>
                                         <div className="flex items-center gap-3 mt-1">
                                             <span className="flex items-center gap-1 text-[10px] text-gray-400">
                                                 <Calendar size={12} />
-                                                {new Date(report.reportDate).toLocaleDateString('fr-FR')}
+                                                {report.reportDate
+                                                    ? new Date(report.reportDate).toLocaleDateString('fr-FR')
+                                                    : '—'}
                                             </span>
                                             <span className="flex items-center gap-1 text-[10px] text-gray-400">
-                                                <MapPin size={12} />
-                                                {report.reportLocation}
+                                                <Building2 size={12} />
+                                                {report.serviceAppartenance || '—'}
                                             </span>
                                         </div>
                                     </div>
