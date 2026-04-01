@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Send, UploadCloud, X, CheckCircle } from 'lucide-react';
 import { createReport } from '../../services/reportService';
+import { useAuth } from '../../context/AuthContext';
+import { getUserProfile } from '../../services/profileService';
 
 const CAMPAGNES_OPTIONS = [
     "Diffusion d'affiches / Flyers",
@@ -27,6 +29,7 @@ const labelClass = "block text-sm font-semibold text-gray-700 mb-2";
 
 const NewReport = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -35,8 +38,8 @@ const NewReport = () => {
         // Section 1
         reportDate: '',
         // Section 2
-        nomGestionnaire: '',
-        serviceAppartenance: '',
+        nomGestionnaire: user?.fullName || '',
+        serviceAppartenance: user?.membershipService || '',
         nombreBatiments: '',
         numeroPoliceSenelec: '',
         // Section 3
@@ -58,6 +61,35 @@ const NewReport = () => {
         illustrations: null,
         autresDocuments: null,
     });
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const profile = await getUserProfile();
+                if (profile) {
+                    setFormData(prev => ({
+                        ...prev,
+                        nomGestionnaire: profile.fullName || '',
+                        serviceAppartenance: profile.membershipService || ''
+                    }));
+                }
+            } catch (err) {
+                console.error("Erreur chargement profil:", err);
+                // Fallback aux infos du token si le fetch échoue
+                if (user) {
+                    setFormData(prev => ({
+                        ...prev,
+                        nomGestionnaire: user.fullName || '',
+                        serviceAppartenance: user.membershipService || ''
+                    }));
+                }
+            }
+        };
+
+        if (user) {
+            fetchProfile();
+        }
+    }, [user]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -295,12 +327,12 @@ const NewReport = () => {
                             <div>
                                 <label className={labelClass}>Prénom(s) et nom du gestionnaire de l'énergie :</label>
                                 <input type="text" name="nomGestionnaire" value={formData.nomGestionnaire}
-                                    onChange={handleChange} className={inputClass} />
+                                    readOnly className={`${inputClass} bg-gray-100 cursor-not-allowed`} />
                             </div>
                             <div>
                                 <label className={labelClass}>Service d'appartenance :</label>
                                 <input type="text" name="serviceAppartenance" value={formData.serviceAppartenance}
-                                    onChange={handleChange} className={inputClass} />
+                                    readOnly className={`${inputClass} bg-gray-100 cursor-not-allowed`} />
                             </div>
                             <div>
                                 <label className={labelClass}>Nombre de bâtiments d'intervention :</label>
