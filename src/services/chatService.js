@@ -1,51 +1,41 @@
-import keycloak from "../Keycloak";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${keycloak.token}`,
-});
+import api from "../lib/apiClient";
 
 export const getOrCreateConversation = async (otherUserId) => {
-    const response = await fetch(`${API_URL}/chat/conversations`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ otherUserId }),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la création de la conversation');
-    return response.json();
+    try {
+        return await api.post('/chat/conversations', { otherUserId });
+    } catch (error) {
+        throw new Error('Erreur lors de la création de la conversation');
+    }
 };
 
 export const getMyConversations = async () => {
-    const response = await fetch(`${API_URL}/chat/conversations`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des conversations');
-    return response.json();
+    try {
+        return await api.get('/chat/conversations');
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des conversations');
+    }
 };
 
 export const getMessages = async (conversationId) => {
-    const response = await fetch(`${API_URL}/chat/conversations/${conversationId}/messages`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des messages');
-    return response.json();
+    try {
+        return await api.get(`/chat/conversations/${conversationId}/messages`);
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des messages');
+    }
 };
 
 export const deleteConversation = async (id) => {
-    const response = await fetch(`${API_URL}/chat/conversations/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la suppression');
-    return response.json();
+    try {
+        return await api.delete(`/chat/conversations/${id}`);
+    } catch (error) {
+        throw new Error('Erreur lors de la suppression');
+    }
 };
 
 export const getUserById = async (userId) => {
-    const response = await fetch(`${API_URL}/auth/users/${userId}`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) return { fullName: 'Utilisateur' };
-    return response.json();
+    try {
+        return await api.get(`/auth/users/${userId}`);
+    } catch (error) {
+        return { fullName: 'Utilisateur' };
+    }
 };

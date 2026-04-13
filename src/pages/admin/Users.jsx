@@ -1,7 +1,24 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Trash2, FileText, Search, Loader2, Plus, X } from 'lucide-react';
-import { getAllUsers, deleteUser, inviteUser } from '../../services/adminService';
+import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, Trash2, FileText, Search, Loader2, Plus, X, Shield, Filter, MoreHorizontal, Mail, ExternalLink } from 'lucide-react';
+import { getAllUsers, deleteUser } from '../../services/adminService';
+import { CreateUserModal } from '@/components/admin/CreateUserModal';
+import { 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableHead, 
+    TableHeader, 
+    TableRow 
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+
+import { cn } from "@/lib/utils";
 
 const Users = () => {
     const [users, setUsers] = useState([]);
@@ -9,14 +26,6 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newUserData, setNewUserData] = useState({
-        email: '',
-        firstName: '',
-        lastName: '',
-        role: 'user',
-        membershipService: ''
-    });
-    const [createLoading, setCreateLoading] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -45,31 +54,14 @@ const Users = () => {
         }
     };
 
-    const handleCreateUser = async (e) => {
-        e.preventDefault();
-        try {
-            setCreateLoading(true);
-            await inviteUser(newUserData);
-            setShowCreateModal(false);
-            setNewUserData({
-                email: '',
-                firstName: '',
-                lastName: '',
-                role: 'user',
-                membershipService: 'SENELEC'
-            });
-            fetchUsers();
-        } catch (err) {
-            alert(err.message);
-        } finally {
-            setCreateLoading(false);
-        }
-    };
-
-    const filteredUsers = users.filter(user => 
-        user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = useMemo(() => {
+        if (!searchTerm) return users;
+        const lowerSearch = searchTerm.toLowerCase();
+        return users.filter(user => 
+            user.fullName?.toLowerCase().includes(lowerSearch) ||
+            user.email?.toLowerCase().includes(lowerSearch)
+        );
+    }, [users, searchTerm]);
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
@@ -78,178 +70,163 @@ const Users = () => {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h1 className="text-2xl font-bold text-primary">Gestion des Utilisateurs</h1>
-                
-                <div className="flex items-center gap-4">
-                    <div className="relative w-full md:w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                        <input
-                            type="text"
-                            placeholder="Rechercher un utilisateur..."
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors whitespace-nowrap"
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">Gestion des Utilisateurs</h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Administrez les comptes, gérez les permissions et invitez de nouveaux membres.
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-2 font-semibold shadow-sm"
+                        onClick={fetchUsers}
                     >
-                        <Plus size={20} />
-                        Créer un utilisateur
-                    </button>
+                        Rafraîchir
+                    </Button>
+                    <Button 
+                        onClick={() => setShowCreateModal(true)}
+                        className="gap-2 shadow-md font-bold bg-primary hover:bg-primary/90"
+                    >
+                        <Plus size={18} /> Nouvel utilisateur
+                    </Button>
                 </div>
             </div>
 
-            {error && (
-                <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
-                    {error}
-                </div>
-            )}
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-100">
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Utilisateur</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Email</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600">Rôle</th>
-                                <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {filteredUsers.length > 0 ? filteredUsers.map((user) => (
-                                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                                                <User size={20} />
-                                            </div>
-                                            <span className="font-medium text-gray-900">{user.fullName || 'N/A'}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">{user.email || 'N/A'}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                                            user.role === 'admin' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
-                                        }`}>
-                                            {user.role === 'admin' ? 'Admin' : 'Utilisateur'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => navigate(`/admin/users/${user.id}`)}
-                                                className="p-2 text-primary hover:bg-primary/5 rounded-lg transition-colors flex items-center gap-1 text-sm font-medium"
-                                                title="Voir les détails"
-                                            >
-                                                <User size={18} />
-                                                Détails
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
-                                        Aucun utilisateur trouvé
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Create User Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-800">Nouvel Utilisateur</h2>
-                            <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-400">
-                                <X size={20} />
-                            </button>
+            {/* Filter & Search Bar */}
+            <Card className="border-none shadow-sm bg-white overflow-hidden">
+                <CardHeader className="pb-4 border-b bg-gray-50/50">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="relative w-full md:w-96">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                            <Input
+                                placeholder="Rechercher par nom, email ou service..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 h-10 text-sm bg-white shadow-sm border-gray-200"
+                            />
                         </div>
-                        <form onSubmit={handleCreateUser} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                    value={newUserData.email}
-                                    onChange={e => setNewUserData({...newUserData, email: e.target.value})}
-                                    placeholder="exemple@energie.sn"
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                        value={newUserData.firstName}
-                                        onChange={e => setNewUserData({...newUserData, firstName: e.target.value})}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                        value={newUserData.lastName}
-                                        onChange={e => setNewUserData({...newUserData, lastName: e.target.value})}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
-                                <select
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                    value={newUserData.role}
-                                    onChange={e => setNewUserData({...newUserData, role: e.target.value})}
-                                >
-                                    <option value="user">Utilisateur</option>
-                                    <option value="admin">Administrateur</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Service affilié</label>
-                                <input
-                                    type="text"
-                                    required
-                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-                                    value={newUserData.membershipService}
-                                    onChange={e => setNewUserData({...newUserData, membershipService: e.target.value})}
-                                    placeholder="ex: SENELEC, ASER..."
-                                />
-                            </div>
-                            <div className="pt-4 flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 font-medium transition-colors"
-                                >
-                                    Annuler
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={createLoading}
-                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark font-medium transition-colors disabled:opacity-50"
-                                >
-                                    {createLoading ? 'Invitation...' : 'Inviter'}
-                                </button>
-                            </div>
-                        </form>
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="h-6 px-3 text-[10px] font-bold uppercase tracking-wider bg-white border-gray-200 shadow-sm">
+                                {filteredUsers.length} Utilisateurs trouvés
+                            </Badge>
+                        </div>
                     </div>
-                </div>
-            )}
+                </CardHeader>
+                <CardContent className="p-0">
+                    {loading ? (
+                        <div className="p-8 space-y-3">
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                            <Skeleton className="h-12 w-full" />
+                        </div>
+                    ) : error ? (
+                        <div className="p-12 text-center text-destructive flex flex-col items-center gap-2">
+                            <X size={32} className="opacity-20" />
+                            <p className="font-medium">{error}</p>
+                            <Button variant="outline" size="sm" onClick={fetchUsers}>Réessayer</Button>
+                        </div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="p-20 text-center text-muted-foreground">
+                            <User size={48} className="mx-auto mb-4 opacity-10" />
+                            <p className="text-lg font-medium">Aucun utilisateur trouvé</p>
+                            <p className="text-sm">Ajustez vos critères de recherche.</p>
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader className="bg-gray-50/50">
+                                <TableRow>
+                                    <TableHead className="w-[300px] font-bold text-gray-900">Utilisateur</TableHead>
+                                    <TableHead className="font-bold text-gray-900">Email & Service</TableHead>
+                                    <TableHead className="font-bold text-gray-900">Rôle & Statut</TableHead>
+                                    <TableHead className="text-right font-bold text-gray-900">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredUsers.map((user) => (
+                                    <TableRow 
+                                        key={user.id}
+                                        className="hover:bg-gray-50/80 transition-colors group"
+                                    >
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <Avatar className="h-10 w-10 border shadow-sm scale-90 group-hover:scale-100 transition-transform">
+                                                    <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
+                                                        {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U'}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="font-bold text-gray-900 leading-tight">{user.fullName || '—'}</div>
+                                                    <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mt-0.5">ID: {user.id || 'N/A'}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-1.5 text-sm text-gray-600 font-medium">
+                                                    <Mail size={12} className="text-muted-foreground" />
+                                                    {user.email}
+                                                </div>
+                                                <div className="text-[10px] text-primary/70 font-black uppercase tracking-tight flex items-center gap-1">
+                                                    <Shield size={10} />
+                                                    {user.membershipService || 'AUCUN SERVICE'}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
+                                                <Badge 
+                                                    className={cn(
+                                                        "text-[10px] font-black uppercase tracking-tighter px-2 h-5 rounded-md",
+                                                        user.role === 'admin' 
+                                                            ? "bg-primary text-white hover:bg-primary/90 shadow-md border-none" 
+                                                            : "bg-primary/20 text-primary border-primary/20 hover:bg-primary/30"
+                                                    )}
+                                                >
+                                                    {user.role === 'admin' ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
+                                                </Badge>
+                                                {user.isActive !== false && (
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    className="font-bold text-primary group-hover:bg-primary/10 transition-colors"
+                                                    onClick={() => navigate(`/admin/users/${user.id}`)}
+                                                >
+                                                    Gérer <ExternalLink size={14} className="ml-2 opacity-50" />
+                                                </Button>
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                    onClick={() => handleDeleteUser(user.id)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+
+            <CreateUserModal 
+                show={showCreateModal} 
+                onClose={() => setShowCreateModal(false)}
+                onCreated={fetchUsers}
+            />
         </div>
     );
 };

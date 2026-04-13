@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Video } from 'lucide-react';
+import { ArrowLeft, Video, Calendar, Clock, Info, ShieldCheck, AlertCircle } from 'lucide-react';
 import { createMeeting } from '../../services/meetingService';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
 
 const NewMeeting = () => {
     const navigate = useNavigate();
@@ -27,53 +32,90 @@ const NewMeeting = () => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-4 mb-6">
-                <button
+        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-700">
+            {/* Header */}
+            <div className="flex items-center gap-4">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
                     onClick={() => navigate(-1)}
-                    className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+                    className="rounded-full hover:bg-gray-100"
                 >
                     <ArrowLeft size={20} />
-                </button>
-                <h1 className="text-2xl font-bold text-primary">New Meeting</h1>
+                </Button>
+                <div>
+                    <h1 className="text-2xl font-black tracking-tight text-gray-900 uppercase">Nouvelle Réunion</h1>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Planifier une session de coordination AEME</p>
+                </div>
             </div>
 
             {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
-                    {error}
-                </div>
+                <Alert variant="destructive" className="border-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle className="text-[10px] font-black uppercase tracking-widest">Erreur de planification</AlertTitle>
+                    <AlertDescription className="text-xs font-medium">{error}</AlertDescription>
+                </Alert>
             )}
 
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-gray-100">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Date et heure
-                        </label>
-                        <input
-                            type="datetime-local"
-                            value={scheduledAt}
-                            onChange={(e) => setScheduledAt(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                        />
-                    </div>
+            <Card className="border-none shadow-2xl shadow-black/5 bg-white overflow-hidden">
+                <CardHeader className="bg-primary/5 pb-8">
+                    <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2 text-primary">
+                        <Calendar size={18} /> Paramètres de la Session
+                    </CardTitle>
+                    <CardDescription className="text-[10px] font-bold uppercase opacity-60">Définissez l'horaire de votre visioconférence sécurisée</CardDescription>
+                </CardHeader>
+                <CardContent className="p-8">
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        <div className="space-y-3">
+                            <Label htmlFor="scheduledAt" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                                Date et Heure de Début
+                            </Label>
+                            <div className="relative group">
+                                <Input
+                                    id="scheduledAt"
+                                    type="datetime-local"
+                                    value={scheduledAt}
+                                    onChange={(e) => setScheduledAt(e.target.value)}
+                                    required
+                                    className="h-14 pl-12 bg-gray-50/50 border-gray-100 focus:border-primary/30 focus:ring-primary/20 transition-all text-sm font-bold rounded-2xl"
+                                />
+                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" size={20} />
+                            </div>
+                        </div>
 
-                    <div className="bg-blue-50 border border-blue-100 rounded-md p-4 text-sm text-blue-700">
-                        Un lien Jitsi unique sera généré automatiquement. Copiez-le et partagez-le avec vos participants.
-                    </div>
+                        <Alert className="bg-blue-50/50 border-blue-100 border-2 rounded-2xl py-6">
+                            <Info className="h-5 w-5 text-blue-600" />
+                            <AlertTitle className="text-[10px] font-black uppercase tracking-widest text-blue-800 mb-1">Génération Automatique</AlertTitle>
+                            <AlertDescription className="text-xs font-medium text-blue-700/80 leading-relaxed">
+                                Un lien <strong>Jitsi MEET</strong> hautement sécurisé sera généré à la création. Vous pourrez le partager avec les membres de votre service dès la validation.
+                            </AlertDescription>
+                        </Alert>
 
-                    <div className="flex justify-end">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex items-center gap-2 bg-primary text-white px-8 py-2 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
-                        >
-                            <Video size={18} />
-                            {loading ? 'Création...' : 'Créer le meeting'}
-                        </button>
-                    </div>
-                </form>
+                        <div className="flex items-center justify-between pt-4">
+                            <div className="flex items-center gap-2 text-[10px] font-black text-green-600 uppercase tracking-widest opacity-60">
+                                <ShieldCheck size={14} /> Chiffrement de bout en bout actif
+                            </div>
+                            <Button
+                                type="submit"
+                                disabled={loading}
+                                className="h-14 px-10 bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest shadow-xl shadow-primary/20 rounded-2xl group transition-all"
+                            >
+                                {loading ? (
+                                    <>Configuration...</>
+                                ) : (
+                                    <>
+                                        Créer la Réunion 
+                                        <Video size={18} className="ml-2 group-hover:scale-110 transition-transform" />
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+
+            <div className="text-center italic opacity-30 text-[10px] font-bold uppercase tracking-tighter">
+                Plateforme de Gouvernance Énergétique · AEME Sénégal
             </div>
         </div>
     );

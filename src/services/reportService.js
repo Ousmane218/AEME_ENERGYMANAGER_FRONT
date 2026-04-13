@@ -1,64 +1,64 @@
-import keycloak from "../Keycloak";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getAuthHeaders = () => ({
-    Authorization: `Bearer ${keycloak.token}`,
-});
+import api from "../lib/apiClient";
 
 export const createReport = async (formData) => {
-    const response = await fetch(`${API_URL}/reports`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: formData,
-    });
-    if (!response.ok) throw new Error('Erreur lors de la création du rapport');
-    return response.json();
+    try {
+        // Axios va gérer le multipart form-data automatiquement s'il voit un FormData
+        // ou vous pouvez définir le header Content-Type spécifiquement, mais Axios le fait.
+        const data = await api.post('/reports', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return data;
+    } catch (error) {
+        throw new Error('Erreur lors de la création du rapport');
+    }
 };
 
 export const getMyReports = async () => {
-    const response = await fetch(`${API_URL}/reports`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des rapports');
-    return response.json();
+    try {
+        return await api.get('/reports');
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des rapports');
+    }
 };
 
 export const getReportById = async (id) => {
-    const response = await fetch(`${API_URL}/reports/${id}`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement du rapport');
-    return response.json();
+    try {
+        return await api.get(`/reports/${id}`);
+    } catch (error) {
+        throw new Error('Erreur lors du chargement du rapport');
+    }
 };
 
 export const deleteReport = async (id) => {
-    const response = await fetch(`${API_URL}/reports/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la suppression');
-    return response.json();
+    try {
+        return await api.delete(`/reports/${id}`);
+    } catch (error) {
+        throw new Error('Erreur lors de la suppression');
+    }
 };
 
 export const downloadReport = async (id, fileType = 'illustrations', fileName) => {
-    const response = await fetch(`${API_URL}/reports/${id}/download/${fileType}`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du téléchargement');
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    try {
+        const blob = await api.get(`/reports/${id}/download/${fileType}`, {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        throw new Error('Erreur lors du téléchargement');
+    }
 };
 
 export const getAllReports = async () => {
-    const response = await fetch(`${API_URL}/reports/all`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des rapports');
-    return response.json();
+    try {
+        return await api.get('/reports/all');
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des rapports');
+    }
 };

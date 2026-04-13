@@ -1,56 +1,42 @@
-import keycloak from "../Keycloak";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${keycloak.token}`,
-});
+import api from "../lib/apiClient";
 
 export const createMeeting = async (data) => {
-    const response = await fetch(`${API_URL}/meetings`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la création du meeting');
-    return response.json();
+    try {
+        return await api.post('/meetings', data);
+    } catch (error) {
+        throw new Error('Erreur lors de la création du meeting');
+    }
 };
 
 export const getMyMeetings = async () => {
-    const response = await fetch(`${API_URL}/meetings`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des meetings');
-    return response.json();
+    try {
+        return await api.get('/meetings');
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des meetings');
+    }
 };
 
 export const getMeetingById = async (id) => {
-    const response = await fetch(`${API_URL}/meetings/${id}`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Meeting introuvable');
-    return response.json();
+    try {
+        return await api.get(`/meetings/${id}`);
+    } catch (error) {
+        throw new Error('Meeting introuvable');
+    }
 };
 
 export const updateMeetingStatus = async (id, status) => {
-    const response = await fetch(`${API_URL}/meetings/${id}/status`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ status }),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la mise à jour');
-    return response.json();
+    try {
+        return await api.patch(`/meetings/${id}/status`, { status });
+    } catch (error) {
+        throw new Error('Erreur lors de la mise à jour');
+    }
 };
 
 export const deleteMeeting = async (id) => {
-    const response = await fetch(`${API_URL}/meetings/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Erreur lors de la suppression');
+    try {
+        return await api.delete(`/meetings/${id}`);
+    } catch (error) {
+        const errMessage = error.response?.data?.message || 'Erreur lors de la suppression';
+        throw new Error(errMessage);
     }
-    return response.json();
 };

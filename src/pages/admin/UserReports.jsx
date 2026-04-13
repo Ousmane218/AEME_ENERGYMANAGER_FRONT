@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, CheckCircle2, XCircle, Download, Loader2, Calendar } from 'lucide-react';
+import { ArrowLeft, FileText, CheckCircle2, XCircle, Download, Loader2, Calendar, User, Info, CheckCircle } from 'lucide-react';
 import { getReportsByUser, approveReport, rejectReport } from '../../services/adminService';
 import { downloadReport } from '../../services/reportService';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { cn, formatDate } from "@/lib/utils";
 
 const UserReports = () => {
     const { userId } = useParams();
@@ -20,7 +25,7 @@ const UserReports = () => {
         try {
             setLoading(true);
             const data = await getReportsByUser(userId);
-            setReports(data);
+            setReports(data || []);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -57,89 +62,130 @@ const UserReports = () => {
     };
 
     if (loading) return (
-        <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="animate-spin text-primary" size={40} />
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+            <Loader2 className="animate-spin text-primary/40" size={40} />
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Chargement des rapports...</p>
         </div>
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <button 
-                    onClick={() => navigate('/admin/users')}
-                    className="p-2 hover:bg-white rounded-lg transition-colors shadow-sm border border-gray-100"
-                >
-                    <ArrowLeft size={20} className="text-primary" />
-                </button>
-                <h1 className="text-2xl font-bold text-primary">Rapports de l'utilisateur</h1>
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
+                <div className="flex items-center gap-5">
+                    <Button 
+                        variant="outline" 
+                        size="icon" 
+                        onClick={() => navigate('/admin/users')}
+                        className="h-11 w-11 rounded-xl shadow-sm hover:bg-primary hover:text-white transition-all group"
+                    >
+                        <ArrowLeft size={20} className="text-primary group-hover:text-white" />
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Rapports de l'Agent</h1>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mt-1 flex items-center gap-2">
+                            <User size={12} className="text-primary" /> ID: {userId} • Revue Administrative
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                     <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold py-1 px-3">
+                        {reports.length} RAPPORTS TROUVÉS
+                    </Badge>
+                </div>
             </div>
 
             {error && (
-                <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
-                    {error}
+                <div className="p-6 bg-red-50 border-2 border-red-100 text-red-600 rounded-2xl flex items-center gap-4">
+                    <XCircle size={20} />
+                    <p className="text-sm font-bold">{error}</p>
                 </div>
             )}
 
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 gap-5">
                 {reports.length > 0 ? reports.map((report) => (
-                    <div key={report.id} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex gap-4">
-                            <div className="p-3 bg-blue-50 rounded-lg text-blue-600 h-fit">
-                                <FileText size={24} />
-                            </div>
-                            <div className="space-y-1">
-                                <h3 className="font-semibold text-gray-900">{report.title || 'Sans titre'}</h3>
-                                <div className="flex items-center gap-3 text-sm text-gray-500">
-                                    <span className="flex items-center gap-1">
-                                        <Calendar size={14} />
-                                        {report.date || new Date(report.createdAt).toLocaleDateString()}
-                                    </span>
-                                    <span>•</span>
-                                    <span className={`font-medium ${
-                                        report.reportStatus === 'APPROVED' ? 'text-green-600' : 
-                                        report.reportStatus === 'REJECTED' ? 'text-red-600' : 'text-amber-600'
-                                    }`}>
-                                        {report.reportStatus || 'EN ATTENTE'}
-                                    </span>
+                    <Card key={report.id} className="border-none shadow-sm hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 bg-white overflow-hidden group">
+                        <div className={cn(
+                            "absolute top-0 left-0 w-1.5 h-full transition-colors",
+                            report.reportStatus === 'APPROVED' ? 'bg-green-500' : 
+                            report.reportStatus === 'REJECTED' ? 'bg-red-500' : 'bg-primary'
+                        )} />
+                        <CardContent className="p-0">
+                            <div className="flex flex-col md:flex-row items-stretch md:items-center">
+                                <div className="p-6 flex-1 flex items-center gap-6">
+                                    <div className={cn(
+                                        "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110",
+                                        report.reportStatus === 'APPROVED' ? 'bg-green-50 text-green-600' : 
+                                        report.reportStatus === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                                    )}>
+                                        <FileText size={28} />
+                                    </div>
+                                    <div className="space-y-1.5 overflow-hidden">
+                                        <h3 className="text-lg font-bold text-gray-900 truncate leading-tight group-hover:text-primary transition-colors">
+                                            {report.title || `Rapport Mensuel - ${new Date(report.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`}
+                                        </h3>
+                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                            <span className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-tight">
+                                                <Calendar size={13} className="text-primary/40" />
+                                                Soumis le {new Date(report.createdAt).toLocaleDateString()}
+                                            </span>
+                                            <div className="h-4 w-[1px] bg-gray-200 hidden sm:block"></div>
+                                            <StatusBadge status={report.reportStatus} className="border-2 px-2.5 py-0" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 bg-gray-50/50 md:bg-transparent border-t md:border-t-0 flex flex-wrap items-center justify-end gap-3 px-8">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleDownload(report)}
+                                        className="h-10 rounded-xl px-5 text-[11px] font-bold uppercase tracking-widest border-gray-200 hover:bg-white hover:text-primary hover:border-primary/20 shadow-sm"
+                                    >
+                                        <Download size={16} className="mr-2" />
+                                        PDF
+                                    </Button>
+                                    
+                                    {(!report.reportStatus || report.reportStatus === 'PENDING' || report.reportStatus === 'EN ATTENTE' || report.reportStatus === 'SUBMITTED') && (
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                onClick={() => handleApprove(report.id)}
+                                                disabled={actionLoading === report.id}
+                                                className="h-10 rounded-xl px-5 text-[11px] font-bold uppercase tracking-widest bg-green-600 hover:bg-green-700 shadow-lg shadow-green-100"
+                                            >
+                                                {actionLoading === report.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} className="mr-2" />}
+                                                Approuver
+                                            </Button>
+                                            
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() => handleReject(report.id)}
+                                                disabled={actionLoading === report.id}
+                                                className="h-10 rounded-xl px-5 text-[11px] font-bold uppercase tracking-widest shadow-lg shadow-red-100"
+                                            >
+                                                {actionLoading === report.id ? <Loader2 className="animate-spin" size={16} /> : <XCircle size={16} className="mr-2" />}
+                                                Rejeter
+                                            </Button>
+                                        </div>
+                                    )}
+                                    
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-300 hover:text-primary rounded-xl">
+                                        <Info size={20} />
+                                    </Button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                onClick={() => handleDownload(report)}
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
-                            >
-                                <Download size={18} />
-                                Télécharger
-                            </button>
-                            
-                            {(!report.reportStatus || report.reportStatus === 'PENDING' || report.reportStatus === 'EN ATTENTE' || report.reportStatus === 'SUBMITTED') && (
-                                <>
-                                    <button
-                                        onClick={() => handleApprove(report.id)}
-                                        disabled={actionLoading === report.id}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2"
-                                    >
-                                        {actionLoading === report.id ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
-                                        Approuver
-                                    </button>
-                                    
-                                    <button
-                                        onClick={() => handleReject(report.id)}
-                                        disabled={actionLoading === report.id}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
-                                    >
-                                        {actionLoading === report.id ? <Loader2 className="animate-spin" size={18} /> : <XCircle size={18} />}
-                                        Rejeter
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 )) : (
-                    <div className="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center text-gray-500">
-                        Aucun rapport trouvé pour cet utilisateur.
+                    <div className="bg-white p-20 rounded-[2.5rem] border-4 border-dashed border-gray-100 text-center space-y-4">
+                        <div className="h-20 w-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-300">
+                           <FileText size={40} />
+                        </div>
+                        <div>
+                            <p className="text-lg font-bold text-gray-900">Aucun rapport disponible</p>
+                            <p className="text-sm font-medium text-muted-foreground max-w-xs mx-auto">Cet agent n'a pas encore soumis de relevés pour la période en cours.</p>
+                        </div>
+                        <Button variant="outline" onClick={() => navigate(-1)} className="mt-4 rounded-xl border-gray-200">Retourner à la liste</Button>
                     </div>
                 )}
             </div>

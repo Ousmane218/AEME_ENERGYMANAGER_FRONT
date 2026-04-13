@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Send, User, Plus, X } from 'lucide-react';
+import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
     getMyConversations,
@@ -14,6 +14,12 @@ import {
     sendWebSocketMessage,
     disconnectWebSocket
 } from '../../services/webSocketService';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 const Chat = () => {
     const { user } = useAuth();
@@ -27,6 +33,7 @@ const Chat = () => {
     const [showNewConv, setShowNewConv] = useState(false);
     const [loading, setLoading] = useState(true);
     const [userNames, setUserNames] = useState({});
+    const [showMobileMessages, setShowMobileMessages] = useState(false);
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -69,10 +76,11 @@ const Chat = () => {
                 const target = data.find(c => c.id === targetConvId);
                 if (target) {
                     setSelectedConv(target);
+                    setShowMobileMessages(true);
                 } else if (data.length > 0) {
                     setSelectedConv(data[0]);
                 }
-            } else if (data.length > 0) {
+            } else if (data.length > 0 && window.innerWidth > 768) {
                 setSelectedConv(data[0]);
             }
         } catch (err) {
@@ -95,6 +103,7 @@ const Chat = () => {
         disconnectWebSocket();
         setSelectedConv(conv);
         setMessages([]);
+        setShowMobileMessages(true);
     };
 
     const handleSend = (e) => {
@@ -116,6 +125,7 @@ const Chat = () => {
             setSelectedConv(conv);
             setShowNewConv(false);
             setNewUserId('');
+            setShowMobileMessages(true);
         } catch (err) {
             alert('Utilisateur introuvable');
         }
@@ -130,6 +140,7 @@ const Chat = () => {
             if (selectedConv?.id === convId) {
                 setSelectedConv(null);
                 setMessages([]);
+                setShowMobileMessages(false);
                 disconnectWebSocket();
             }
         } catch (err) {
@@ -153,101 +164,124 @@ const Chat = () => {
     });
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="flex h-[calc(100vh-10rem)] bg-white rounded-3xl shadow-2xl shadow-black/5 border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
 
-            {/* Sidebar */}
-            <div className="w-1/3 border-r border-gray-200 bg-gray-50 flex flex-col">
-                <div className="p-4 border-b border-gray-200 bg-primary text-white flex items-center justify-between">
-                    <h2 className="font-bold">Conversations</h2>
-                    <button
+            {/* Sidebar / Conversation List */}
+            <div className={cn(
+                "w-full md:w-80 lg:w-96 border-r border-gray-100 bg-gray-50/30 flex flex-col transition-all duration-300",
+                showMobileMessages ? "hidden md:flex" : "flex"
+            )}>
+                {/* Sidebar Header */}
+                <div className="p-6 border-b border-gray-100/50 bg-white flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">Messagerie</h2>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Plateforme AEME</p>
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => setShowNewConv(!showNewConv)}
-                        className="p-1 hover:bg-primary-dark rounded transition-colors"
-                        title="Nouvelle conversation"
+                        className="h-10 w-10 rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
                     >
                         <Plus size={18} />
-                    </button>
+                    </Button>
                 </div>
 
+                {/* New Conversation Modal/Overlay (simplified directly in sidebar) */}
                 {showNewConv && (
-                    <div className="p-3 border-b border-gray-200 bg-white">
-                        <p className="text-xs text-gray-500 mb-2">ID de l'utilisateur :</p>
+                    <div className="px-6 py-4 bg-primary/5 border-b border-primary/10 animate-in slide-in-from-top duration-300">
+                        <label className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 block px-1">Nouvel Interlocuteur (UUID)</label>
                         <div className="flex gap-2">
-                            <input
-                                type="text"
+                            <Input
                                 value={newUserId}
                                 onChange={(e) => setNewUserId(e.target.value)}
-                                placeholder="UUID du user..."
-                                className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                                placeholder="Coller l'identifiant..."
+                                className="h-10 bg-white border-2 border-transparent focus:border-primary/20 rounded-xl text-sm"
                             />
-                            <button
+                            <Button
                                 onClick={handleNewConversation}
-                                className="px-3 py-1 bg-primary text-white rounded text-sm hover:bg-primary-dark"
+                                className="bg-primary hover:bg-primary/90 h-10 px-4 rounded-xl font-bold"
                             >
-                                OK
-                            </button>
-                            <button
-                                onClick={() => setShowNewConv(false)}
-                                className="p-1 text-gray-400 hover:text-gray-600"
-                            >
-                                <X size={16} />
-                            </button>
+                                <Plus size={18} />
+                            </Button>
                         </div>
                     </div>
                 )}
 
-                <div className="p-2">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-                        <input
-                            type="text"
-                            placeholder="Search..."
+                {/* Search */}
+                <div className="px-6 py-4">
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" size={16} />
+                        <Input
+                            placeholder="Rechercher un contact..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-9 pr-2 py-2 rounded border border-gray-300 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                            className="pl-11 h-11 bg-white border-2 border-transparent focus:border-primary/10 rounded-2xl shadow-sm transition-all"
                         />
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto">
+                {/* Conv List Body */}
+                <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1.5 scrollbar-hide">
                     {loading ? (
-                        <div className="p-4 text-center text-sm text-gray-400">Chargement...</div>
+                        <div className="p-8 text-center">
+                            <div className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Synchronisation...</p>
+                        </div>
                     ) : filteredConversations.length === 0 ? (
-                        <div className="p-4 text-center text-sm text-gray-400">
-                            Aucune conversation.
+                        <div className="py-12 px-6 text-center">
+                            <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-300">
+                                <MessageSquare className="h-8 w-8" />
+                            </div>
+                            <p className="text-sm font-bold text-gray-900">Aucun message</p>
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight mt-1 opacity-60">Commencez une nouvelle discussion</p>
                         </div>
                     ) : (
                         filteredConversations.map((conv) => {
                             const otherUserId = getOtherUserIdFromConv(conv);
+                            const isSelected = selectedConv?.id === conv.id;
                             return (
                                 <div
                                     key={conv.id}
                                     onClick={() => handleSelectConversation(conv)}
-                                    className={`p-3 cursor-pointer hover:bg-gray-200 transition-colors relative group ${
-                                        selectedConv?.id === conv.id
-                                            ? 'bg-blue-100 border-l-4 border-primary'
-                                            : 'border-l-4 border-transparent'
-                                    }`}
+                                    className={cn(
+                                        "group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2",
+                                        isSelected 
+                                            ? "bg-white border-primary/10 shadow-lg shadow-black/5 -translate-y-0.5" 
+                                            : "border-transparent hover:bg-white hover:border-gray-100"
+                                    )}
                                 >
-                                    <div className="flex items-center gap-2 w-full">
-                                        <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0">
-                                            <User size={16} />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-medium text-sm text-gray-800 truncate">
+                                    <div className="relative">
+                                        <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                            <AvatarFallback className={cn(
+                                                "font-bold text-xs",
+                                                isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary"
+                                            )}>
+                                                {(userNames[otherUserId] || 'C').charAt(0)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white ring-1 ring-black/5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className={cn(
+                                                "font-bold text-sm truncate",
+                                                isSelected ? "text-primary" : "text-gray-900"
+                                            )}>
                                                 {userNames[otherUserId] || 'Chargement...'}
                                             </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                {otherUserId.substring(0, 16)}...
-                                            </p>
+                                            <Clock size={10} className="text-gray-300" />
                                         </div>
-                                        <button
-                                            onClick={(e) => handleDeleteConversation(e, conv.id)}
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-red-400 hover:text-red-600 flex-shrink-0 ml-auto"
-                                            title="Supprimer"
-                                        >
-                                            <X size={16} />
-                                        </button>
+                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-40">
+                                            ID: {otherUserId.substring(0, 12)}...
+                                        </p>
                                     </div>
+                                    <button
+                                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                                        className="opacity-0 group-hover:opacity-100 transition-all p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                                    >
+                                        <X size={14} />
+                                    </button>
                                 </div>
                             );
                         })
@@ -256,28 +290,66 @@ const Chat = () => {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1 flex flex-col">
+            <div className={cn(
+                "flex-1 flex flex-col bg-white transition-all duration-300",
+                !showMobileMessages ? "hidden md:flex" : "flex"
+            )}>
                 {!selectedConv ? (
-                    <div className="flex-1 flex items-center justify-center text-gray-400">
-                        Sélectionne une conversation pour commencer.
+                    <div className="flex-1 flex flex-col items-center justify-center p-12 bg-gray-50/30">
+                         <div className="h-24 w-24 bg-white rounded-[2rem] shadow-xl border border-gray-100 flex items-center justify-center text-primary/20 mb-6 animate-pulse">
+                            <Send size={40} className="rotate-12 translate-x-1" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 tracking-tight">Votre Espace de Discussion</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs text-center mt-2 font-medium opacity-60 leading-relaxed uppercase tracking-tighter">Sélectionnez un expert pour démarrer une communication sécurisée.</p>
+                        <Badge variant="outline" className="mt-8 border-primary/10 text-primary/40 font-black tracking-[0.2em] px-4 py-1.5 uppercase text-[9px]">AEME SECURE CHAT v2</Badge>
                     </div>
                 ) : (
                     <>
-                        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white">
-                            <div>
-                                <h3 className="font-bold text-primary">
-                                    {userNames[getOtherUserIdFromConv(selectedConv)] || 'Chargement...'}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    {getOtherUserIdFromConv(selectedConv).substring(0, 24)}...
-                                </p>
+                        {/* Chat Header */}
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                            <div className="flex items-center gap-4">
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    onClick={() => setShowMobileMessages(false)}
+                                    className="md:hidden h-10 w-10 text-gray-400 hover:text-primary rounded-xl"
+                                >
+                                    <ArrowLeft size={20} />
+                                </Button>
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10 border-2 border-primary/10">
+                                        <AvatarFallback className="bg-primary/5 text-primary font-bold text-sm">
+                                            {(userNames[getOtherUserIdFromConv(selectedConv)] || 'U').charAt(0).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <h3 className="text-base font-bold text-gray-900">
+                                            {userNames[getOtherUserIdFromConv(selectedConv)] || 'Utilisateur'}
+                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
+                                                En ligne · Expert AEME
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            <Button variant="ghost" size="icon" className="text-gray-300 rounded-xl hover:text-primary">
+                                <MoreVertical size={20} />
+                            </Button>
                         </div>
 
-                        <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-gray-50">
+                        {/* Messages Area */}
+                        <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-gray-50/20 scrollbar-hide">
                             {messages.length === 0 ? (
-                                <div className="text-center text-gray-400 text-sm mt-8">
-                                    Aucun message. Commencez la conversation !
+                                <div className="text-center py-20 px-8">
+                                    <div className="h-12 w-12 bg-primary/5 text-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                        <ShieldCheck size={24} />
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                                        Cette conversation est sécurisée.<br/>Commencez à échanger maintenant.
+                                    </p>
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => {
@@ -285,27 +357,32 @@ const Chat = () => {
                                     return (
                                         <div
                                             key={msg.id || idx}
-                                            className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}
+                                            className={cn(
+                                                "flex flex-col gap-1.5 animate-in slide-in-from-bottom-2 duration-300",
+                                                isMe ? "items-end" : "items-start"
+                                            )}
                                         >
-                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                                isMe ? 'bg-primary text-white' : 'bg-gray-300 text-gray-600'
-                                            }`}>
-                                                <User size={16} />
-                                            </div>
-                                            <div className={`p-3 rounded-lg shadow-sm max-w-md ${
-                                                isMe ? 'bg-primary text-white' : 'bg-white text-gray-800'
-                                            }`}>
+                                            <div className={cn(
+                                                "max-w-[85%] md:max-w-[70%] p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed transition-all hover:shadow-md",
+                                                isMe 
+                                                    ? "bg-primary text-white rounded-tr-none shadow-primary/10" 
+                                                    : "bg-white text-gray-800 rounded-tl-none border border-gray-100"
+                                            )}>
                                                 {!isMe && (
-                                                    <p className="text-xs font-bold text-gray-500 mb-1">
-                                                        {userNames[msg.senderId] || msg.senderId.substring(0, 8) + '...'}
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2 opacity-60">
+                                                        {userNames[msg.senderId] || 'Expert'}
                                                     </p>
                                                 )}
-                                                <p className="text-sm">{msg.content}</p>
-                                                <span className={`text-[10px] block mt-1 text-right ${
-                                                    isMe ? 'text-blue-200' : 'text-gray-400'
-                                                }`}>
-                                                    {msg.sentAt ? formatTime(msg.sentAt) : '...'}
-                                                </span>
+                                                <p>{msg.content}</p>
+                                                <div className={cn(
+                                                    "flex items-center gap-1.5 mt-2 justify-end",
+                                                    isMe ? "text-primary-foreground/50" : "text-muted-foreground/40"
+                                                )}>
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter">
+                                                        {msg.sentAt ? formatTime(msg.sentAt) : 'SYNCING'}
+                                                    </span>
+                                                    {isMe && <CheckCircle size={8} className="text-primary-foreground/40" />}
+                                                </div>
                                             </div>
                                         </div>
                                     );
@@ -314,23 +391,27 @@ const Chat = () => {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="p-4 border-t border-gray-200 bg-white">
-                            <form onSubmit={handleSend} className="flex gap-2 items-center">
-                                <div className="flex-1 relative">
-                                    <input
-                                        type="text"
+                        {/* Input Area */}
+                        <div className="p-6 border-t border-gray-100 bg-white/80 backdrop-blur-md">
+                            <form onSubmit={handleSend} className="flex gap-4 items-center">
+                                <div className="flex-1 relative group">
+                                    <Input
                                         value={messageInput}
                                         onChange={(e) => setMessageInput(e.target.value)}
-                                        placeholder="Type your message..."
-                                        className="w-full pl-4 pr-10 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                                        placeholder="Écrivez votre message..."
+                                        className="h-14 pl-6 pr-12 bg-gray-50 border-transparent focus:bg-white focus:border-primary/20 rounded-[2rem] text-sm shadow-inner transition-all"
                                     />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                        <Badge className="bg-primary/5 text-primary border-none text-[8px] font-black opacity-40">ENTER</Badge>
+                                    </div>
                                 </div>
-                                <button
+                                <Button
                                     type="submit"
-                                    className="bg-primary text-white p-3 rounded-full hover:bg-primary-dark transition-colors shadow-md flex-shrink-0"
+                                    disabled={!messageInput.trim()}
+                                    className="h-14 w-14 rounded-[2rem] bg-primary text-white hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary/20 flex-shrink-0"
                                 >
-                                    <Send size={20} />
-                                </button>
+                                    <Send size={24} className="translate-x-0.5 -translate-y-0.5" />
+                                </Button>
                             </form>
                         </div>
                     </>
@@ -341,3 +422,4 @@ const Chat = () => {
 };
 
 export default Chat;
+;

@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, Calendar, MessageSquare, ChevronRight, AlertCircle, TrendingUp, Building2 } from 'lucide-react';
+import { FileText, Calendar, MessageSquare, ChevronRight, CheckCircle, Clock, XCircle, TrendingUp, Filter, Download, Zap, Plus } from 'lucide-react';
 import { getUserProfile } from '../services/profileService';
 import { getMyReports, getAllReports } from '../services/reportService';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatDate } from "@/lib/utils";
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -14,9 +21,10 @@ const Dashboard = () => {
     useEffect(() => {
         Promise.all([getUserProfile(), getMyReports(), getAllReports()])
             .then(([profileData, myReportsData, allReportsData]) => {
+                const sortDesc = (a, b) => new Date(b.createdAt || b.reportDate || 0) - new Date(a.createdAt || a.reportDate || 0);
                 setProfile(profileData);
-                setMyReports(myReportsData);
-                setAllReports(allReportsData);
+                setMyReports((myReportsData || []).sort(sortDesc));
+                setAllReports((allReportsData || []).sort(sortDesc));
             })
             .catch(console.error)
             .finally(() => setLoading(false));
@@ -24,243 +32,187 @@ const Dashboard = () => {
 
     const approved = myReports.filter(r => r.reportStatus === 'APPROVED').length;
     const rejected = myReports.filter(r => r.reportStatus === 'REJECTED').length;
+    const pending = myReports.filter(r => r.reportStatus === 'PENDING' || r.reportStatus === 'EN ATTENTE').length;
 
-    const today = new Date().toLocaleDateString('fr-FR', {
-        day: 'numeric', month: 'long', year: 'numeric'
-    });
-
-    const statusStyle = (status) => {
-        if (status === 'APPROVED') return { badge: 'bg-green-50 text-green-700', label: 'Approuvé' };
-        if (status === 'REJECTED') return { badge: 'bg-red-50 text-red-700',     label: 'Rejeté' };
-        return { badge: 'bg-blue-50 text-blue-700', label: 'En attente' };
-    };
-
-    const quickLinks = [
-        { label: 'Nouveau rapport',       icon: FileText,      path: '/reports/new',  color: '#185FA5', bg: '#E6F1FB' },
-        { label: 'Planifier une réunion', icon: Calendar,      path: '/meetings/new', color: '#0F6E56', bg: '#E1F5EE' },
-        { label: 'Messagerie',            icon: MessageSquare, path: '/chat',         color: '#854F0B', bg: '#FAEEDA' },
-    ];
-
-    const score      = profile?.score ?? 0;
-    const scoreColor = score >= 0 ? 'text-green-700' : 'text-red-700';
-    const scoreBg    = score >= 0 ? '#EAF3DE' : '#FCEBEB';
-    const scoreIcon  = score >= 0 ? '#3B6D11' : '#A32D2D';
-
-    const formatDate = (dateStr) => {
-        if (!dateStr) return '—';
-        const d = new Date(dateStr);
-        const now = new Date();
-        const diff = Math.floor((now - d) / 1000);
-        if (diff < 60)   return "À l'instant";
-        if (diff < 3600) return `il y a ${Math.floor(diff / 60)} min`;
-        if (diff < 86400) return `il y a ${Math.floor(diff / 3600)} h`;
-        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-    };
+    const MetricCard = ({ title, value, icon: Icon, colorClass, gradient }) => (
+        <Card className={`border-none shadow-sm overflow-hidden ${gradient}`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
+                    {title}
+                </CardTitle>
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${colorClass} shadow-sm`}>
+                    <Icon size={14} />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-gray-900">{loading ? <Skeleton className="h-8 w-16" /> : value}</div>
+                <p className="text-[10px] text-muted-foreground mt-1 font-medium italic">Données consolidées</p>
+            </CardContent>
+        </Card>
+    );
 
     return (
-        <div className="space-y-6">
-
-            {/* Header */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-primary">
-                        {loading ? 'Tableau de bord' : `Bonjour, ${profile?.firstName || 'Utilisateur'} !`}
+        <div className="space-y-8 animate-in fade-in duration-700">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
+                        {loading ? <Skeleton className="h-9 w-48" /> : "Tableau de Bord"}
+                        {!loading && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5 px-2 py-0">LIVE</Badge>}
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Agence pour l'Économie et la Maîtrise de l'Énergie — Espace gestionnaire
+                    <p className="text-sm text-muted-foreground font-medium">
+                        Heureux de vous revoir, <span className="text-primary font-bold">{profile?.firstName || 'Utilisateur'}</span>. Voici l'état de votre consommation et de vos rapports.
                     </p>
                 </div>
-                <span className="text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded-lg px-3 py-1.5 hidden md:block">
-                    {today}
-                </span>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-                {[
-                    { label: 'Rapports soumis', value: myReports.length, sub: 'Total',              color: 'text-gray-800' },
-                    { label: 'Approuvés',        value: approved,         sub: "Validés par l'AEME", color: 'text-green-700' },
-                    { label: 'Rejetés',          value: rejected,         sub: 'À corriger',         color: 'text-red-700' },
-                ].map((stat, i) => (
-                    <div key={i} className="bg-gray-50 rounded-xl p-4">
-                        <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">{stat.label}</p>
-                        <p className={`text-3xl font-bold ${stat.color}`}>{loading ? '—' : stat.value}</p>
-                        <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
-                    </div>
-                ))}
-            </div>
-
-            {/* Rappel mensuel + Score */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div
-                    className="md:col-span-2 bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-4"
-                    style={{ borderLeft: '3px solid #1D9E75' }}
-                >
-                    <div className="flex items-start gap-3">
-                        <AlertCircle size={18} className="text-green-700 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-sm font-medium text-gray-800">Rappel mensuel</p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Soumettez votre rapport d'activités avant le 05 du mois suivant.
-                            </p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => navigate('/reports/new')}
-                        className="text-xs font-medium text-white px-4 py-2 rounded-lg flex-shrink-0 transition-colors hover:opacity-90"
-                        style={{ background: '#1D9E75' }}
-                    >
-                        Soumettre
-                    </button>
-                </div>
-
-                <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center gap-4">
-                    <div
-                        className="h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: scoreBg }}
-                    >
-                        <TrendingUp size={20} style={{ color: scoreIcon }} />
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider mb-0.5">Score actuel</p>
-                        <p className={`text-2xl font-bold ${scoreColor}`}>
-                            {loading ? '—' : `${score >= 0 ? '+' : ''}${score} pts`}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                            {score >= 0 ? 'Bonne progression' : 'À améliorer'}
-                        </p>
-                    </div>
+                <div className="flex items-center gap-3">
+                    <Button variant="default" size="sm" className="h-10 px-4 gap-2 text-sm font-bold shadow-md bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02]" onClick={() => navigate('/reports/new')}>
+                        <Plus size={16} /> Nouveau Rapport
+                    </Button>
                 </div>
             </div>
 
-            {/* Layout principal */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <MetricCard 
+                    title="Rapports Envoyés"
+                    value={myReports.length}
+                    icon={FileText}
+                    colorClass="bg-blue-100/50 text-blue-600"
+                    gradient="bg-gradient-to-br from-white to-blue-50/20"
+                />
+                <MetricCard 
+                    title="En Attente"
+                    value={pending}
+                    icon={Clock}
+                    colorClass="bg-amber-100/50 text-amber-600"
+                    gradient="bg-gradient-to-br from-white to-amber-50/20"
+                />
+                <MetricCard 
+                    title="Approuvés"
+                    value={approved}
+                    icon={CheckCircle}
+                    colorClass="bg-green-100/50 text-green-600"
+                    gradient="bg-gradient-to-br from-white to-green-50/20"
+                />
+                <MetricCard 
+                    title="Rejetés"
+                    value={rejected}
+                    icon={XCircle}
+                    colorClass="bg-red-100/50 text-red-600"
+                    gradient="bg-gradient-to-br from-white to-red-50/20"
+                />
+            </div>
 
-                {/* Feed — tous les reports — 2/3 */}
-                <div className="md:col-span-2 space-y-3">
-                    <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                            Activité récente
-                        </p>
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-                            {allReports.length} rapports
-                        </span>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Score Panel */}
+                <Card className="border-none shadow-sm overflow-hidden bg-white group flex flex-col">
+                    <CardHeader className="border-b bg-gray-50/30 flex flex-row items-center justify-between py-4">
+                        <CardTitle className="text-xs font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
+                            <TrendingUp size={14} className="text-primary" /> Performance
+                        </CardTitle>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black">TOP 5%</Badge>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col items-center justify-center py-10 relative overflow-hidden">
+                        <div className="absolute -right-8 -bottom-8 text-primary opacity-[0.03] rotate-12">
+                            <Zap size={160} />
+                        </div>
+                        <div className="relative">
+                            <div className="inline-flex items-center justify-center p-8 rounded-full bg-primary/5 mb-6 border-8 border-white shadow-xl">
+                                <span className="text-6xl font-black text-primary tracking-tighter">{loading ? "..." : profile?.score || 0}</span>
+                            </div>
+                            <div className="absolute -top-2 -right-2 h-8 w-8 rounded-full bg-accent text-white flex items-center justify-center shadow-lg border-2 border-white animate-bounce-subtle">
+                                <TrendingUp size={14} />
+                            </div>
+                        </div>
+                        <p className="text-sm font-bold text-gray-900 mb-1">Points de Maîtrise</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-bold opacity-60">Indice Énergétique</p>
+                    </CardContent>
+                </Card>
 
-                    {loading ? (
-                        <div className="bg-white border border-gray-100 rounded-xl p-8 text-center text-sm text-gray-400">
-                            Chargement...
-                        </div>
-                    ) : allReports.length === 0 ? (
-                        <div className="bg-white border border-dashed border-gray-200 rounded-xl p-12 text-center text-sm text-gray-400">
-                            <FileText size={32} className="mx-auto mb-3 opacity-20" />
-                            Aucun rapport soumis pour le moment.
-                        </div>
-                    ) : (
-                        allReports
-                            .slice()
-                            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                            .map(report => {
-                                const { badge, label } = statusStyle(report.reportStatus);
-                                return (
-                                    <div
-                                        key={report.id}
+                {/* Recent Activity List */}
+                <Card className="lg:col-span-2 border-none shadow-sm bg-white overflow-hidden flex flex-col">
+                    <CardHeader className="flex flex-row items-center justify-between border-b py-4 bg-gray-50/30">
+                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Activité des Rapports</CardTitle>
+                        <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/5" onClick={() => navigate('/reports')}>
+                            Voir Tout <ChevronRight size={12} className="ml-1" />
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="p-0 flex-1 overflow-auto">
+                        {loading ? (
+                            <div className="p-4 space-y-4">
+                                <Skeleton className="h-14 w-full" />
+                                <Skeleton className="h-14 w-full" />
+                                <Skeleton className="h-14 w-full" />
+                            </div>
+                        ) : allReports.length === 0 ? (
+                            <div className="p-12 text-center">
+                                <FileText size={40} className="mx-auto mb-4 text-gray-200" />
+                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Aucune activité récente</p>
+                            </div>
+                        ) : (
+                            <div className="divide-y divide-gray-100">
+                                {allReports.slice(0, 5).map((report) => (
+                                    <div 
+                                        key={report.id} 
+                                        className="flex items-center justify-between p-4 hover:bg-gray-50/50 transition-all cursor-pointer group border-l-4 border-l-transparent hover:border-l-primary"
                                         onClick={() => navigate(`/reports/${report.id}`)}
-                                        className="bg-white border border-gray-100 rounded-xl p-4 cursor-pointer hover:border-gray-200 hover:shadow-sm transition-all"
                                     >
-                                        {/* Top row */}
-                                        <div className="flex items-start justify-between gap-3 mb-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">
-                                                    {report.nomGestionnaire?.charAt(0)?.toUpperCase() || '?'}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-800">
-                                                        {report.nomGestionnaire || 'Sans nom'}
-                                                    </p>
-                                                    <p className="text-xs text-gray-400">
-                                                        {formatDate(report.createdAt)}
-                                                    </p>
+                                        <div className="flex items-center gap-4">
+                                            <Avatar className="h-11 w-11 ring-2 ring-white shadow-sm border border-gray-100">
+                                                <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                                                    {report.nomGestionnaire?.charAt(0)?.toUpperCase() || "?"}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900 group-hover:text-primary transition-colors">{report.nomGestionnaire}</p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <span className="text-[10px] font-semibold text-muted-foreground/80 lowercase">{report.serviceAppartenance}</span>
+                                                    <span className="h-1 w-1 rounded-full bg-gray-300"></span>
+                                                    <span className="text-[10px] font-bold text-muted-foreground/60">{formatDate(report.createdAt)}</span>
                                                 </div>
                                             </div>
-                                            <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded-md flex-shrink-0 ${badge}`}>
-                                                {label}
-                                            </span>
                                         </div>
-
-                                        {/* Infos */}
-                                        <div className="flex items-center gap-4 mb-3 pl-12">
-                                            {report.serviceAppartenance && (
-                                                <span className="flex items-center gap-1 text-xs text-gray-500">
-                                                    <Building2 size={12} />
-                                                    {report.serviceAppartenance}
-                                                </span>
-                                            )}
-                                            {report.reportDate && (
-                                                <span className="flex items-center gap-1 text-xs text-gray-500">
-                                                    <Calendar size={12} />
-                                                    {new Date(report.reportDate).toLocaleDateString('fr-FR')}
-                                                </span>
-                                            )}
+                                        <div className="flex flex-col items-end gap-1.5">
+                                            <StatusBadge status={report.reportStatus} className="text-[9px] px-2 py-0.5 border-2 rounded-full h-auto" />
+                                            <Badge variant="ghost" className="h-4 p-0 px-1 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">OUVRIR</Badge>
                                         </div>
-
-                                        {/* Contraintes */}
-                                        {report.contraintes && (
-                                            <p className="text-sm text-gray-600 pl-12 line-clamp-2">
-                                                {report.contraintes}
-                                            </p>
-                                        )}
                                     </div>
-                                );
-                            })
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
-                {/* Colonne droite — 1/3 */}
-                <div className="flex flex-col gap-4">
-
-                    {/* Accès rapide */}
-                    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100">
-                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Accès rapide
-                            </p>
-                        </div>
-                        <div className="divide-y divide-gray-50">
-                            {quickLinks.map((link, i) => (
-                                <div
-                                    key={i}
-                                    onClick={() => navigate(link.path)}
-                                    className="px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div
-                                            className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                                            style={{ background: link.bg }}
-                                        >
-                                            <link.icon size={14} style={{ color: link.color }} />
-                                        </div>
-                                        <p className="text-sm font-medium text-gray-800">{link.label}</p>
-                                    </div>
-                                    <ChevronRight size={16} className="text-gray-300" />
-                                </div>
-                            ))}
-                        </div>
+            {/* Action Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+                <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-primary/30 hover:bg-primary/5 group transition-all rounded-2xl" onClick={() => navigate('/reports/new')}>
+                    <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                        <FileText size={22} />
                     </div>
-
-                    {/* Prochaines réunions */}
-                    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100">
-                            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-                                Prochaines réunions
-                            </p>
-                        </div>
-                        <div className="px-5 py-8 text-center text-sm text-gray-400">
-                            Aucune réunion planifiée.
-                        </div>
+                    <div className="text-left">
+                        <p className="text-sm font-bold text-gray-900">Nouveau Rapport</p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Saisie mensuelle</p>
                     </div>
-
-                </div>
+                </Button>
+                <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-accent/30 hover:bg-accent/5 group transition-all rounded-2xl" onClick={() => navigate('/meetings/new')}>
+                    <div className="h-11 w-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
+                        <Calendar size={22} />
+                    </div>
+                    <div className="text-left">
+                        <p className="text-sm font-bold text-gray-900">Planifier Réunion</p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Agenda administratif</p>
+                    </div>
+                </Button>
+                <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-primary/30 hover:bg-primary/5 group transition-all rounded-2xl" onClick={() => navigate('/chat')}>
+                    <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
+                        <MessageSquare size={22} />
+                    </div>
+                    <div className="text-left">
+                        <p className="text-sm font-bold text-gray-900">Messagerie</p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Discussions directes</p>
+                    </div>
+                </Button>
             </div>
         </div>
     );

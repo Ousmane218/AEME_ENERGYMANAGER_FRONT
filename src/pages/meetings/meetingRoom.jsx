@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Check, Users } from 'lucide-react';
+import { ArrowLeft, Video, Loader2, Check, Copy } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getMeetingById, updateMeetingStatus } from '../../services/meetingService';
 import { useAuth } from '../../context/AuthContext';
 
 const MeetingRoom = () => {
-    const { id } = useParams();
+    const { id } = useParams(); // URL param is likely 'id' if matching user snippet, or meetingId. If my route is /meetings/:id. Let's use id. Or if my router expects meetingId? I'll use id based on user snippet
     const navigate = useNavigate();
     const { user } = useAuth();
     const jitsiContainerRef = useRef(null);
@@ -68,26 +70,34 @@ const MeetingRoom = () => {
                 startWithAudioMuted: false,
                 startWithVideoMuted: false,
                 enableWelcomePage: false,
+                prejoinPageEnabled: false,
             },
             interfaceConfigOverwrite: {
                 SHOW_JITSI_WATERMARK: false,
                 SHOW_BRAND_WATERMARK: false,
                 DEFAULT_REMOTE_DISPLAY_NAME: 'Participant',
-                TOOLBAR_BUTTONS: [
-                    'microphone', 'camera', 'desktop',
-                    'fullscreen', 'fodeviceselection',
-                    'hangup', 'chat', 'raisehand',
-                    'videoquality', 'tileview',
-                ],
             },
         });
 
+        // Redirige dès que le user quitte — avant que la page JaaS s'affiche
+        api.addEventListener('videoConferenceLeft', async () => {
+            api.dispose();
+            jitsiApiRef.current = null;
+            if (meetingData.createdByUserId === user?.id) {
+                await updateMeetingStatus(id, 'ENDED');
+            }
+            navigate('/meetings');
+        });
+
+        // Fallback
         api.addEventListener('readyToClose', async () => {
             if (meetingData.createdByUserId === user?.id) {
                 await updateMeetingStatus(id, 'ENDED');
             }
             navigate('/meetings');
         });
+
+        api.addEventListener('videoConferenceJoined', () => setLoading(false));
 
         jitsiApiRef.current = api;
     };
@@ -99,62 +109,58 @@ const MeetingRoom = () => {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const formatDate = (dateStr) => new Date(dateStr).toLocaleString('fr-FR', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit'
-    });
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-96">
-                <p className="text-gray-400">Chargement du meeting...</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => navigate('/meetings')}
-                        className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+        <div className="fixed inset-0 bg-neutral-900 z-50 flex flex-col animate-in fade-in duration-500">
+            {/* Minimal Header */}
+            <header className="h-16 bg-neutral-950 border-b border-white/5 flex items-center justify-between px-6 shrink-0 relative z-10">
+                <div className="flex items-center gap-4">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="text-white/70 hover:text-white hover:bg-white/10"
+                        onClick={() => {
+                            if (window.confirm("Voulez-vous vraiment quitter la réunion ?")) {
+                                navigate('/meetings');
+                            }
+                        }}
                     >
                         <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-primary">
-                            Meeting #{meeting?.id}
-                        </h1>
-                        <div className="flex items-center gap-3 text-sm text-gray-500">
-                            <span>{formatDate(meeting?.scheduledAt)}</span>
-                            <span>·</span>
-                            <div className="flex items-center gap-1">
-                                <Users size={14} />
-                                <span>{meeting?.participantIds?.length} participant(s)</span>
-                            </div>
+                    </Button>
+                    <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                            <Video size={18} />
+                        </div>
+                        <div>
+                            <h1 className="text-sm font-bold text-white uppercase tracking-tight">Réunion AEME</h1>
+                            <p className="text-[10px] text-white/40 font-black uppercase tracking-widest">ID: {id}</p>
                         </div>
                     </div>
                 </div>
 
-                <button
-                    onClick={handleCopyUrl}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-md text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                    {copied
-                        ? <><Check size={16} className="text-green-500" /> Lien copié !</>
-                        : <><Copy size={16} /> Copier le lien</>
-                    }
-                </button>
-            </div>
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="outline" 
+                        className="h-8 text-[10px] uppercase font-black tracking-widest bg-transparent text-white border-white/20 hover:bg-white/10" 
+                        onClick={handleCopyUrl}
+                    >
+                        {copied ? <><Check size={14} className="mr-2 text-green-500" /> Copié</> : <><Copy size={14} className="mr-2" /> Lien URL</>}
+                    </Button>
+                    <Badge variant="outline" className="text-green-500 border-green-500/30 bg-green-500/10 text-[10px] font-black uppercase tracking-widest py-1">
+                        {loading ? 'Connexion...' : 'En ligne'}
+                    </Badge>
+                </div>
+            </header>
 
-            {/* Jitsi container */}
-            <div
-                ref={jitsiContainerRef}
-                className="w-full rounded-lg overflow-hidden border border-gray-200 shadow-sm"
-                style={{ height: 'calc(100vh - 200px)' }}
-            />
+            {/* Jitsi Container */}
+            <main className="flex-1 relative bg-black">
+                {loading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 z-20 space-y-4">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Initialisation sécurisée...</p>
+                    </div>
+                )}
+                <div ref={jitsiContainerRef} id="jitsi-container" className="h-full w-full" />
+            </main>
         </div>
     );
 };

@@ -1,78 +1,62 @@
-import keycloak from "../Keycloak";
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getAuthHeaders = () => ({
-    Authorization: `Bearer ${keycloak.token}`,
-    'Content-Type': 'application/json',
-});
+import api from "../lib/apiClient";
 
 // USERS MANAGEMENT
 export const getAllUsers = async () => {
-    const response = await fetch(`${API_URL}/admin/users`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des utilisateurs');
-    return response.json();
+    try {
+        return await api.get('/admin/users');
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des utilisateurs');
+    }
 };
 
 export const deleteUser = async (userId) => {
-    const response = await fetch(`${API_URL}/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la suppression de l\'utilisateur');
-    return response.json();
+    try {
+        return await api.delete(`/admin/users/${userId}`);
+    } catch (error) {
+        throw new Error('Erreur lors de la suppression de l\'utilisateur');
+    }
 };
 
 export const inviteUser = async ({ email, firstName, lastName, role, membershipService }) => {
-    const response = await fetch(`${API_URL}/admin/users`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ email, firstName, lastName, role, membershipService }),
-    });
-    if (!response.ok) {
-        if (response.status === 409) throw new Error('Email déjà utilisé');
+    try {
+        return await api.post('/admin/users', { email, firstName, lastName, role, membershipService });
+    } catch (error) {
+        if (error.response && error.response.status === 409) {
+            throw new Error('Email déjà utilisé');
+        }
         throw new Error("Erreur lors de l'invitation");
     }
-    return response.json();
 };
 
 export const updateUserMembership = async (userId, membershipService) => {
-    const response = await fetch(`${API_URL}/admin/users/${userId}/membership`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ membershipService }),
-    });
-    if (!response.ok) throw new Error('Erreur lors de la mise à jour du membership');
-    return response.json();
+    try {
+        return await api.patch(`/admin/users/${userId}/membership`, { membershipService });
+    } catch (error) {
+        throw new Error('Erreur lors de la mise à jour du membership');
+    }
 };
 
 // REPORTS MANAGEMENT
 export const getReportsByUser = async (userId) => {
-    const response = await fetch(`${API_URL}/admin/users/${userId}/reports`, {
-        headers: getAuthHeaders(),
-    });
-    if (!response.ok) throw new Error('Erreur lors du chargement des rapports de l\'utilisateur');
-    return response.json();
+    try {
+        return await api.get(`/admin/users/${userId}/reports`);
+    } catch (error) {
+        throw new Error('Erreur lors du chargement des rapports de l\'utilisateur');
+    }
 };
 
 export const approveReport = async (reportId) => {
-    const response = await fetch(`${API_URL}/admin/reports/${reportId}/status`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ status: 'APPROVED' }),
-    });
-    if (!response.ok) throw new Error('Erreur lors de l\'approbation du rapport');
-    return response.json();
+    try {
+        return await api.patch(`/admin/reports/${reportId}/status`, { status: 'APPROVED' });
+    } catch (error) {
+        throw new Error('Erreur lors de l\'approbation du rapport');
+    }
 };
 
 export const rejectReport = async (reportId) => {
-    const response = await fetch(`${API_URL}/admin/reports/${reportId}/status`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ status: 'REJECTED' }),
-    });
-    if (!response.ok) throw new Error('Erreur lors du rejet du rapport');
-    return response.json();
+    try {
+        return await api.patch(`/admin/reports/${reportId}/status`, { status: 'REJECTED' });
+    } catch (error) {
+        throw new Error('Erreur lors du rejet du rapport');
+    }
 };
