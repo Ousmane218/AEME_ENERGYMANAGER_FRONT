@@ -36,7 +36,7 @@ function App() {
 
     return (
         <ErrorBoundary>
-            <div className="flex min-h-screen bg-gray-50/50">
+            <div className="flex h-screen overflow-hidden bg-gray-50/50">
                 {/* Professional Sidebar */}
                 <Sidebar />
 

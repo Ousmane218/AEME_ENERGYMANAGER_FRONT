@@ -35,8 +35,11 @@ export const groupByService = (users) => {
             ];
         }
 
-        // Add member names
-        map[svc].members.push(u.fullName || u.email);
+        // Add member objects with ID and Name
+        map[svc].members.push({
+            id: u.id,
+            name: u.fullName || u.email
+        });
     });
 
     // Return only services that have at least one coordinate

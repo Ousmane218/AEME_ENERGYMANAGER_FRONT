@@ -4,8 +4,15 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { getAllUsersWithLocation } from '../services/profileService';
 import { SENEGAL_CENTER, groupByService } from '../lib/mapUtils';
 import { Card } from "@/components/ui/card";
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { getOrCreateConversation } from '../services/chatService';
+import { Button } from "@/components/ui/button";
+import { MessageSquare, FileText, User } from 'lucide-react';
 
 const MapPage = () => {
+    const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
     const [markers, setMarkers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError]     = useState(null);
@@ -63,18 +70,64 @@ const MapPage = () => {
                             {markers.map((m, i) => (
                                 <Marker key={i} position={m.coords}>
                                     <Popup>
-                                        <div className="text-sm min-w-[150px]">
-                                            <p className="font-bold text-primary mb-2 border-b border-gray-100 pb-1">
-                                                {m.service}
+                                        <div className="text-sm min-w-[220px] p-1">
+                                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+                                                <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                                    <MapPin size={16} />
+                                                </div>
+                                                <p className="font-black text-gray-900 uppercase tracking-tight text-[11px] truncate">
+                                                    {m.service}
+                                                </p>
+                                            </div>
+                                            
+                                            <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.15em] mb-3">
+                                                Membres ({m.members.length})
                                             </p>
-                                            <p className="text-xs text-gray-500 font-medium mb-1">
-                                                Membres ({m.members.length}) :
-                                            </p>
-                                            <div className="max-h-32 overflow-y-auto">
-                                                {m.members.map((name, j) => (
-                                                    <p key={j} className="text-[11px] text-gray-700 py-0.5">
-                                                        • {name}
-                                                    </p>
+                                            
+                                            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1 customize-scrollbar">
+                                                {m.members.map((member, j) => (
+                                                    <div key={j} className="bg-gray-50/50 rounded-xl p-3 border border-gray-100/50 space-y-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-6 w-6 rounded-full bg-white border border-gray-100 flex items-center justify-center text-[10px] font-bold text-primary">
+                                                                {member.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <span className="text-[11px] font-bold text-gray-700 truncate">
+                                                                {member.name}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-2 pt-1 border-t border-gray-50">
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                className="flex-1 h-7 text-[9px] font-black uppercase tracking-widest gap-2 bg-white text-primary hover:bg-primary/10 hover:text-primary border border-gray-100 shadow-sm"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const conv = await getOrCreateConversation(member.id);
+                                                                        navigate('/chat', { state: { conversationId: conv.id } });
+                                                                    } catch {
+                                                                        alert('Erreur lors de la création du chat');
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <MessageSquare size={12} /> Chat
+                                                            </Button>
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                className="flex-1 h-7 text-[9px] font-black uppercase tracking-widest gap-2 bg-white text-accent hover:bg-accent/10 hover:text-accent border border-gray-100 shadow-sm"
+                                                                onClick={() => {
+                                                                    if (currentUser?.isAdmin) {
+                                                                        navigate(`/admin/users/${member.id}`);
+                                                                    } else if (member.id === currentUser?.id) {
+                                                                        navigate('/profile');
+                                                                    } else {
+                                                                        navigate(`/reports?userId=${member.id}`);
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <FileText size={12} /> Rapports
+                                                            </Button>
+                                                        </div>
+                                                    </div>
                                                 ))}
                                             </div>
                                         </div>

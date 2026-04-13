@@ -60,19 +60,14 @@ api.interceptors.response.use(
             failureCount++;
             if (failureCount >= 5 && !isCircuitOpen) {
                 isCircuitOpen = true;
-                console.error("🔥 CIRCUIT BREAKER TRIPPED! Cooling down for 30 seconds...");
                 
                 setTimeout(() => {
                     isCircuitOpen = false;
                     failureCount = 0;
-                    console.log("🧊 CIRCUIT BREAKER RESET. Resuming backend calls.");
                 }, 30000); // 30s cooldown
             }
         }
 
-        if (error.response && error.response.status === 401) {
-            console.error("Unauthorized request - maybe redirect to login?");
-        }
         return Promise.reject(error);
     }
 );

@@ -124,8 +124,8 @@ const Sidebar = () => {
                 </Link>
             </nav>
 
-            {/* Bottom Section - Profile & Logout */}
-            <div className={cn("border-t bg-gray-50/50 space-y-4 transition-all flex-shrink-0", isCollapsed ? "p-3" : "p-6")}>
+            {/* User Profile Section (Link only) */}
+            <div className={cn("border-t bg-gray-50/50 transition-all flex-shrink-0", isCollapsed ? "p-3" : "p-6")}>
                 <Link to="/profile" className={cn(
                     "flex items-center rounded-2xl border-2 border-white bg-white shadow-sm hover:border-primary/20 transition-all group",
                     isCollapsed ? "justify-center p-2" : "gap-3.5 p-3"
@@ -146,22 +146,6 @@ const Sidebar = () => {
                         </div>
                     )}
                 </Link>
-                
-                <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={logout}
-                    title={isCollapsed ? 'Déconnexion' : undefined}
-                    className={cn(
-                        "text-[10px] font-bold text-red-500 hover:bg-red-50 hover:text-green-700 rounded-xl group transition-all uppercase tracking-widest",
-                        isCollapsed ? "w-full justify-center p-2 h-auto" : "w-full justify-start gap-3.5 h-11"
-                    )}
-                >
-                    <div className={cn("rounded-lg bg-red-50 text-red-500 flex items-center justify-center transition-colors group-hover:bg-red-100 shrink-0", isCollapsed ? "h-10 w-10" : "h-8 w-8")}>
-                      <LogOut size={16} className={cn("transition-transform", isCollapsed ? "" : "group-hover:-translate-x-0.5")} />
-                    </div>
-                    {!isCollapsed && <span>Déconnexion</span>}
-                </Button>
             </div>
         </aside>
     );

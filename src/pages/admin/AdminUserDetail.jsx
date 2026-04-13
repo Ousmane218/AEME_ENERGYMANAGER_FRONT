@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-    User, ArrowLeft, Trash2, MessageSquare, 
+    User, ArrowLeft, Trash2, MessageSquare, Shield,
     FileText, Download, CheckCircle, XCircle, Loader2, TrendingUp,
     Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, Map
 } from 'lucide-react';
@@ -122,179 +122,225 @@ const AdminUserDetail = () => {
     );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
+        <div className="space-y-10 animate-in fade-in duration-700">
+            {/* Minimal Navigation Header */}
+            <div className="flex items-center justify-between px-2">
                 <button
                     onClick={() => navigate('/admin/users')}
-                    className="p-2 hover:bg-gray-100 rounded-lg text-gray-500"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-primary hover:border-primary/20 transition-all shadow-sm group"
                 >
-                    <ArrowLeft size={20} />
+                    <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    Retour
                 </button>
-                <h1 className="text-2xl font-bold text-primary">Détails de l'utilisateur</h1>
+                <div className="h-0.5 flex-1 mx-8 bg-gradient-to-r from-gray-100/50 via-gray-100 to-gray-100/50 rounded-full" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                {/* Left Column - User Info Card */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                        <div className="h-28 w-28 rounded-full bg-accent border-4 border-white flex items-center justify-center shadow-lg shadow-primary/10 text-white font-bold text-5xl mb-6">
-                            {user?.fullName ? user.fullName.charAt(0).toUpperCase() : '?'}
+            {/* Premium Hero Banner */}
+            <div className="relative group overflow-hidden">
+                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/10 to-primary/20 rounded-[3rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                <div className="relative bg-white/70 backdrop-blur-3xl border border-white p-8 rounded-[2.5rem] shadow-2xl shadow-black/5">
+                    <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                        {/* Avatar Area */}
+                        <div className="relative shrink-0">
+                            <div className="h-32 w-32 rounded-[2.5rem] bg-accent flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-accent/20 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                {user?.fullName ? user.fullName.charAt(0).toUpperCase() : '?'}
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-white rounded-2xl flex items-center justify-center shadow-lg border-2 border-gray-50 text-primary">
+                                <Shield size={18} />
+                            </div>
                         </div>
-                        <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{user?.fullName || '—'}</h2>
-                        <p className="text-sm text-gray-500 mb-6 font-medium">{user?.email || '—'}</p>
 
-                        <div className="w-full space-y-3 mb-8">
-                            <InfoRow label="Service" value={user?.membershipService && user.membershipService.trim() !== "" ? user.membershipService : null} />
-                            <InfoRow label="Rôle" value={user?.role === 'admin' ? 'Administrateur' : 'Utilisateur'} />
-                            <div className="flex justify-between items-center text-sm py-3 border-b border-gray-50">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score d'engagement</span>
-                                <div className="flex items-center gap-2">
-                                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${scoreBg}`}>
-                                        <TrendingUp size={14} className={scoreColor} />
+                        {/* Essential Info */}
+                        <div className="flex-1 text-center lg:text-left space-y-2">
+                            <h1 className="text-4xl font-black tracking-tighter text-gray-900 uppercase leading-none">
+                                {user?.fullName || '—'}
+                            </h1>
+                            <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                                <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
+                                    <Mail size={16} className="text-primary/40" />
+                                    {user?.email || '—'}
+                                </div>
+                                <div className="h-1 w-1 rounded-full bg-gray-300 hidden sm:block" />
+                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-3 py-1 rounded-lg">
+                                    <Building2 size={14} />
+                                    {user?.membershipService || 'Sans Service'}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Status & Actions Area */}
+                        <div className="flex flex-col items-center lg:items-end gap-6 border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-12 w-full lg:w-auto">
+                            <div className="flex items-center gap-8">
+                                <div className="text-center lg:text-right">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Impact Score</p>
+                                    <div className="flex items-center gap-2 justify-center lg:justify-end">
+                                        <TrendingUp size={16} className={scoreColor} />
+                                        <span className={`text-2xl font-black ${scoreColor}`}>
+                                            {score !== null ? `${score >= 0 ? '+' : ''}${score}` : '0'}
+                                        </span>
                                     </div>
-                                    <span className={`font-black ${scoreColor}`}>
-                                        {score !== null ? `${score >= 0 ? '+' : ''}${score} pts` : '—'}
+                                </div>
+                                <div className="h-10 w-px bg-gray-100" />
+                                <div className="text-center lg:text-right">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Accès</p>
+                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                        user?.role === 'admin' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-blue-100 text-blue-700 border-blue-200'
+                                    }`}>
+                                        {user?.role === 'admin' ? 'Admin' : 'Expert'}
                                     </span>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="w-full grid grid-cols-2 gap-3">
-                            <button onClick={handleChat} className="flex items-center justify-center gap-2 p-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 hover:bg-primary-dark transition-all text-xs font-black uppercase tracking-widest">
-                                <MessageSquare size={16} /> Chat
-                            </button>
-                            <button onClick={handleDeleteUser} className="flex items-center justify-center gap-2 p-3 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors text-xs font-black uppercase tracking-widest">
-                                <Trash2 size={16} /> Supprimer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Column - Fiche & Reports */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* Fiche d'identification au format grilles */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {[
-                            { title: "1. Identité & Contact", icon: User, fields: [
-                                { label: 'Genre',             value: userProfile?.genre,          icon: Users },
-                                { label: 'Date de naissance', value: userProfile?.dateNaissance,  icon: Calendar },
-                                { label: 'Contact N°1',       value: userProfile?.contact1,       icon: Phone },
-                                { label: 'Contact N°2',       value: userProfile?.contact2,       icon: Phone },
-                                { label: 'Email Secondaire',  value: userProfile?.emailSecondaire,icon: Mail },
-                            ]},
-                            { title: "2. Professionnel", icon: Briefcase, fields: [
-                                { label: 'Département',       value: userProfile?.departement,    icon: Building2 },
-                                { label: 'Poste occupé',      value: userProfile?.posteOccupe,    icon: Briefcase },
-                                { label: 'Date de nomination',value: userProfile?.dateNomination, icon: Calendar },
-                            ]},
-                            { title: "3. Formation", icon: GraduationCap, fields: [
-                                { label: 'Cohorte 1',         value: userProfile?.cohorte1,       icon: GraduationCap },
-                                { label: 'Cohorte 2',         value: userProfile?.cohorte2,       icon: GraduationCap },
-                                { label: "Date d'installation",value: userProfile?.dateInstallation,icon: Calendar },
-                                { label: 'Date de formation', value: userProfile?.dateFormation,  icon: Calendar },
-                                { label: 'Dernière MàJ',      value: userProfile?.derniereMiseANiveau, icon: Calendar },
-                            ]},
-                            { title: "4. Gestion & Carto", icon: Map, fields: [
-                                { label: 'Sites gérés',       value: userProfile?.nombreSitesGeres, icon: Map },
-                                { label: 'Type de bâtiment',  value: userProfile?.typeBatiment,     icon: Building2 },
-                            ]}
-                        ].map((section, idx) => (
-                            <div key={idx} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-5">
-                                <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                        <section.icon size={16} />
-                                    </div>
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">{section.title}</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    {section.fields.map((item, i) => (
-                                        <div key={i} className="flex items-center gap-3 group">
-                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                                <item.icon size={14} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">{item.label}</p>
-                                                <p className={`text-xs font-bold truncate ${item.value ? 'text-gray-800' : 'text-gray-300 italic'}`}>
-                                                    {item.value || 'Non renseigné'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <button 
+                                    onClick={handleChat} 
+                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                                >
+                                    <MessageSquare size={16} /> Chat Direct
+                                </button>
+                                <button 
+                                    onClick={handleDeleteUser} 
+                                    className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all group"
+                                    title="Supprimer l'utilisateur"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
                             </div>
-                        ))}
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Reports List */}
-                <div className="lg:col-span-3">
-                    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-50">
-                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Rapports Soumis</h3>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {[
+                    { title: "1. Identité & Contact", icon: User, fields: [
+                        { label: 'Genre',             value: userProfile?.genre,          icon: Users },
+                        { label: 'Date de naissance', value: userProfile?.dateNaissance,  icon: Calendar },
+                        { label: 'Contact Principal', value: userProfile?.contact1,       icon: Phone },
+                        { label: 'Contact Secondaire',value: userProfile?.contact2,       icon: Phone },
+                        { label: 'Email Alternatif',  value: userProfile?.emailSecondaire,icon: Mail },
+                    ]},
+                    { title: "2. Profil Professionnel", icon: Briefcase, fields: [
+                        { label: 'Département',       value: userProfile?.departement,    icon: Building2 },
+                        { label: 'Poste occupé',      value: userProfile?.posteOccupe,    icon: Briefcase },
+                        { label: 'Date de nomination',value: userProfile?.dateNomination, icon: Calendar },
+                    ]},
+                    { title: "3. Formation & Expertise", icon: GraduationCap, fields: [
+                        { label: 'Cohorte 1',         value: userProfile?.cohorte1,       icon: GraduationCap },
+                        { label: 'Cohorte 2',         value: userProfile?.cohorte2,       icon: GraduationCap },
+                        { label: "Date d'installation",value: userProfile?.dateInstallation,icon: Calendar },
+                        { label: 'Date de formation', value: userProfile?.dateFormation,  icon: Calendar },
+                    ]},
+                    { title: "4. Périmètre de Gestion", icon: Map, fields: [
+                        { label: 'Sites gérés',       value: userProfile?.nombreSitesGeres, icon: Map },
+                        { label: 'Type de bâtiment',  value: userProfile?.typeBatiment,     icon: Building2 },
+                    ]}
+                ].map((section, idx) => (
+                    <div key={idx} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-black/5 transition-all duration-500">
+                        <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-gray-100">
+                                    <section.icon size={16} />
+                                </div>
+                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">{section.title}</h3>
+                            </div>
                         </div>
-                        <div className="p-4 space-y-3">
-                            {reports.length > 0 ? reports.map(report => (
-                                <div key={report.id} onClick={() => navigate(`/reports/${report.id}`)} className="p-5 border border-gray-100 rounded-2xl hover:shadow-md transition-all cursor-pointer bg-gray-50/50 hover:bg-white group">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex gap-4">
-                                            <div className="h-10 w-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors">
-                                                <FileText size={20} />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-gray-900 text-sm">
-                                                    {report.nomGestionnaire || 'Sans nom'}
-                                                </h4>
-                                                <p className="text-[10px] uppercase font-bold tracking-widest text-gray-400 mt-1">
-                                                    {report.reportDate ? new Date(report.reportDate).toLocaleDateString('fr-FR') : '—'} · {report.serviceAppartenance || '—'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                                            report.reportStatus === 'APPROVED' ? 'bg-green-100 text-green-700' :
-                                            report.reportStatus === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-                                        }`}>
-                                            {report.reportStatus}
-                                        </span>
+                        <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 flex-1">
+                            {section.fields.map((item, i) => (
+                                <div key={i} className="flex items-start gap-4">
+                                    <div className="h-6 w-6 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 text-gray-400 group-hover:text-primary transition-colors">
+                                        <item.icon size={12} />
                                     </div>
-
-                                    <p className="text-xs font-medium text-gray-500 mb-4 line-clamp-2 pl-14">
-                                        {report.contraintes || "Aucune contrainte fournie."}
-                                    </p>
-
-                                    <div className="flex items-center justify-between pl-14">
-                                        <div className="flex gap-3">
-                                            {report.illustrationsName && (
-                                                <button onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'illustrations', report.illustrationsName); }} className="flex items-center gap-1.5 text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">
-                                                    <Download size={12} /> {report.illustrationsName}
-                                                </button>
-                                            )}
-                                            {report.autresDocumentsName && (
-                                                <button onClick={(e) => { e.stopPropagation(); downloadReport(report.id, 'autresDocuments', report.autresDocumentsName); }} className="flex items-center gap-1.5 text-[10px] font-bold text-primary hover:underline uppercase tracking-widest">
-                                                    <Download size={12} /> {report.autresDocumentsName}
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {report.reportStatus === 'SUBMITTED' && (
-                                            <div className="flex gap-2">
-                                                <button onClick={(e) => { e.stopPropagation(); handleApprove(report.id); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-500/20">
-                                                    <CheckCircle size={14} /> Approuver
-                                                </button>
-                                                <button onClick={(e) => { e.stopPropagation(); handleReject(report.id); }} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-[10px] font-black uppercase tracking-widest">
-                                                    <XCircle size={14} /> Rejeter
-                                                </button>
-                                            </div>
-                                        )}
+                                    <div className="min-w-0 space-y-0.5">
+                                        <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{item.label}</p>
+                                        <p className={`text-[12px] font-bold truncate ${item.value ? 'text-gray-900' : 'text-gray-300 italic'}`}>
+                                            {item.value || 'Non renseigné'}
+                                        </p>
                                     </div>
                                 </div>
-                            )) : (
-                                <div className="p-12 text-center text-sm font-bold text-gray-300 uppercase tracking-widest border-2 border-dashed border-gray-100 rounded-2xl">
-                                    Cet utilisateur n'a soumis aucun rapport
-                                </div>
-                            )}
+                            ))}
                         </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Reports Section with Internal Scrolling */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center gap-3">
+                        Archive des Rapports
+                        <span className="px-2 py-0.5 bg-gray-100 text-[10px] rounded-lg text-gray-400">{reports.length}</span>
+                    </h3>
+                </div>
+                
+                <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="max-h-[500px] overflow-y-auto px-4 py-8 customize-scrollbar">
+                        {reports.length > 0 ? (
+                            <div className="space-y-4">
+                                {reports.map(report => (
+                                    <div 
+                                        key={report.id} 
+                                        onClick={() => navigate(`/reports/${report.id}`)} 
+                                        className="p-6 border border-gray-100 rounded-[1.5rem] hover:border-primary/20 hover:shadow-xl hover:shadow-black/5 transition-all cursor-pointer bg-gray-50/30 hover:bg-white group"
+                                    >
+                                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                            <div className="flex items-center gap-5 flex-1 min-w-0">
+                                                <div className="h-12 w-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-primary group-hover:bg-primary/5 transition-all">
+                                                    <FileText size={24} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <h4 className="font-bold text-gray-900 text-[13px] group-hover:text-primary transition-colors truncate">
+                                                        Expertise du {report.reportDate ? new Date(report.reportDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                                                    </h4>
+                                                    <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-400 mt-1">
+                                                        {report.serviceAppartenance || 'Service non défini'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 w-full md:w-auto">
+                                                <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border ${
+                                                    report.reportStatus === 'APPROVED' ? 'bg-green-100 text-green-700 border-green-200' :
+                                                    report.reportStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-blue-100 text-blue-700 border-blue-200'
+                                                }`}>
+                                                    {report.reportStatus === 'APPROVED' ? 'Approuvé' : 
+                                                     report.reportStatus === 'REJECTED' ? 'Rejeté' : 'Soumis'}
+                                                </span>
+                                                
+                                                {report.reportStatus === 'SUBMITTED' && (
+                                                    <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleApprove(report.id); }} 
+                                                            className="h-9 w-9 bg-green-500 text-white rounded-xl flex items-center justify-center hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all font-black text-[10px] uppercase tracking-widest px-8 w-auto min-w-[120px]"
+                                                        >
+                                                            <CheckCircle size={14} className="mr-2" /> Approuver
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); handleReject(report.id); }} 
+                                                            className="h-9 w-9 bg-red-50 text-red-700 rounded-xl flex items-center justify-center hover:bg-red-100 transition-all font-black text-[10px] uppercase tracking-widest px-8 w-auto min-w-[100px]"
+                                                        >
+                                                            Rejeter
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="h-10 w-10 flex items-center justify-center text-gray-300 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <ArrowLeft className="rotate-180" size={20} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-20 text-center space-y-4">
+                                <div className="h-20 w-20 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto text-gray-200">
+                                    <FileText size={40} />
+                                </div>
+                                <p className="text-sm font-black text-gray-300 uppercase tracking-[0.2em]">Aucun rapport soumis par cet utilisateur</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -9,7 +9,7 @@ import { MapContainer, TileLayer, useMapEvents, Marker, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, updateMyLocation, updateMyProfile } from '../services/profileService';
+import { getUserProfile, updateMyLocation, updateMyProfile, searchGeocode } from '../services/profileService';
 import keycloak from '../Keycloak';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -115,14 +115,13 @@ const Profile = () => {
         if (!query.trim() || query.length < 3) { setSearchResults([]); return; }
         try {
             setSearching(true);
-            const res = await fetch(
-                `${API_URL}/geocode/search?q=${encodeURIComponent(query)}`,
-                { headers: { Authorization: `Bearer ${keycloak.token}` } }
-            );
-            const data = await res.json();
-            setSearchResults(data);
-        } catch { setSearchResults([]); }
-        finally { setSearching(false); }
+            const data = await searchGeocode(query);
+            setSearchResults(data || []);
+        } catch (err) {
+            setSearchResults([]);
+        } finally {
+            setSearching(false);
+        }
     };
 
     const handleSearchInput = (val) => {
@@ -208,230 +207,195 @@ const Profile = () => {
 
     return (
         <>
-            <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
-
-                {/* Header */}
-                <div className="flex items-center justify-between">
+            <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-700 pb-20">
+                {/* Simplified Header */}
+                <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate(-1)} className="p-2.5 rounded-xl hover:bg-gray-100 transition-colors text-gray-600 bg-white border border-gray-100 shadow-sm">
-                            <ArrowLeft size={20} />
+                        <button onClick={() => navigate(-1)} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-primary hover:border-primary/20 transition-all shadow-sm group">
+                            <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+                            Retour
                         </button>
-                        <h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">Mon profil</h1>
+                        <h1 className="text-2xl font-black tracking-tighter text-gray-900 uppercase">Mon Dossier</h1>
                     </div>
-                    <button onClick={() => setShowEditModal(true)} className="hidden md:flex items-center gap-2 bg-primary text-white font-black px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all uppercase tracking-widest text-[10px]">
+                    <button onClick={() => setShowEditModal(true)} className="flex items-center gap-2 bg-primary text-white font-black px-6 py-3 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-[10px]">
                         <Edit2 size={16} /> Éditer la Fiche
                     </button>
                 </div>
 
-                {/* Bannière profil incomplet */}
+                {/* Status Banner */}
                 {!profileComplete && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-center justify-between gap-4 shadow-sm">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
-                                <FileText size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm font-black text-amber-800 uppercase tracking-widest">Fiche d'identification incomplète</p>
-                                <p className="text-xs text-amber-600 font-medium mt-0.5">Veuillez renseigner toutes vos informations professionnelles obligatoires.</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowEditModal(true)}
-                            className="text-[10px] font-black text-white bg-amber-500 hover:bg-amber-600 px-5 py-2.5 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-amber-500/20"
-                        >
-                            Compléter
-                        </button>
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
-                    {/* Left Column - Identification Card & Actions */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white rounded-3xl shadow-xl shadow-black/5 border border-gray-100 overflow-hidden relative group">
-                            <div className="h-32 bg-primary/10 relative overflow-hidden">
-                                <div className="absolute inset-0 bg-primary/20 backdrop-blur-3xl"></div>
-                            </div>
-                            <div className="px-6 pb-8 text-center relative z-10">
-                                <div className="flex justify-center -mt-16 mb-6">
-                                    <div className="h-32 w-32 rounded-3xl bg-accent border-[6px] border-white flex items-center justify-center shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-300">
-                                        <span className="text-white font-black text-5xl">{getInitial()}</span>
-                                    </div>
+                    <div className="relative group mx-2 overflow-hidden">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                        <div className="relative bg-amber-50/50 backdrop-blur-3xl border border-amber-200/50 rounded-[1.5rem] p-5 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="h-10 w-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center shadow-inner">
+                                    <FileText size={20} />
                                 </div>
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{displayName}</h2>
-                                <p className="text-xs font-bold text-primary mb-6 uppercase tracking-widest">{displayService}</p>
-                                <div className="flex flex-col gap-3">
-                                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Score d'engagement</span>
-                                        <ScoreBadge score={profile?.score ?? 0} />
-                                    </div>
-                                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Type d'accès</span>
-                                        <RoleBadge role={profile?.role} />
-                                    </div>
-                                    <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl group/copy cursor-pointer" onClick={handleCopyId}>
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Unique</span>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-gray-900 truncate max-w-[100px]">{profile?.id || '—'}</span>
-                                            {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400 group-hover/copy:text-primary transition-colors" />}
-                                        </div>
-                                    </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Action Requise</p>
+                                    <p className="text-xs text-amber-600 font-bold mt-0.5 opacity-80">Votre fiche d'identification est incomplète.</p>
                                 </div>
                             </div>
-                        </div>
-
-                        {/* Logout Button */}
-                        <button
-                            onClick={logout}
-                            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-white text-red-500 hover:bg-red-50 transition-colors rounded-2xl shadow-sm border border-red-100 group"
-                        >
-                            <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
-                            <span className="text-xs font-black uppercase tracking-widest">Déconnexion</span>
-                        </button>
-                    </div>
-
-                    {/* Right Column - Fiche d'identification détaillée */}
-                    <div className="lg:col-span-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            
-                            {/* SECTION 1: Informations Identitaires et Contact */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-5">
-                                <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                        <User size={16} />
-                                    </div>
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">1. Identitaires & Contact</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    {[
-                                        { label: 'Prénom & Nom',      value: displayName,             icon: User },
-                                        { label: 'Genre',             value: profile?.genre,          icon: Users },
-                                        { label: 'Date de naissance', value: profile?.dateNaissance,  icon: Calendar },
-                                        { label: 'Contact N°1',       value: profile?.contact1,       icon: Phone },
-                                        { label: 'Contact N°2',       value: profile?.contact2,       icon: Phone },
-                                        { label: 'Email Institutionnel',value: profile?.email,        icon: Mail },
-                                        { label: 'Email Secondaire',  value: profile?.emailSecondaire,icon: Mail },
-                                    ].map((info, i) => (
-                                        <div key={i} className="flex items-center gap-3 group">
-                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                                <info.icon size={14} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">{info.label}</p>
-                                                <p className={`text-xs font-bold truncate ${info.value ? 'text-gray-800' : 'text-gray-300 italic'}`}>
-                                                    {info.value || 'Non renseigné'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* SECTION 2: Profil Professionnel et Institutionnel */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-5">
-                                <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                        <Briefcase size={16} />
-                                    </div>
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">2. Professionnel</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    {[
-                                        { label: 'Direction / Département', value: profile?.departement,      icon: Building2 },
-                                        { label: 'Poste occupé',         value: profile?.posteOccupe,      icon: Briefcase },
-                                        { label: 'Date de nomination',   value: profile?.dateNomination,   icon: Calendar },
-                                    ].map((info, i) => (
-                                        <div key={i} className="flex items-center gap-3 group">
-                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                                <info.icon size={14} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">{info.label}</p>
-                                                <p className={`text-xs font-bold truncate ${info.value ? 'text-gray-800' : 'text-gray-300 italic'}`}>
-                                                    {info.value || 'Non renseigné'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* SECTION 3: Parcours de Formation */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-5">
-                                <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                        <GraduationCap size={16} />
-                                    </div>
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">3. Formation (AEME)</h3>
-                                </div>
-                                <div className="space-y-4">
-                                    {[
-                                        { label: 'Cohorte 1',               value: profile?.cohorte1,            icon: GraduationCap },
-                                        { label: 'Cohorte 2',               value: profile?.cohorte2,            icon: GraduationCap },
-                                        { label: 'Date d\'installation',    value: profile?.dateInstallation,    icon: Calendar },
-                                        { label: 'Date de formation',       value: profile?.dateFormation,       icon: Calendar },
-                                        { label: 'Dernière mise à niveau',  value: profile?.derniereMiseANiveau, icon: Calendar },
-                                    ].map((info, i) => (
-                                        <div key={i} className="flex items-center gap-3 group">
-                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                                <info.icon size={14} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">{info.label}</p>
-                                                <p className={`text-xs font-bold truncate ${info.value ? 'text-gray-800' : 'text-gray-300 italic'}`}>
-                                                    {info.value || 'Non renseigné'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* SECTION 4: Périmètre de Gestion */}
-                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 space-y-5 flex flex-col">
-                                <div className="flex items-center gap-3 border-b border-gray-50 pb-3">
-                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                                        <Map size={16} />
-                                    </div>
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">4. Périmètre & Carto</h3>
-                                </div>
-                                <div className="space-y-4 flex-1">
-                                    {[
-                                        { label: 'Nombre de sites gérés', value: profile?.nombreSitesGeres, icon: Map },
-                                        { label: 'Type de bâtiment',      value: profile?.typeBatiment,     icon: Building2 },
-                                    ].map((info, i) => (
-                                        <div key={i} className="flex items-center gap-3 group">
-                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                                <info.icon size={14} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[9px] text-gray-400 uppercase font-bold tracking-widest">{info.label}</p>
-                                                <p className={`text-xs font-bold truncate ${info.value ? 'text-gray-800' : 'text-gray-300 italic'}`}>
-                                                    {info.value || 'Non renseigné'}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="pt-4 border-t border-gray-50 mt-auto">
-                                    <button
-                                        onClick={() => setShowLocationModal(true)}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-lg shadow-primary/20 transition-all text-[10px] font-black uppercase tracking-widest"
-                                    >
-                                        <MapPin size={14} />
-                                        {hasLocation ? 'Mettre à jour la cartographie' : 'Définir la cartographie'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Mobile Éditer Trigger */}
-                        <div className="mt-8 md:hidden">
-                            <button onClick={() => setShowEditModal(true)} className="w-full flex items-center justify-center gap-2 bg-primary text-white font-black px-5 py-4 rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all uppercase tracking-widest text-[10px]">
-                                <Edit2 size={16} /> Mettre à jour la fiche
+                            <button
+                                onClick={() => setShowEditModal(true)}
+                                className="text-[9px] font-black text-white bg-amber-500 hover:bg-amber-600 px-5 py-2.5 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-amber-500/20 whitespace-nowrap"
+                            >
+                                Compléter maintenant
                             </button>
                         </div>
                     </div>
+                )}
+
+                {/* Premium Hero Banner */}
+                <div className="relative group overflow-hidden px-2">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/10 to-primary/20 rounded-[3rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                    <div className="relative bg-white/70 backdrop-blur-3xl border border-white p-8 rounded-[2.5rem] shadow-2xl shadow-black/5">
+                        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                            {/* Avatar Area */}
+                            <div className="relative shrink-0">
+                                <div className="h-36 w-36 rounded-[2.5rem] bg-accent flex items-center justify-center text-white text-6xl font-black shadow-2xl shadow-accent/20 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                    {getInitial()}
+                                </div>
+                                <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-white rounded-2xl flex items-center justify-center shadow-lg border-2 border-gray-50 text-primary">
+                                    <Shield size={18} />
+                                </div>
+                            </div>
+
+                            {/* Essential Info */}
+                            <div className="flex-1 text-center lg:text-left space-y-3">
+                                <h2 className="text-4xl font-black tracking-tighter text-gray-900 uppercase leading-loose">
+                                    {displayName}
+                                </h2>
+                                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                                    <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
+                                        <Mail size={16} className="text-primary/40" />
+                                        {profile?.email || '—'}
+                                    </div>
+                                    <div className="h-1 w-1 rounded-full bg-gray-300 hidden sm:block" />
+                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-3 py-1 rounded-lg">
+                                        <Building2 size={14} />
+                                        {displayService}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stats & Metadata Area */}
+                            <div className="flex flex-col items-center lg:items-end gap-6 border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-12 w-full lg:w-auto">
+                                <div className="flex items-center gap-10">
+                                    <div className="text-center lg:text-right">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Score Global</p>
+                                        <div className="flex items-center gap-2 justify-center lg:justify-end">
+                                            <Star size={18} className="text-amber-500 fill-amber-500" />
+                                            <span className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors">
+                                                {profile?.score ?? 0}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="h-12 w-px bg-gray-100" />
+                                    <div className="text-center lg:text-right">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Accès</p>
+                                        <RoleBadge role={profile?.role} />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between w-full lg:w-48 px-4 py-3 bg-gray-50/50 rounded-2xl group/copy cursor-pointer hover:bg-primary/5 transition-all border border-transparent hover:border-primary/10" onClick={handleCopyId}>
+                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Unique</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-black text-gray-900 truncate max-w-[80px] opacity-70">{profile?.id || '—'}</span>
+                                        {copied ? <Check size={14} className="text-green-500" /> : <Copy size={12} className="text-gray-400 group-hover/copy:text-primary transition-colors" />}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* High Density Info Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-2">
+                    {[
+                        { title: "1. Identitaires & Contact", icon: User, fields: [
+                            { label: 'Prénom & Nom',      value: displayName,             icon: User },
+                            { label: 'Genre',             value: profile?.genre,          icon: Users },
+                            { label: 'Date de naissance', value: profile?.dateNaissance,  icon: Calendar },
+                            { label: 'Contact N°1',       value: profile?.contact1,       icon: Phone },
+                            { label: 'Contact N°2',       value: profile?.contact2,       icon: Phone },
+                            { label: 'Email Secondaire',  value: profile?.emailSecondaire,icon: Mail },
+                        ]},
+                        { title: "2. Profil Professionnel", icon: Briefcase, fields: [
+                            { label: 'Direction / Département', value: profile?.departement,      icon: Building2 },
+                            { label: 'Poste occupé',         value: profile?.posteOccupe,      icon: Briefcase },
+                            { label: 'Date de nomination',   value: profile?.dateNomination,   icon: Calendar },
+                        ]},
+                        { title: "3. Formation (AEME)", icon: GraduationCap, fields: [
+                            { label: 'Cohorte 1',               value: profile?.cohorte1,            icon: GraduationCap },
+                            { label: 'Cohorte 2',               value: profile?.cohorte2,            icon: GraduationCap },
+                            { label: 'Date d\'installation',    value: profile?.dateInstallation,    icon: Calendar },
+                            { label: 'Date de formation',       value: profile?.dateFormation,       icon: Calendar },
+                            { label: 'Dernière mise à niveau',  value: profile?.derniereMiseANiveau, icon: Calendar },
+                        ]},
+                        { title: "4. Périmètre & Carto", icon: Map, fields: [
+                            { label: 'Sites gérés', value: profile?.nombreSitesGeres, icon: Map },
+                            { label: 'Bâtiment',   value: profile?.typeBatiment,     icon: Building2 },
+                        ], hasAction: true, actionLabel: hasLocation ? 'Mettre à jour position' : 'Définir position', onAction: () => setShowLocationModal(true) }
+                    ].map((section, idx) => (
+                        <div key={idx} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-black/5 transition-all duration-500">
+                            <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-gray-100">
+                                        <section.icon size={16} />
+                                    </div>
+                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">{section.title}</h3>
+                                </div>
+                                {section.hasAction && (
+                                    <span className={`h-2 w-2 rounded-full ${hasLocation ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
+                                )}
+                            </div>
+                            <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 flex-1">
+                                {section.fields.map((info, i) => (
+                                    <div key={i} className="flex items-start gap-4">
+                                        <div className="h-6 w-6 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                                            <info.icon size={12} />
+                                        </div>
+                                        <div className="min-w-0 space-y-0.5">
+                                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">{info.label}</p>
+                                            <p className={`text-[12px] font-bold truncate ${info.value ? 'text-gray-900' : 'text-gray-300 italic'}`}>
+                                                {info.value || 'Non renseigné'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            {section.hasAction && (
+                                <div className="px-8 pb-8 pt-2">
+                                    <button
+                                        onClick={section.onAction}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary/95 text-white rounded-2xl shadow-xl shadow-primary/20 transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                                    >
+                                        <MapPin size={14} />
+                                        {section.actionLabel}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Logout Button */}
+                <div className="px-2 pt-4">
+                    <button
+                        onClick={logout}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-white text-red-500 hover:bg-red-50 transition-all rounded-[2rem] shadow-sm border border-red-50 group border-dashed"
+                    >
+                        <LogOut size={18} className="group-hover:-translate-x-1 transition-transform" />
+                        <span className="text-xs font-black uppercase tracking-[0.3em]">Déconnexion du portail</span>
+                    </button>
+                </div>
+
+                {/* Mobile Éditer Trigger */}
+                <div className="mt-8 md:hidden px-2">
+                    <button onClick={() => setShowEditModal(true)} className="w-full flex items-center justify-center gap-2 bg-primary text-white font-black px-5 py-4 rounded-2xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all uppercase tracking-widest text-[10px]">
+                        <Edit2 size={16} /> Mettre à jour la fiche
+                    </button>
                 </div>
             </div>
 
@@ -585,25 +549,32 @@ const Profile = () => {
                                     placeholder="Rechercher un lieu au Sénégal..."
                                     value={searchQuery}
                                     onChange={(e) => handleSearchInput(e.target.value)}
-                                    className="flex-1 bg-transparent text-sm outline-none"
+                                    className="flex-1 bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400"
                                 />
-                                {searching && <Loader2 size={14} className="animate-spin text-gray-400" />}
+                                {searching && <Loader2 size={14} className="animate-spin text-gray-400 flex-shrink-0" />}
                                 {searchQuery && !searching && (
                                     <button onClick={() => { setSearchQuery(''); setSearchResults([]); }}>
-                                        <X size={14} className="text-gray-400" />
+                                        <X size={14} className="text-gray-400 hover:text-gray-600" />
                                     </button>
                                 )}
                             </div>
                             {searchResults.length > 0 && (
-                                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[1000] overflow-hidden">
                                     {searchResults.map((result, i) => (
-                                        <button key={i} onClick={() => handleSelectResult(result)} className="w-full text-left px-4 py-2 hover:bg-gray-50 border-b">
-                                            <p className="text-sm text-gray-800 truncate">{result.display_name.split(',')[0]}</p>
+                                        <button key={i} onClick={() => handleSelectResult(result)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
+                                            <p className="text-sm font-medium text-gray-800 truncate">{result.display_name.split(',')[0]}</p>
+                                            <p className="text-xs text-gray-400 truncate">{result.display_name}</p>
                                         </button>
                                     ))}
                                 </div>
                             )}
+                            {!searching && searchQuery.length >= 3 && searchResults.length === 0 && (
+                                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[1000] px-4 py-3">
+                                    <p className="text-sm text-gray-400 text-center">Aucun résultat — cliquez directement sur la carte</p>
+                                </div>
+                            )}
                         </div>
+
                         <div style={{ height: '360px' }}>
                             <MapContainer center={pickedCoords || SENEGAL_CENTER} zoom={pickedCoords ? 14 : 7} style={{ height: '100%', width: '100%' }}>
                                 <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -612,11 +583,12 @@ const Profile = () => {
                                 {pickedCoords && <Marker position={pickedCoords} />}
                             </MapContainer>
                         </div>
+
                         <div className="px-6 py-4 border-t border-gray-100 text-center">
                             {locationSaved ? (
-                                <p className="text-sm text-green-600 font-medium"><Check size={16} className="inline mr-1" /> Position sauvegardée !</p>
+                                <p className="text-sm text-green-600 font-medium flex items-center justify-center gap-2"><Check size={16} /> Position sauvegardée !</p>
                             ) : (
-                                <p className="text-xs text-gray-400">Recherchez ou cliquez sur la carte</p>
+                                <p className="text-xs text-gray-400">Recherchez un lieu ou cliquez directement sur la carte</p>
                             )}
                         </div>
                     </div>

@@ -133,26 +133,26 @@ const NewReport = () => {
         nombreBatiments: '',
         numeroPoliceSenelec: '',
         campagnesCommunication: [],
-        precisezCampagnes: '',
+        autreCampagnePrecision: '',
         autresActivites: [],
-        precisezAutresActivites: '',
+        autreActivitePrecision: '',
         guidePartageCommande: 'NON',
         guidePartagePerformance: 'NON',
         procedureResiliation: 'NON',
         modificationPuissance: 'NON',
-        pieceJustifPuissance: null,
+        pieceJustificativeModification: null,
         consommationsNullesIdentifiees: 'NON',
-        actionMeneeConsoNulles: '',
+        actionConsommationsNulles: '',
         estimationsRecensees: 'NON',
-        actionMeneeEstimations: '',
+        actionEstimations: '',
         batteriesCondensateursInstallees: 'NON',
-        nombreBatteries: '',
+        nombreBatteriesCondensateurs: '',
         cadastreEnergetiqueRealise: 'NON',
         indexTransmis: 'NON',
-        dateIndex: '',
-        valeurIndex: '',
+        dateIndexTransmis: '',
+        indexConsommation: '',
         plateformeDigitale: 'NON',
-        suiviPlateforme: 'NON',
+        suiviPlateformeDigitale: 'NON',
         contraintes: '',
         besoins: '',
         illustrations: null,
@@ -212,19 +212,19 @@ const NewReport = () => {
             data.append('numeroPoliceSenelec', formData.numeroPoliceSenelec || '');
             
             if (formData.campagnesCommunication.length > 0) {
-                // If "Autre(s)" is selected, we might want to append the precisez value, or send it separately based on backend structure. For now, send both in JSON or map it nicely.
                 let camps = [...formData.campagnesCommunication];
-                if (camps.includes("Autre(s)") && formData.precisezCampagnes) {
-                    camps = camps.map(c => c === "Autre(s)" ? `Autre(s) : ${formData.precisezCampagnes}` : c);
-                }
                 data.append('campagnesCommunication', JSON.stringify(camps));
             }
+            if (formData.autreCampagnePrecision) {
+                data.append('autreCampagnePrecision', formData.autreCampagnePrecision);
+            }
+
             if (formData.autresActivites.length > 0) {
                 let autres = [...formData.autresActivites];
-                if (autres.includes("Autre(s)") && formData.precisezAutresActivites) {
-                    autres = autres.map(a => a === "Autre(s)" ? `Autre(s) : ${formData.precisezAutresActivites}` : a);
-                }
                 data.append('autresActivites', JSON.stringify(autres));
+            }
+            if (formData.autreActivitePrecision) {
+                data.append('autreActivitePrecision', formData.autreActivitePrecision);
             }
             
             const mapBool = (val) => val === 'OUI' ? true : false;
@@ -233,16 +233,30 @@ const NewReport = () => {
             data.append('procedureResiliation', mapBool(formData.procedureResiliation));
             data.append('modificationPuissance', mapBool(formData.modificationPuissance));
             
-            if (formData.modificationPuissance === 'OUI' && formData.pieceJustifPuissance) {
-                data.append('pieceJustifPuissance', formData.pieceJustifPuissance);
+            if (formData.modificationPuissance === 'OUI' && formData.pieceJustificativeModification) {
+                data.append('pieceJustificativeModification', formData.pieceJustificativeModification);
             }
             
             data.append('consommationsNullesIdentifiees', mapBool(formData.consommationsNullesIdentifiees));
+            if (formData.actionConsommationsNulles) data.append('actionConsommationsNulles', formData.actionConsommationsNulles);
+            
             data.append('estimationsRecensees', mapBool(formData.estimationsRecensees));
+            if (formData.actionEstimations) data.append('actionEstimations', formData.actionEstimations);
+            
             data.append('batteriesCondensateursInstallees', mapBool(formData.batteriesCondensateursInstallees));
+            if (formData.nombreBatteriesCondensateurs) data.append('nombreBatteriesCondensateurs', formData.nombreBatteriesCondensateurs);
+            
             data.append('cadastreEnergetiqueRealise', mapBool(formData.cadastreEnergetiqueRealise));
+            
             data.append('indexTransmis', mapBool(formData.indexTransmis));
+            if (formData.dateIndexTransmis) data.append('dateIndexTransmis', `${formData.dateIndexTransmis}T00:00:00`);
+            if (formData.indexConsommation) data.append('indexConsommation', formData.indexConsommation);
+            
             data.append('plateformeDigitale', mapBool(formData.plateformeDigitale));
+            if (formData.plateformeDigitale === 'OUI') {
+                data.append('suiviPlateformeDigitale', mapBool(formData.suiviPlateformeDigitale));
+            }
+
             if (formData.contraintes) data.append('contraintes', formData.contraintes);
             if (formData.besoins) data.append('recommandations', formData.besoins);
             if (formData.illustrations) data.append('illustrations', formData.illustrations);
@@ -398,7 +412,7 @@ const NewReport = () => {
                             {formData.campagnesCommunication.includes("Autre(s)") && (
                                 <div className="mt-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100 animate-in slide-in-from-top-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1 block mb-2">Précisez :</Label>
-                                    <Input name="precisezCampagnes" value={formData.precisezCampagnes} onChange={handleChange} className="h-10 bg-white" placeholder="Précisez votre réponse..." />
+                                    <Input name="autreCampagnePrecision" value={formData.autreCampagnePrecision} onChange={handleChange} className="h-10 bg-white" placeholder="Précisez votre réponse..." />
                                 </div>
                             )}
                         </div>
@@ -433,7 +447,7 @@ const NewReport = () => {
                             {formData.autresActivites.includes("Autre(s)") && (
                                 <div className="mt-4 p-4 bg-gray-50/50 rounded-xl border border-gray-100 animate-in slide-in-from-top-2">
                                     <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1 block mb-2">Précisez :</Label>
-                                    <Input name="precisezAutresActivites" value={formData.precisezAutresActivites} onChange={handleChange} className="h-10 bg-white" placeholder="Précisez votre réponse..." />
+                                    <Input name="autreActivitePrecision" value={formData.autreActivitePrecision} onChange={handleChange} className="h-10 bg-white" placeholder="Précisez votre réponse..." />
                                 </div>
                             )}
                         </div>
@@ -458,13 +472,111 @@ const NewReport = () => {
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="guidePartageCommande" label="Avez-vous partagé le guide bâtiment avec les services en charge de la commande au niveau de la structure ?" />
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="guidePartagePerformance" label="Avez-vous partagé le guide pour l'amélioration de la performance énergétique des équipements avec les services en charge de la commande au niveau de la structure ?" />
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="procedureResiliation" label="Avez-vous effectué une procédure de résiliation d’un ou plusieurs contrats d’électricité ?" />
-                            <QuestionBlock formData={formData} setFormData={setFormData} fieldName="modificationPuissance" label="Avez-vous effectué une démarche de modification de la puissance souscrite sur un ou plusieurs contrats d'électricité ?" />
-                            <QuestionBlock formData={formData} setFormData={setFormData} fieldName="consommationsNullesIdentifiees" label="Avez-vous identifié les consommations nulles ?" />
-                            <QuestionBlock formData={formData} setFormData={setFormData} fieldName="estimationsRecensees" label="Avez-vous recensé les estimations ?" />
-                            <QuestionBlock formData={formData} setFormData={setFormData} fieldName="batteriesCondensateursInstallees" label="Avez-vous installé les batteries de condensateurs ?" />
+                            
+                            <QuestionBlock 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                fieldName="modificationPuissance" 
+                                label="Avez-vous effectué une démarche de modification de la puissance souscrite sur un ou plusieurs contrats d'électricité ?" 
+                                conditionalNode={
+                                    <FileZone field="pieceJustificativeModification" label="Pièce Jusificative" accept=".pdf,.doc,.docx" formData={formData} handleFile={handleFile} />
+                                }
+                            />
+
+                            <QuestionBlock 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                fieldName="consommationsNullesIdentifiees" 
+                                label="Avez-vous identifié les consommations nulles ?" 
+                                conditionalNode={
+                                    <div className="space-y-2 mt-4">
+                                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Action menée :</Label>
+                                        <select 
+                                            name="actionConsommationsNulles"
+                                            value={formData.actionConsommationsNulles} 
+                                            onChange={handleChange}
+                                            className="w-full h-11 px-4 rounded-xl border-2 border-gray-100 bg-white text-sm focus:border-primary/40 outline-none transition-all shadow-sm"
+                                        >
+                                            <option value="">Sélectionner une action</option>
+                                            <option value="Realisation">Réalisation</option>
+                                            <option value="Autre">Autre</option>
+                                        </select>
+                                    </div>
+                                }
+                            />
+
+                            <QuestionBlock 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                fieldName="estimationsRecensees" 
+                                label="Avez-vous recensé les estimations ?" 
+                                conditionalNode={
+                                    <div className="space-y-2 mt-4">
+                                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Action menée :</Label>
+                                        <select 
+                                            name="actionEstimations"
+                                            value={formData.actionEstimations} 
+                                            onChange={handleChange}
+                                            className="w-full h-11 px-4 rounded-xl border-2 border-gray-100 bg-white text-sm focus:border-primary/40 outline-none transition-all shadow-sm"
+                                        >
+                                            <option value="">Sélectionner une action</option>
+                                            <option value="Vous avez prevenu la Senelec">Vous avez prévenu la Senelec</option>
+                                            <option value="Vous avez prevenu l'AEME">Vous avez prévenu l'AEME</option>
+                                            <option value="Aucune action menee">Aucune action menée</option>
+                                        </select>
+                                    </div>
+                                }
+                            />
+
+                            <QuestionBlock 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                fieldName="batteriesCondensateursInstallees" 
+                                label="Avez-vous installé les batteries de condensateurs ?" 
+                                conditionalNode={
+                                    <div className="space-y-2 mt-4">
+                                        <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Nombre d'unités installées :</Label>
+                                        <Input type="number" name="nombreBatteriesCondensateurs" value={formData.nombreBatteriesCondensateurs} onChange={handleChange} className="h-11 bg-white" placeholder="ex: 3" />
+                                    </div>
+                                }
+                            />
+
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="cadastreEnergetiqueRealise" label="Avez-vous réalisé le cadastre énergétique de votre bâtiment ?" />
-                            <QuestionBlock formData={formData} setFormData={setFormData} fieldName="indexTransmis" label="Avez-vous relevé et transmis les index de consommation d’énergie pour le suivi des factures ?" />
-                            <QuestionBlock formData={formData} setFormData={setFormData} fieldName="plateformeDigitale" label="Disposez-vous d'une plateforme digitale ?" />
+                            
+                            <QuestionBlock 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                fieldName="indexTransmis" 
+                                label="Avez-vous relevé et transmis les index de consommation d’énergie pour le suivi des factures ?" 
+                                conditionalNode={
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Date du relevé :</Label>
+                                            <Input type="date" name="dateIndexTransmis" value={formData.dateIndexTransmis} onChange={handleChange} className="h-11 bg-white" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Indice de consommation (kWh) :</Label>
+                                            <Input type="text" name="indexConsommation" value={formData.indexConsommation} onChange={handleChange} className="h-11 bg-white" placeholder="ex: 14500" />
+                                        </div>
+                                    </div>
+                                }
+                            />
+
+                            <QuestionBlock 
+                                formData={formData} 
+                                setFormData={setFormData} 
+                                fieldName="plateformeDigitale" 
+                                label="Disposez-vous d'une plateforme digitale ?" 
+                                conditionalNode={
+                                    <div className="mt-4 p-5 rounded-2xl bg-primary/5 border border-primary/10">
+                                        <OuiNonField 
+                                            label="Si oui, assurez-vous le suivi ?" 
+                                            value={formData.suiviPlateformeDigitale} 
+                                            onChange={(val) => setFormData(prev => ({ ...prev, suiviPlateformeDigitale: val }))} 
+                                        />
+                                    </div>
+                                }
+                            />
                         </div>
                     </CardContent>
                 </Card>

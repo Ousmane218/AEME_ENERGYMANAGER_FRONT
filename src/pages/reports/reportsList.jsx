@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { FileText, Plus, Search, Trash2, Filter, Download, MoreHorizontal, ChevronRight, Calendar, Building2 } from 'lucide-react';
-import { getMyReports, deleteReport } from '../../services/reportService';
+import { getMyReports, deleteReport, getAllReports } from '../../services/reportService';
 import { 
     Table, 
     TableBody, 
@@ -20,6 +20,8 @@ import { cn, formatDate } from "@/lib/utils";
 
 const ReportsList = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const targetedUserId = searchParams.get('userId');
     const [reports, setReports] = useState([]);
     const [filter, setFilter] = useState('All');
     const [search, setSearch] = useState('');
@@ -33,8 +35,23 @@ const ReportsList = () => {
     const fetchReports = async () => {
         try {
             setLoading(true);
-            const data = await getMyReports();
-            const sortedData = (data || []).sort((a, b) => new Date(b.createdAt || b.reportDate || 0) - new Date(a.createdAt || a.reportDate || 0));
+            // If we have a targeted user, we load ALL reports and then filter.
+            // (Assuming permissions allow or the backend handles it gracefully)
+            const data = targetedUserId ? await getAllReports() : await getMyReports();
+            
+            let filteredData = data || [];
+            if (targetedUserId) {
+                // Filter specifically by the ID we want
+                // Note: The structure of report might have user.id or createdBy
+                // Based on previous analysis, we'll try to match by some identifier or trust the backend's result if we had a specific endpoint.
+                // Since there is no getReportsByUserId, we filter the full list.
+                // We'll check for user.id or a similar field. 
+                // In AdminUserDetail it used reportsData directly from getReportsByUser(userId).
+                // I'll add getReportsByUser to reportService if needed, but let's try filtering first.
+                filteredData = (data || []).filter(r => r.userId === targetedUserId || r.createdBy === targetedUserId);
+            }
+
+            const sortedData = filteredData.sort((a, b) => new Date(b.createdAt || b.reportDate || 0) - new Date(a.createdAt || a.reportDate || 0));
             setReports(sortedData);
         } catch (err) {
             setError(err.message);
