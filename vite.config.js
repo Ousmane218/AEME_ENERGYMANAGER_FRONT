@@ -11,5 +11,9 @@ export default defineConfig({
   },
   define: {
     global: 'globalThis',
+  },
+  build: {
+    cssMinify: 'esbuild',
+    chunkSizeWarningLimit: 1000
   }
 })
