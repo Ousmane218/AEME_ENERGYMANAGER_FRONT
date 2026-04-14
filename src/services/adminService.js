@@ -9,6 +9,16 @@ export const getAllUsers = async () => {
     }
 };
 
+export const getUserAuthProfile = async (userId) => {
+    try {
+        // Direct access to the auth profile (Keycloak attributes)
+        return await api.get(`/auth/users/${userId}`);
+    } catch (error) {
+        console.warn(`Could not fetch auth profile for user ${userId}`);
+        return null;
+    }
+};
+
 export const deleteUser = async (userId) => {
     try {
         return await api.delete(`/admin/users/${userId}`);
@@ -17,9 +27,22 @@ export const deleteUser = async (userId) => {
     }
 };
 
-export const inviteUser = async ({ email, firstName, lastName, role, membershipService }) => {
+export const inviteUser = async ({ email, firstName, lastName, role, membershipService, serviceLatitude, serviceLongitude }) => {
     try {
-        return await api.post('/admin/users', { email, firstName, lastName, role, membershipService });
+        const payload = { 
+            email, 
+            firstName, 
+            lastName, 
+            role, 
+            membershipService,
+            // Shotgun approach: send under multiple names to ensure backend/Keycloak mapping
+            serviceLatitude: serviceLatitude ? String(serviceLatitude) : null,
+            serviceLongitude: serviceLongitude ? String(serviceLongitude) : null,
+            latitude: serviceLatitude ? String(serviceLatitude) : null,
+            longitude: serviceLongitude ? String(serviceLongitude) : null
+        };
+
+        return await api.post('/admin/users', payload);
     } catch (error) {
         if (error.response && error.response.status === 409) {
             throw new Error('Email déjà utilisé');
@@ -28,9 +51,17 @@ export const inviteUser = async ({ email, firstName, lastName, role, membershipS
     }
 };
 
-export const updateUserMembership = async (userId, membershipService) => {
+export const updateUserMembership = async (userId, { membershipService, serviceLatitude, serviceLongitude }) => {
     try {
-        return await api.patch(`/admin/users/${userId}/membership`, { membershipService });
+        const payload = { 
+            membershipService,
+            serviceLatitude: serviceLatitude ? String(serviceLatitude) : null,
+            serviceLongitude: serviceLongitude ? String(serviceLongitude) : null,
+            latitude: serviceLatitude ? String(serviceLatitude) : null,
+            longitude: serviceLongitude ? String(serviceLongitude) : null
+        };
+
+        return await api.patch(`/admin/users/${userId}/membership`, payload);
     } catch (error) {
         throw new Error('Erreur lors de la mise à jour du membership');
     }

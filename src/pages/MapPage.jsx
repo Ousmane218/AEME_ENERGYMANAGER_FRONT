@@ -1,43 +1,181 @@
-import { useState, useEffect } from 'react';
-import { Loader2, MapPin } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, UserPlus } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { getAllUsersWithLocation } from '../services/profileService';
+import { getAllUsers, getUserAuthProfile } from '../services/adminService';
 import { SENEGAL_CENTER, groupByService } from '../lib/mapUtils';
 import { Card } from "@/components/ui/card";
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getOrCreateConversation } from '../services/chatService';
 import { Button } from "@/components/ui/button";
-import { MessageSquare, FileText, User } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 const MapPage = () => {
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
     const [markers, setMarkers] = useState([]);
+    const [rawData, setRawData] = useState([]); 
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [enriching, setEnriching] = useState(false);
     const [error, setError]     = useState(null);
+    const [debugMode, setDebugMode] = useState(false);
+
+    const fetchMarkers = useCallback(async (isManual = false) => {
+        try {
+            if (isManual) setRefreshing(true);
+            else setLoading(true);
+            
+            // 1. Fetch standard locations
+            let users = await getAllUsersWithLocation() || [];
+            
+            // 2. Admin Enrichment: Show users who haven't validated their email (like Daouda)
+            if (currentUser?.isAdmin) {
+                setEnriching(true);
+                try {
+                    const allUsers = await getAllUsers();
+                    const existingIds = new Set(users.map(u => u.id));
+                    
+                    // Find users with a service who are NOT in the active locations list
+                    const missingUsers = allUsers.filter(u => 
+                        !existingIds.has(u.id) && 
+                        (u.membershipService && u.membershipService.trim() !== '')
+                    );
+
+                    if (missingUsers.length > 0) {
+                        // Fetch their detailed Keycloak profiles in parallel (limit to 10 for performance)
+                        const enrichmentResults = await Promise.all(
+                            missingUsers.slice(0, 10).map(async (u) => {
+                                const authProfile = await getUserAuthProfile(u.id);
+                                if (authProfile) {
+                                    return { ...u, ...authProfile, isPending: true };
+                                }
+                                return null;
+                            })
+                        );
+                        
+                        const enrichedUsers = enrichmentResults.filter(u => u && u.serviceLatitude);
+                        users = [...users, ...enrichedUsers];
+                    }
+                } catch (adminErr) {
+                    console.warn("Failed to enrich map data:", adminErr);
+                } finally {
+                    setEnriching(false);
+                }
+            }
+
+            setRawData(users);
+            setMarkers(groupByService(users));
+            setError(null);
+        } catch (err) {
+            setError('Impossible de charger les positions.');
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, [currentUser]);
 
     useEffect(() => {
-        getAllUsersWithLocation()
-            .then(users => setMarkers(groupByService(users)))
-            .catch(() => setError('Impossible de charger les positions.'))
-            .finally(() => setLoading(false));
-    }, []);
+        fetchMarkers();
+    }, [fetchMarkers]);
 
     return (
         <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-12">
             {/* Header */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-                    <MapPin className="text-primary" size={32} />
-                    Carte des Services
-                </h1>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mt-1">
-                    Localisation globale des infrastructures AEME
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
+                        <MapPin className="text-primary" size={32} />
+                        Carte des Services
+                    </h1>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mt-1">
+                        Localisation globale des infrastructures AEME
+                    </p>
+                </div>
+                
+                {currentUser?.isAdmin && (
+                    <div className="flex items-center gap-3">
+                        {enriching && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary rounded-lg animate-pulse">
+                                <Loader2 size={12} className="animate-spin" />
+                                <span className="text-[9px] font-black uppercase tracking-widest">Sychronisation Keycloak...</span>
+                            </div>
+                        )}
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setDebugMode(!debugMode)}
+                            className={cn(
+                                "h-8 w-8 p-0 rounded-lg text-gray-300 hover:text-primary transition-colors",
+                                debugMode && "text-amber-500 bg-amber-50"
+                            )}
+                            title="Outils de diagnostic"
+                        >
+                            <FileText size={14} />
+                        </Button>
+                    </div>
+                )}
             </div>
 
+            {/* Diagnostic Panel - Now more compact */}
+            {debugMode && (
+                <Card className="p-4 border-amber-100 bg-amber-50/10 rounded-2xl animate-in slide-in-from-top-4">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-[9px] font-bold">
+                            <thead>
+                                <tr className="border-b border-amber-100 text-amber-400 uppercase tracking-tighter">
+                                    <th className="text-left py-1">Utilisateur</th>
+                                    <th className="text-left py-1">Statut</th>
+                                    <th className="text-left py-1">serviceLatitude</th>
+                                    <th className="text-left py-1">serviceLongitude</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-amber-50">
+                                {rawData.map((u, i) => (
+                                    <tr key={i} className="hover:bg-white/50 transition-colors">
+                                        <td className="py-1.5 text-gray-900">{u.fullName || u.email}</td>
+                                        <td className="py-1.5">
+                                            {u.isPending ? (
+                                                <span className="text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Invité</span>
+                                            ) : (
+                                                <span className="text-green-500 bg-green-50 px-1.5 py-0.5 rounded uppercase">Actif</span>
+                                            )}
+                                        </td>
+                                        <td className="py-1.5 text-primary">{String(u.serviceLatitude || '—')}</td>
+                                        <td className="py-1.5 text-primary">{String(u.serviceLongitude || '—')}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
+
             <Card className="border-none shadow-xl shadow-black/5 bg-white rounded-3xl overflow-hidden flex flex-col relative">
+                {/* Fixed Top-Right Tools */}
+                <div className="absolute top-4 right-4 z-[20] flex flex-col gap-2">
+                    <Button
+                        size="icon"
+                        variant="white"
+                        onClick={() => fetchMarkers(true)}
+                        disabled={refreshing || loading}
+                        className={cn(
+                            "h-12 w-12 rounded-2xl shadow-2xl bg-white/90 backdrop-blur-md border-white/50 hover:bg-white transition-all group",
+                            refreshing && "opacity-70"
+                        )}
+                        title="Actualiser la carte"
+                    >
+                        <RefreshCw 
+                            size={20} 
+                            className={cn(
+                                "text-primary group-hover:rotate-180 transition-transform duration-500",
+                                refreshing && "animate-spin"
+                            )} 
+                        />
+                    </Button>
+                </div>
+
                 {/* Map */}
                 <div className="relative w-full h-[600px]">
                     {loading ? (

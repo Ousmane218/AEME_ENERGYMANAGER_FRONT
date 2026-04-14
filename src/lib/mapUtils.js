@@ -15,8 +15,21 @@ export const SENEGAL_CENTER = [14.4974, -14.4524];
 // Helper to group users by service for markers
 export const groupByService = (users) => {
     const map = {};
+    
+    // Internal helper to safely extract coordinates (handles strings, numbers, and Keycloak arrays)
+    const getSafeCoord = (val) => {
+        if (!val) return null;
+        let finalVal = val;
+        // Handle Keycloak attributes which are often arrays: ["14.49"]
+        if (Array.isArray(val) && val.length > 0) finalVal = val[0];
+        
+        const num = parseFloat(finalVal);
+        return isNaN(num) ? null : num;
+    };
+
     users.forEach(u => {
-        const svc = u.membershipService;
+        // Fallback between different possible field names for the service
+        const svc = u.membershipService || u.service || u.department;
         if (!svc || svc.trim() === '') return;
 
         if (!map[svc]) {
@@ -27,18 +40,18 @@ export const groupByService = (users) => {
             };
         }
 
-        // Take coordinates from the first user who has them
-        if (!map[svc].coords && u.serviceLatitude && u.serviceLongitude) {
-            map[svc].coords = [
-                parseFloat(u.serviceLatitude),
-                parseFloat(u.serviceLongitude)
-            ];
+        // Search for coordinates in multiple possible keys (robustness)
+        const lat = getSafeCoord(u.serviceLatitude || u.latitude || u.lat);
+        const lon = getSafeCoord(u.serviceLongitude || u.longitude || u.lng || u.lon);
+
+        if (!map[svc].coords && lat !== null && lon !== null) {
+            map[svc].coords = [lat, lon];
         }
 
-        // Add member objects with ID and Name
+        // Add member objects
         map[svc].members.push({
             id: u.id,
-            name: u.fullName || u.email
+            name: u.fullName || u.email || 'Membre'
         });
     });
 

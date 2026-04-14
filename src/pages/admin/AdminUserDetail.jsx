@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
     User, ArrowLeft, Trash2, MessageSquare, Shield,
     FileText, Download, CheckCircle, XCircle, Loader2, TrendingUp,
-    Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, Map
+    Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, Map, MapPin, Search
 } from 'lucide-react';
-import { getReportsByUser, deleteUser, approveReport, rejectReport, getAllUsers } from '../../services/adminService';
+import { getReportsByUser, deleteUser, approveReport, rejectReport, getAllUsers, updateUserMembership } from '../../services/adminService';
 import { downloadReport } from '../../services/reportService';
 import { getOrCreateConversation } from '../../services/chatService';
+import { searchGeocode } from '../../services/profileService';
 import keycloak from '../../Keycloak';
+import { cn } from "@/lib/utils";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -21,6 +23,18 @@ const AdminUserDetail = () => {
     const [score, setScore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showMembershipModal, setShowMembershipModal] = useState(false);
+    const [membershipData, setMembershipData] = useState({
+        membershipService: '',
+        serviceLatitude: null,
+        serviceLongitude: null
+    });
+    const [localizing, setLocalizing] = useState(false);
+    const [localizationStatus, setLocalizationStatus] = useState('idle');
+    const [saveLoading, setSaveLoading] = useState(false);
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const suggestionRef = useRef(null);
 
     useEffect(() => {
         fetchData();
@@ -54,6 +68,85 @@ const AdminUserDetail = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Handle debounced search for suggestions
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (membershipData.membershipService && membershipData.membershipService.length >= 3 && localizationStatus !== 'success' && showMembershipModal) {
+                try {
+                    const results = await searchGeocode(`${membershipData.membershipService}, Senegal`);
+                    setSuggestions(results || []);
+                    setShowSuggestions(true);
+                } catch (err) {
+                    setSuggestions([]);
+                }
+            } else {
+                setSuggestions([]);
+                setShowSuggestions(false);
+            }
+        }, 600);
+
+        return () => clearTimeout(timer);
+    }, [membershipData.membershipService, showMembershipModal]);
+
+    // Close suggestions on click outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleSelectSuggestion = (suggestion) => {
+        setMembershipData({
+            ...membershipData,
+            membershipService: suggestion.display_name.split(',')[0],
+            serviceLatitude: suggestion.lat,
+            serviceLongitude: suggestion.lon
+        });
+        setLocalizationStatus('success');
+        setSuggestions([]);
+        setShowSuggestions(false);
+    };
+
+    const handleEditMembership = () => {
+        setMembershipData({
+            membershipService: user?.membershipService || '',
+            serviceLatitude: userProfile?.serviceLatitude || null,
+            serviceLongitude: userProfile?.serviceLongitude || null
+        });
+        setLocalizationStatus(userProfile?.serviceLatitude ? 'success' : 'idle');
+        setShowMembershipModal(true);
+    };
+
+    const handleAutoLocalize = async () => {
+        if (!membershipData.membershipService || membershipData.membershipService.length < 3) return;
+        try {
+            setLocalizing(true);
+            setLocalizationStatus('loading');
+            const query = `${membershipData.membershipService}, Senegal`;
+            const results = await searchGeocode(query);
+            if (results && results.length > 0) {
+                handleSelectSuggestion(results[0]);
+            } else {
+                setLocalizationStatus('error');
+            }
+        } catch { setLocalizationStatus('error'); }
+        finally { setLocalizing(false); }
+    };
+
+    const handleSaveMembership = async () => {
+        try {
+            setSaveLoading(true);
+            await updateUserMembership(userId, membershipData);
+            await fetchData(); // Refresh
+            setShowMembershipModal(false);
+        } catch (err) { alert(err.message); }
+        finally { setSaveLoading(false); }
     };
 
     const handleChat = async () => {
@@ -161,9 +254,13 @@ const AdminUserDetail = () => {
                                     {user?.email || '—'}
                                 </div>
                                 <div className="h-1 w-1 rounded-full bg-gray-300 hidden sm:block" />
-                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-3 py-1 rounded-lg">
+                                <div 
+                                    className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-3 py-1 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors group/edit"
+                                    onClick={handleEditMembership}
+                                >
                                     <Building2 size={14} />
                                     {user?.membershipService || 'Sans Service'}
+                                    <MapPin size={12} className={cn("ml-1", userProfile?.serviceLatitude ? "text-green-500 fill-green-500" : "text-gray-300")} />
                                 </div>
                             </div>
                         </div>
@@ -344,6 +441,120 @@ const AdminUserDetail = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de Mise à jour Membership & Localisation */}
+            {showMembershipModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="bg-gray-50 px-8 py-6 border-b flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900 uppercase tracking-tighter">Éditer l'Affiliation</h3>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Mettre à jour le service et sa position</p>
+                            </div>
+                            <button onClick={() => setShowMembershipModal(false)} className="h-8 w-8 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors">
+                                <XCircle size={20} className="text-gray-400" />
+                            </button>
+                        </div>
+                        
+                        <div className="p-8 space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Service du Gestionnaire</label>
+                                <div className="relative" ref={suggestionRef}>
+                                    <div className="relative">
+                                        <input 
+                                            className={cn(
+                                                "w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all",
+                                                localizationStatus === 'success' && "border-green-100 bg-green-50/20"
+                                            )}
+                                            value={membershipData.membershipService}
+                                            onChange={e => {
+                                                setMembershipData({...membershipData, membershipService: e.target.value, serviceLatitude: null, serviceLongitude: null});
+                                                setLocalizationStatus('idle');
+                                            }}
+                                            placeholder="Ex: SENELEC, Cabinet du Ministre..."
+                                        />
+                                        <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300" />
+                                    </div>
+
+                                    {/* Autocomplete Suggestions Dropdown */}
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <div className="absolute z-[110] left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                                            {suggestions.map((suggestion, index) => (
+                                                <button
+                                                    key={index}
+                                                    type="button"
+                                                    onClick={() => handleSelectSuggestion(suggestion)}
+                                                    className="w-full text-left px-4 py-3 hover:bg-primary/5 transition-colors border-b last:border-0 border-gray-50 group flex items-start gap-3"
+                                                >
+                                                    <Search size={14} className="mt-0.5 text-gray-300 group-hover:text-primary transition-colors" />
+                                                    <div className="min-w-0">
+                                                        <p className="text-[11px] font-bold text-gray-900 group-hover:text-primary transition-colors truncate">
+                                                            {suggestion.display_name.split(',')[0]}
+                                                        </p>
+                                                        <p className="text-[9px] text-gray-400 truncate">
+                                                            {suggestion.display_name.split(',').slice(1).join(',').trim()}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleAutoLocalize}
+                                disabled={localizing || !membershipData.membershipService}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-3 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border",
+                                    localizationStatus === 'success' 
+                                        ? "bg-green-50 text-green-600 border-green-100" 
+                                        : "bg-white border-primary/20 text-primary hover:bg-primary/5"
+                                )}
+                            >
+                                {localizing ? (
+                                    <Loader2 size={16} className="animate-spin text-primary" />
+                                ) : localizationStatus === 'success' ? (
+                                    <CheckCircle size={16} className="text-green-500" />
+                                ) : (
+                                    <MapPin size={16} />
+                                )}
+                                {localizing ? 'Recherche...' : localizationStatus === 'success' ? 'Épinglé avec succès' : 'Localiser sur la carte'}
+                            </button>
+
+                            {localizationStatus === 'error' && (
+                                <p className="text-[10px] text-red-500 font-bold text-center animate-in fade-in">
+                                    Impossible de localiser ce service automatiquement.
+                                </p>
+                            )}
+
+                            {localizationStatus === 'success' && (
+                                <div className="bg-green-50/50 p-3 rounded-xl border border-green-100/50 animate-in slide-in-from-top-2">
+                                    <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest text-center">
+                                        Coordonnées : {parseFloat(membershipData.serviceLatitude).toFixed(4)}, {parseFloat(membershipData.serviceLongitude).toFixed(4)}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-8 bg-gray-50 border-t flex gap-3">
+                            <button 
+                                onClick={() => setShowMembershipModal(false)}
+                                className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={handleSaveMembership}
+                                disabled={saveLoading || !membershipData.membershipService}
+                                className="flex-2 bg-primary text-white py-4 px-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {saveLoading ? 'Enregistrement...' : 'Confirmer'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

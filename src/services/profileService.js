@@ -32,7 +32,8 @@ export const updateMyLocation = async (latitude, longitude) => {
 
 export const getAllUsersWithLocation = async () => {
     try {
-        const data = await api.get('/users/locations');
+        // Add timestamp to bypass potential API caching
+        const data = await api.get(`/users/locations?t=${Date.now()}`);
         return data;
     } catch (error) {
         throw new Error('Erreur lors du chargement des positions');
