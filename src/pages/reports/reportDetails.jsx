@@ -28,16 +28,16 @@ const StatusBadge = ({ status }) => {
     };
     return (
         <span className={cn("flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border", variants[status])}>
-            <Shield size={12} /> {labels[status] || status}
+            <Shield size={12} /> <span>{labels[status] || status}</span>
         </span>
     );
 };
 
 const BoolIndicator = ({ value }) => {
-    if (value === null || value === undefined) return <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">N/A</span>;
+    if (value === null || value === undefined) return <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest"><span>N/A</span></span>;
     return value
-        ? <span className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-100"><CheckCircle size={10} strokeWidth={3} /> OUI</span>
-        : <span className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-red-100"><XCircle size={10} strokeWidth={3} /> NON</span>;
+        ? <span className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-100"><CheckCircle size={10} strokeWidth={3} /> <span>OUI</span></span>
+        : <span className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-red-100"><XCircle size={10} strokeWidth={3} /> <span>NON</span></span>;
 };
 
 const InfoItem = ({ icon: Icon, label, value }) => (
@@ -46,9 +46,9 @@ const InfoItem = ({ icon: Icon, label, value }) => (
             <Icon size={12} />
         </div>
         <div className="min-w-0 space-y-0.5">
-            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{label}</p>
+            <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest"><span>{label}</span></p>
             <p className={`text-[12px] font-bold truncate ${value ? 'text-gray-900' : 'text-gray-300 italic'}`}>
-                {value || 'Non renseigné'}
+                <span>{value || 'Non renseigné'}</span>
             </p>
         </div>
     </div>
@@ -61,7 +61,7 @@ const QuestionRow = ({ icon: Icon, label, boolValue, subLabel, subValue, customS
                 <div className="h-8 w-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover/row:bg-primary/5 group-hover/row:text-primary transition-all duration-300">
                     <Icon size={14} />
                 </div>
-                <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest leading-none group-hover/row:text-gray-900 transition-colors">{label}</span>
+                <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest leading-none group-hover/row:text-gray-900 transition-colors"><span>{label}</span></span>
             </div>
             <BoolIndicator value={boolValue} />
         </div>
@@ -141,9 +141,9 @@ const ReportDetails = () => {
                         <div className="flex-1 text-center lg:text-left space-y-4">
                             <div className="space-y-1">
                                 <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase leading-none">
-                                    {report.nomGestionnaire}
+                                    <span>{report.nomGestionnaire}</span>
                                 </h2>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Code Rapport: {id?.substring(0, 8)}</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]"><span>Code Rapport: {id?.substring(0, 8)}</span></p>
                             </div>
                             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                 <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
@@ -161,10 +161,10 @@ const ReportDetails = () => {
                         {/* Metadata Grid Area */}
                         <div className="grid grid-cols-2 gap-8 border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-12 w-full lg:w-auto">
                             <div className="text-center lg:text-left">
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Bâtiments</p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><span>Bâtiments</span></p>
                                 <div className="flex items-center justify-center lg:justify-start gap-2">
                                     <Hash size={16} className="text-primary/40" />
-                                    <span className="text-xl font-black text-gray-900">{report.nombreBatiments || '0'}</span>
+                                    <span className="text-xl font-black text-gray-900"><span>{report.nombreBatiments || '0'}</span></span>
                                 </div>
                             </div>
                             <div className="text-center lg:text-left">
@@ -189,9 +189,9 @@ const ReportDetails = () => {
                                 <div className="h-8 w-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-gray-100">
                                     <Activity size={16} />
                                 </div>
-                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">Suivi Technique & Activités</h3>
+                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]"><span>Suivi Technique & Activités</span></h3>
                             </div>
-                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-primary/20 text-primary">Détails Mensuels</Badge>
+                            <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-primary/20 text-primary"><span>Détails Mensuels</span></Badge>
                         </div>
                         <CardContent className="p-8 space-y-6">
                             {parsedCampagnes.length > 0 && (
@@ -203,7 +203,7 @@ const ReportDetails = () => {
                                     <div className="flex flex-wrap gap-2">
                                         {parsedCampagnes.map((c, i) => (
                                             <span key={i} className="px-4 py-1.5 bg-gray-50 text-gray-600 font-bold text-[11px] rounded-full border border-gray-100 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all cursor-default">
-                                                {c}
+                                                <span>{c}</span>
                                             </span>
                                         ))}
                                     </div>
@@ -245,12 +245,12 @@ const ReportDetails = () => {
                                     customSubNode={
                                         <div className="flex items-center gap-8 w-full">
                                             <div className="flex items-center gap-3">
-                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Date :</span>
-                                                <span className="text-[11px] font-black text-primary bg-white px-2 py-1 rounded-lg border border-gray-50">{report.dateIndex ? new Date(report.dateIndex).toLocaleDateString() : '—'}</span>
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest"><span>Date :</span></span>
+                                                <span className="text-[11px] font-black text-primary bg-white px-2 py-1 rounded-lg border border-gray-50"><span>{report.dateIndex ? new Date(report.dateIndex).toLocaleDateString() : '—'}</span></span>
                                             </div>
                                             <div className="flex items-center gap-3">
-                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Index :</span>
-                                                <span className="text-[11px] font-black text-primary bg-white px-2 py-1 rounded-lg border border-gray-50">{report.valeurIndex || '—'}</span>
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest"><span>Index :</span></span>
+                                                <span className="text-[11px] font-black text-primary bg-white px-2 py-1 rounded-lg border border-gray-50"><span>{report.valeurIndex || '—'}</span></span>
                                             </div>
                                         </div>
                                     }
@@ -333,12 +333,12 @@ const ReportDetails = () => {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-3xl font-black italic tracking-tighter leading-tight">Rapport en cours d'audit par l'AEME.</h3>
-                                <p className="text-[11px] font-bold opacity-70 leading-relaxed uppercase tracking-tight">Le secrétariat technique procède à la vérification des données transmises.</p>
+                                <h3 className="text-3xl font-black italic tracking-tighter leading-tight"><span>Rapport en cours d'audit par l'AEME.</span></h3>
+                                <p className="text-[11px] font-bold opacity-70 leading-relaxed uppercase tracking-tight"><span>Le secrétariat technique procède à la vérification des données transmises.</span></p>
                             </div>
                             <div className="pt-4 border-t border-white/10 flex items-center gap-4">
                                 <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Flux de validation actif</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em]"><span>Flux de validation actif</span></span>
                             </div>
                         </div>
                     </div>

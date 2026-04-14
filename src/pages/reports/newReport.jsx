@@ -52,7 +52,7 @@ const OuiNonField = ({ label, value, onChange }) => (
                             : "text-gray-400 hover:text-gray-600"
                     )}
                 >
-                    {val}
+                    <span>{val}</span>
                 </button>
             ))}
         </div>
@@ -287,14 +287,14 @@ const NewReport = () => {
                     <CheckCircle size={56} strokeWidth={2} />
                 </div>
                 <div>
-                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-3">Rapport Transmis</h2>
+                    <h2 className="text-4xl font-bold text-gray-900 tracking-tight mb-3"><span>Rapport Transmis</span></h2>
                     <p className="text-base text-muted-foreground font-medium max-w-sm mx-auto leading-relaxed">
-                        Votre rapport mensuel a été enregistré avec succès et sera examiné par l'équipe AEME.
+                        <span>Votre rapport mensuel a été enregistré avec succès et sera examiné par l'équipe AEME.</span>
                     </p>
                 </div>
                 <div className="pt-6">
                     <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary/30" />
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-3 opacity-40">Redirection automatique...</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-3 opacity-40"><span>Redirection automatique...</span></p>
                 </div>
             </CardContent>
         </Card>
@@ -659,12 +659,18 @@ const NewReport = () => {
                         className="h-16 px-16 rounded-3xl text-sm font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary group hover:bg-primary/95"
                     >
                         {submitting ? (
-                            <><Loader2 className="mr-4 h-6 w-6 animate-spin text-white/50" /> Transmission...</>
+                            <>
+                                <Loader2 className="mr-4 h-6 w-6 animate-spin text-white/50" /> 
+                                <span>Transmission...</span>
+                            </>
                         ) : (
-                            <><Send className="mr-4 h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /> Envoyer le Rapport</>
+                            <>
+                                <Send className="mr-4 h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /> 
+                                <span>Envoyer le Rapport</span>
+                            </>
                         )}
                     </Button>
-                    <p className="mt-6 text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Toutes les données sont transmises de manière sécurisée</p>
+                    <p className="mt-6 text-[9px] font-bold text-muted-foreground uppercase tracking-widest opacity-40"><span>Toutes les données sont transmises de manière sécurisée</span></p>
                 </div>
             </form>
         </div>

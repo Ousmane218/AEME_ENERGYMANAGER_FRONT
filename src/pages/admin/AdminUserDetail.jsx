@@ -113,13 +113,19 @@ const AdminUserDetail = () => {
         setShowSuggestions(false);
     };
 
+    const isGeocoded = (lat) => {
+        if (!lat) return false;
+        if (Array.isArray(lat)) return lat.length > 0 && lat[0] !== '' && lat[0] !== 'null';
+        return String(lat).trim() !== '' && String(lat) !== 'null';
+    };
+
     const handleEditMembership = () => {
         setMembershipData({
             membershipService: user?.membershipService || '',
-            serviceLatitude: userProfile?.serviceLatitude || null,
-            serviceLongitude: userProfile?.serviceLongitude || null
+            serviceLatitude: isGeocoded(userProfile?.serviceLatitude) ? userProfile.serviceLatitude : null,
+            serviceLongitude: isGeocoded(userProfile?.serviceLongitude) ? userProfile.serviceLongitude : null
         });
-        setLocalizationStatus(userProfile?.serviceLatitude ? 'success' : 'idle');
+        setLocalizationStatus(isGeocoded(userProfile?.serviceLatitude) ? 'success' : 'idle');
         setShowMembershipModal(true);
     };
 
@@ -259,8 +265,8 @@ const AdminUserDetail = () => {
                                     onClick={handleEditMembership}
                                 >
                                     <Building2 size={14} />
-                                    {user?.membershipService || 'Sans Service'}
-                                    <MapPin size={12} className={cn("ml-1", userProfile?.serviceLatitude ? "text-green-500 fill-green-500" : "text-gray-300")} />
+                                    <span>{user?.membershipService || 'Sans Service'}</span>
+                                    <MapPin size={12} className={cn("ml-1", isGeocoded(userProfile?.serviceLatitude) ? "text-green-500 fill-green-500" : "text-gray-300")} />
                                 </div>
                             </div>
                         </div>
@@ -293,7 +299,7 @@ const AdminUserDetail = () => {
                                     onClick={handleChat} 
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                                 >
-                                    <MessageSquare size={16} /> Chat Direct
+                                    <MessageSquare size={16} /> <span>Chat Direct</span>
                                 </button>
                                 <button 
                                     onClick={handleDeleteUser} 
@@ -528,10 +534,11 @@ const AdminUserDetail = () => {
                                 </p>
                             )}
 
-                            {localizationStatus === 'success' && (
+                            {localizationStatus === 'success' && membershipData.serviceLatitude && (
                                 <div className="bg-green-50/50 p-3 rounded-xl border border-green-100/50 animate-in slide-in-from-top-2">
                                     <p className="text-[9px] text-green-600 font-bold uppercase tracking-widest text-center">
-                                        Coordonnées : {parseFloat(membershipData.serviceLatitude).toFixed(4)}, {parseFloat(membershipData.serviceLongitude).toFixed(4)}
+                                        <span>Coordonnées : </span>
+                                        {parseFloat(String(membershipData.serviceLatitude)).toFixed(4)}, {parseFloat(String(membershipData.serviceLongitude)).toFixed(4)}
                                     </p>
                                 </div>
                             )}
@@ -542,14 +549,14 @@ const AdminUserDetail = () => {
                                 onClick={() => setShowMembershipModal(false)}
                                 className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
                             >
-                                Annuler
+                                <span>Annuler</span>
                             </button>
                             <button 
                                 onClick={handleSaveMembership}
                                 disabled={saveLoading || !membershipData.membershipService}
                                 className="flex-2 bg-primary text-white py-4 px-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
-                                {saveLoading ? 'Enregistrement...' : 'Confirmer'}
+                                <span>{saveLoading ? 'Enregistrement...' : 'Confirmer'}</span>
                             </button>
                         </div>
                     </div>

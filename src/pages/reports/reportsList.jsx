@@ -89,11 +89,11 @@ const ReportsList = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-                        Archives des Rapports
-                        {!loading && <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold px-2 py-0">{reports.length}</Badge>}
+                        <span>Archives des Rapports</span>
+                        {!loading && <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold px-2 py-0"><span>{reports.length}</span></Badge>}
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium">
-                        Historique complet de vos soumissions et relevés énergétiques.
+                        <span>Historique complet de vos soumissions et relevés énergétiques.</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -101,7 +101,7 @@ const ReportsList = () => {
                         onClick={() => navigate('/reports/new')}
                         className="h-10 gap-2 shadow-xl font-bold bg-primary hover:bg-primary/95 transition-all hover:scale-[1.02] active:scale-[0.98]"
                     >
-                        <Plus size={18} /> Nouveau Rapport
+                        <Plus size={18} /> <span>Nouveau Rapport</span>
                     </Button>
                 </div>
             </div>
@@ -122,9 +122,11 @@ const ReportsList = () => {
                                             : 'text-gray-400 hover:text-gray-600'
                                     )}
                                 >
-                                    {status === 'All' ? 'Tous' : 
-                                     status === 'Submitted' ? 'Soumis' : 
-                                     status === 'Approved' ? 'Approuvés' : 'Rejetés'}
+                                    <span>
+                                        {status === 'All' ? 'Tous' : 
+                                         status === 'Submitted' ? 'Soumis' : 
+                                         status === 'Approved' ? 'Approuvés' : 'Rejetés'}
+                                    </span>
                                 </button>
                             ))}
                         </div>
@@ -163,21 +165,21 @@ const ReportsList = () => {
                                 <FileText size={48} />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-xl font-bold text-gray-900 uppercase tracking-tight">Aucun document trouvé</p>
-                                <p className="text-sm text-muted-foreground font-medium">Affinez vos filtres ou créez votre premier rapport.</p>
+                                <p className="text-xl font-bold text-gray-900 uppercase tracking-tight"><span>Aucun document trouvé</span></p>
+                                <p className="text-sm text-muted-foreground font-medium"><span>Affinez vos filtres ou créez votre premier rapport.</span></p>
                             </div>
-                            <Button variant="outline" onClick={() => {setFilter('All'); setSearch('');}} className="rounded-xl border-gray-200">Effacer les filtres</Button>
+                            <Button variant="outline" onClick={() => {setFilter('All'); setSearch('');}} className="rounded-xl border-gray-200"><span>Effacer les filtres</span></Button>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader className="bg-gray-50/30">
                                     <TableRow className="hover:bg-transparent border-b-gray-100">
-                                        <TableHead className="px-8 py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Gestionnaire</TableHead>
-                                        <TableHead className="py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Département</TableHead>
-                                        <TableHead className="py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Date Expertise</TableHead>
-                                        <TableHead className="py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">État</TableHead>
-                                        <TableHead className="px-8 py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-right text-muted-foreground">Actions</TableHead>
+                                        <TableHead className="px-8 py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground"><span>Gestionnaire</span></TableHead>
+                                        <TableHead className="py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground"><span>Département</span></TableHead>
+                                        <TableHead className="py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground"><span>Date Expertise</span></TableHead>
+                                        <TableHead className="py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground"><span>État</span></TableHead>
+                                        <TableHead className="px-8 py-5 h-auto text-[10px] font-bold uppercase tracking-[0.2em] text-right text-muted-foreground"><span>Actions</span></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -236,10 +238,10 @@ const ReportsList = () => {
                     )}
                 </CardContent>
                 <div className="p-6 bg-gray-50/50 border-t flex items-center justify-between px-8">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40 italic">Interface Gouvernementale Sécurisée</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40 italic"><span>Interface Gouvernementale Sécurisée</span></p>
                     <div className="flex items-center gap-2">
                          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Base de données à jour</span>
+                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><span>Base de données à jour</span></span>
                     </div>
                 </div>
             </Card>

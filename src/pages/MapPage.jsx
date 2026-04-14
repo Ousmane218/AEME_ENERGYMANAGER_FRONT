@@ -1,15 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
+import L from 'leaflet';
 import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, UserPlus } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { getAllUsersWithLocation } from '../services/profileService';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { getAllUsersWithLocation, searchGeocode } from '../services/profileService';
 import { getAllUsers, getUserAuthProfile } from '../services/adminService';
-import { SENEGAL_CENTER, groupByService } from '../lib/mapUtils';
+import { SENEGAL_CENTER, groupByService, REFERENCE_MARKERS } from '../lib/mapUtils';
 import { Card } from "@/components/ui/card";
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getOrCreateConversation } from '../services/chatService';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Search, X, Building2 as HQIcon } from 'lucide-react';
+
+const MapRecenter = ({ coords }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (coords) {
+            map.flyTo(coords, 15, { animate: true, duration: 1.5 });
+        }
+    }, [coords, map]);
+    return null;
+};
 
 const MapPage = () => {
     const navigate = useNavigate();
@@ -21,6 +33,12 @@ const MapPage = () => {
     const [enriching, setEnriching] = useState(false);
     const [error, setError]     = useState(null);
     const [debugMode, setDebugMode] = useState(false);
+
+    // Address Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [searching, setSearching] = useState(false);
+    const [pickedLocation, setPickedLocation] = useState(null);
 
     const fetchMarkers = useCallback(async (isManual = false) => {
         try {
@@ -55,7 +73,13 @@ const MapPage = () => {
                             })
                         );
                         
-                        const enrichedUsers = enrichmentResults.filter(u => u && u.serviceLatitude);
+                        const enrichedUsers = enrichmentResults.filter(u => {
+                            if (!u || !u.serviceLatitude) return false;
+                            // Check for empty Keycloak arrays or "null" strings
+                            const lat = u.serviceLatitude;
+                            if (Array.isArray(lat)) return lat.length > 0 && lat[0] !== '' && lat[0] !== 'null';
+                            return String(lat).trim() !== '' && String(lat) !== 'null';
+                        });
                         users = [...users, ...enrichedUsers];
                     }
                 } catch (adminErr) {
@@ -75,6 +99,33 @@ const MapPage = () => {
             setRefreshing(false);
         }
     }, [currentUser]);
+
+    const handleSearch = async (val) => {
+        setSearchQuery(val);
+        if (!val.trim() || val.length < 3) {
+            setSearchResults([]);
+            return;
+        }
+        setSearching(true);
+        try {
+            const results = await searchGeocode(val);
+            setSearchResults(results || []);
+        } catch {
+            setSearchResults([]);
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleSelectResult = (result) => {
+        const lat = parseFloat(result.lat);
+        const lon = parseFloat(result.lon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            setPickedLocation([lat, lon]);
+            setSearchQuery(result.display_name.split(',')[0]);
+            setSearchResults([]);
+        }
+    };
 
     useEffect(() => {
         fetchMarkers();
@@ -134,16 +185,16 @@ const MapPage = () => {
                             <tbody className="divide-y divide-amber-50">
                                 {rawData.map((u, i) => (
                                     <tr key={i} className="hover:bg-white/50 transition-colors">
-                                        <td className="py-1.5 text-gray-900">{u.fullName || u.email}</td>
+                                        <td className="py-1.5 text-gray-900"><span>{u.fullName || u.email}</span></td>
                                         <td className="py-1.5">
                                             {u.isPending ? (
-                                                <span className="text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded uppercase">Invité</span>
+                                                <span className="text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded uppercase"><span>Invité</span></span>
                                             ) : (
-                                                <span className="text-green-500 bg-green-50 px-1.5 py-0.5 rounded uppercase">Actif</span>
+                                                <span className="text-green-500 bg-green-50 px-1.5 py-0.5 rounded uppercase"><span>Actif</span></span>
                                             )}
                                         </td>
-                                        <td className="py-1.5 text-primary">{String(u.serviceLatitude || '—')}</td>
-                                        <td className="py-1.5 text-primary">{String(u.serviceLongitude || '—')}</td>
+                                        <td className="py-1.5 text-primary"><span>{String(u.serviceLatitude || '—')}</span></td>
+                                        <td className="py-1.5 text-primary"><span>{String(u.serviceLongitude || '—')}</span></td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -176,12 +227,48 @@ const MapPage = () => {
                     </Button>
                 </div>
 
+                {/* Floating Search Bar */}
+                <div className="absolute top-4 left-4 z-[20] w-full max-w-[300px] hidden md:block">
+                    <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 p-1.5 flex flex-col gap-1">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50/50 rounded-xl border border-gray-100/50">
+                            <Search size={14} className="text-gray-400 shrink-0" />
+                            <input 
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                placeholder="Chercher une adresse..."
+                                className="w-full bg-transparent text-[11px] font-bold outline-none placeholder:text-gray-400"
+                            />
+                            {searching && <Loader2 size={12} className="animate-spin text-primary shrink-0" />}
+                            {searchQuery && !searching && (
+                                <button onClick={() => { setSearchQuery(''); setSearchResults([]); setPickedLocation(null); }}>
+                                    <X size={12} className="text-gray-400 hover:text-red-500 transition-colors" />
+                                </button>
+                            )}
+                        </div>
+                        {searchResults.length > 0 && (
+                            <div className="flex flex-col gap-0.5 mt-1 overflow-hidden">
+                                {searchResults.slice(0, 5).map((res, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => handleSelectResult(res)}
+                                        className="text-left px-3 py-2 hover:bg-primary/5 rounded-lg transition-colors group"
+                                    >
+                                        <p className="text-[10px] font-bold text-gray-800 truncate group-hover:text-primary transition-colors">{res.display_name.split(',')[0]}</p>
+                                        <p className="text-[8px] text-gray-400 truncate uppercase tracking-tighter">{res.display_name}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Map */}
                 <div className="relative w-full h-[600px]">
                     {loading ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 bg-gray-50/50">
                             <Loader2 size={32} className="animate-spin text-primary" />
-                            <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Chargement des positions...</p>
+                            <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground"><span>Chargement des positions...</span></p>
                         </div>
                     ) : error ? (
                         <div className="absolute inset-0 flex items-center justify-center text-red-500 text-sm font-bold bg-red-50">
@@ -190,9 +277,9 @@ const MapPage = () => {
                     ) : markers.length === 0 ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-400 bg-gray-50/50">
                             <MapPin size={48} className="text-gray-300 mb-2" />
-                            <p className="text-sm font-bold text-gray-600">Aucun service localisé pour le moment.</p>
+                            <p className="text-sm font-bold text-gray-600"><span>Aucun service localisé pour le moment.</span></p>
                             <p className="text-xs text-center px-8 text-gray-400">
-                                Les membres peuvent ajouter leur position depuis leur profil.
+                                <span>Les membres peuvent ajouter leur position depuis leur profil.</span>
                             </p>
                         </div>
                     ) : (
@@ -205,6 +292,40 @@ const MapPage = () => {
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
+                            <MapRecenter coords={pickedLocation} />
+
+                            {/* Reference HQ Markers (Always Visible) */}
+                            {REFERENCE_MARKERS.map((ref) => (
+                                <Marker 
+                                    key={ref.id} 
+                                    position={ref.coords}
+                                    icon={L.divIcon({
+                                        className: 'custom-div-icon',
+                                        html: `<div class="h-8 w-8 bg-amber-500 rounded-2xl shadow-xl border-2 border-white flex items-center justify-center text-white"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"></path><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"></path><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1 2 2h-2"></path><path d="M10 6h4"></path><path d="M10 10h4"></path><path d="M10 14h4"></path><path d="M10 18h4"></path></svg></div>`,
+                                        iconSize: [32, 32],
+                                        iconAnchor: [16, 32]
+                                    })}
+                                >
+                                    <Popup>
+                                        <div className="p-2 sm:p-3 min-w-[200px]">
+                                            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100">
+                                                <div className="h-8 w-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shadow-lg">
+                                                    <HQIcon size={16} />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-gray-900 uppercase tracking-tight text-[10px] leading-tight">
+                                                        {ref.name}
+                                                    </p>
+                                                    <p className="text-[8px] font-bold text-amber-600 uppercase tracking-widest mt-0.5">Siège Administratif</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-[10px] font-bold text-gray-500 italic leading-relaxed">
+                                                {ref.address}
+                                            </p>
+                                        </div>
+                                    </Popup>
+                                </Marker>
+                            ))}
                             {markers.map((m, i) => (
                                 <Marker key={i} position={m.coords}>
                                     <Popup>
@@ -247,7 +368,7 @@ const MapPage = () => {
                                                                     }
                                                                 }}
                                                             >
-                                                                <MessageSquare size={12} /> Chat
+                                                                <MessageSquare size={12} /> <span>Chat</span>
                                                             </Button>
                                                             <Button 
                                                                 variant="ghost" 
@@ -262,7 +383,7 @@ const MapPage = () => {
                                                                     }
                                                                 }}
                                                             >
-                                                                <FileText size={12} /> Rapports
+                                                                <FileText size={12} /> <span>Rapports</span>
                                                             </Button>
                                                         </div>
                                                     </div>

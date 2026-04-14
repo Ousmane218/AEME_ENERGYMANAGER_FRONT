@@ -19,7 +19,10 @@ L.Icon.Default.mergeOptions({
     shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const SENEGAL_CENTER = [14.4974, -14.4524];
+// Default Constants
+export const SENEGAL_CENTER = [14.4974, -14.4524];
+export const DAKAR_CENTER   = [14.6937, -17.4441]; // More useful default city center
+export const AEME_HQ        = [14.6653, -17.4339];
 const API_URL = import.meta.env.VITE_API_URL;
 
 const LocationPicker = ({ onPick }) => {
@@ -58,6 +61,21 @@ const Profile = () => {
         derniereMiseANiveau: '', nombreSitesGeres: '', typeBatiment: ''
     });
 
+    const isGeocoded = (val) => {
+        if (val === null || val === undefined) return false;
+        let finalVal = val;
+        if (Array.isArray(val)) {
+            if (val.length === 0) return false;
+            finalVal = val[0];
+        }
+        if (typeof finalVal === 'string') {
+            const trimmed = finalVal.trim();
+            if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
+            finalVal = trimmed;
+        }
+        return !isNaN(parseFloat(finalVal));
+    };
+
     useEffect(() => {
         let mounted = true;
         getUserProfile()
@@ -81,8 +99,13 @@ const Profile = () => {
                     nombreSitesGeres:    data.nombreSitesGeres    || '',
                     typeBatiment:        data.typeBatiment        || '',
                 });
-                if (data.serviceLatitude && data.serviceLongitude) {
-                    setPickedCoords([parseFloat(data.serviceLatitude), parseFloat(data.serviceLongitude)]);
+                
+                if (isGeocoded(data.serviceLatitude) && isGeocoded(data.serviceLongitude)) {
+                    const lat = parseFloat(Array.isArray(data.serviceLatitude) ? data.serviceLatitude[0] : data.serviceLatitude);
+                    const lng = parseFloat(Array.isArray(data.serviceLongitude) ? data.serviceLongitude[0] : data.serviceLongitude);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        setPickedCoords([lat, lng]);
+                    }
                 }
             })
             .catch(err => { if (mounted) setError(err.message); })
@@ -103,6 +126,7 @@ const Profile = () => {
     };
 
     const handlePickLocation = async (lat, lng) => {
+        if (isNaN(lat) || isNaN(lng)) return;
         setPickedCoords([lat, lng]);
         try {
             await updateMyLocation(lat, lng);
@@ -112,11 +136,27 @@ const Profile = () => {
     };
 
     const handleSearch = async (query) => {
-        if (!query.trim() || query.length < 3) { setSearchResults([]); return; }
+        const q = query.trim().toLowerCase();
+        if (!q || q.length < 3) { setSearchResults([]); return; }
+        
         try {
             setSearching(true);
             const data = await searchGeocode(query);
-            setSearchResults(data || []);
+            
+            // Intelligent suggestion: if user types "AEME" or "Siege", inject official HQ
+            let finalResults = data || [];
+            if (q.includes('aeme') || q.includes('siege') || q.includes('siège')) {
+                const hqResult = {
+                    display_name: "Siège Social AEME, 15 Boulevard de la République, Dakar",
+                    lat: AEME_HQ[0].toString(),
+                    lon: AEME_HQ[1].toString(),
+                    isOfficial: true
+                };
+                // Prepend to results if not already broadly present
+                finalResults = [hqResult, ...finalResults];
+            }
+            
+            setSearchResults(finalResults);
         } catch (err) {
             setSearchResults([]);
         } finally {
@@ -133,6 +173,7 @@ const Profile = () => {
     const handleSelectResult = async (result) => {
         const lat = parseFloat(result.lat);
         const lng = parseFloat(result.lon);
+        if (isNaN(lat) || isNaN(lng)) return;
         setPickedCoords([lat, lng]);
         setSearchQuery(result.display_name.split(',')[0]);
         setSearchResults([]);
@@ -213,12 +254,12 @@ const Profile = () => {
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate(-1)} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-100 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-primary hover:border-primary/20 transition-all shadow-sm group">
                             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
-                            Retour
+                            <span>Retour</span>
                         </button>
-                        <h1 className="text-2xl font-black tracking-tighter text-gray-900 uppercase">Mon Dossier</h1>
+                        <h1 className="text-2xl font-black tracking-tighter text-gray-900 uppercase"><span>Mon Dossier</span></h1>
                     </div>
                     <button onClick={() => setShowEditModal(true)} className="flex items-center gap-2 bg-primary text-white font-black px-6 py-3 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-[10px]">
-                        <Edit2 size={16} /> Éditer la Fiche
+                        <Edit2 size={16} /> <span>Éditer la Fiche</span>
                     </button>
                 </div>
 
@@ -232,15 +273,15 @@ const Profile = () => {
                                     <FileText size={20} />
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Action Requise</p>
-                                    <p className="text-xs text-amber-600 font-bold mt-0.5 opacity-80">Votre fiche d'identification est incomplète.</p>
+                                    <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest"><span>Action Requise</span></p>
+                                    <p className="text-xs text-amber-600 font-bold mt-0.5 opacity-80"><span>Votre fiche d'identification est incomplète.</span></p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowEditModal(true)}
                                 className="text-[9px] font-black text-white bg-amber-500 hover:bg-amber-600 px-5 py-2.5 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-amber-500/20 whitespace-nowrap"
                             >
-                                Compléter maintenant
+                                <span>Compléter maintenant</span>
                             </button>
                         </div>
                     </div>
@@ -269,12 +310,12 @@ const Profile = () => {
                                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                     <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
                                         <Mail size={16} className="text-primary/40" />
-                                        {profile?.email || '—'}
+                                        <span>{profile?.email || '—'}</span>
                                     </div>
                                     <div className="h-1 w-1 rounded-full bg-gray-300 hidden sm:block" />
                                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-3 py-1 rounded-lg">
                                         <Building2 size={14} />
-                                        {displayService}
+                                        <span>{displayService}</span>
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +324,7 @@ const Profile = () => {
                             <div className="flex flex-col items-center lg:items-end gap-6 border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-12 w-full lg:w-auto">
                                 <div className="flex items-center gap-10">
                                     <div className="text-center lg:text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Score Global</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><span>Score Global</span></p>
                                         <div className="flex items-center gap-2 justify-center lg:justify-end">
                                             <Star size={18} className="text-amber-500 fill-amber-500" />
                                             <span className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors">
@@ -293,7 +334,7 @@ const Profile = () => {
                                     </div>
                                     <div className="h-12 w-px bg-gray-100" />
                                     <div className="text-center lg:text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Accès</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><span>Accès</span></p>
                                         <RoleBadge role={profile?.role} />
                                     </div>
                                 </div>
@@ -344,7 +385,7 @@ const Profile = () => {
                                     <div className="h-8 w-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-primary border border-gray-100">
                                         <section.icon size={16} />
                                     </div>
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]">{section.title}</h3>
+                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]"><span>{section.title}</span></h3>
                                 </div>
                                 {section.hasAction && (
                                     <span className={`h-2 w-2 rounded-full ${hasLocation ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
@@ -372,7 +413,7 @@ const Profile = () => {
                                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary/95 text-white rounded-2xl shadow-xl shadow-primary/20 transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                                     >
                                         <MapPin size={14} />
-                                        {section.actionLabel}
+                                        <span>{section.actionLabel}</span>
                                     </button>
                                 </div>
                             )}
@@ -576,11 +617,15 @@ const Profile = () => {
                         </div>
 
                         <div style={{ height: '360px' }}>
-                            <MapContainer center={pickedCoords || SENEGAL_CENTER} zoom={pickedCoords ? 14 : 7} style={{ height: '100%', width: '100%' }}>
+                            <MapContainer 
+                                center={(pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1])) ? pickedCoords : DAKAR_CENTER} 
+                                zoom={pickedCoords ? 14 : 12} 
+                                style={{ height: '100%', width: '100%' }}
+                            >
                                 <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                                 <LocationPicker onPick={handlePickLocation} />
                                 <MapRecenter coords={pickedCoords} />
-                                {pickedCoords && <Marker position={pickedCoords} />}
+                                {pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1]) && <Marker position={pickedCoords} />}
                             </MapContainer>
                         </div>
 

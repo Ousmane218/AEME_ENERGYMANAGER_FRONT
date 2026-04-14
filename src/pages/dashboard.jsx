@@ -38,7 +38,7 @@ const Dashboard = () => {
         <Card className={`border-none shadow-sm overflow-hidden ${gradient}`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
-                    {title}
+                    <span>{title}</span>
                 </CardTitle>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${colorClass} shadow-sm`}>
                     <Icon size={14} />
@@ -57,8 +57,8 @@ const Dashboard = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-                        {loading ? <Skeleton className="h-9 w-48" /> : "Tableau de Bord"}
-                        {!loading && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5 px-2 py-0">LIVE</Badge>}
+                        {loading ? <Skeleton className="h-9 w-48" /> : <span>Tableau de Bord</span>}
+                        {!loading && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5 px-2 py-0"><span>LIVE</span></Badge>}
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium">
                         Heureux de vous revoir, <span className="text-primary font-bold">{profile?.firstName || 'Utilisateur'}</span>. Voici l'état de votre consommation et de vos rapports.
@@ -108,9 +108,9 @@ const Dashboard = () => {
                 <Card className="border-none shadow-sm overflow-hidden bg-white group flex flex-col">
                     <CardHeader className="border-b bg-gray-50/30 flex flex-row items-center justify-between py-4">
                         <CardTitle className="text-xs font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
-                            <TrendingUp size={14} className="text-primary" /> Performance
+                            <TrendingUp size={14} className="text-primary" /> <span>Performance</span>
                         </CardTitle>
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black">TOP 5%</Badge>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black"><span>TOP 5%</span></Badge>
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col items-center justify-center py-10 relative overflow-hidden">
                         <div className="absolute -right-8 -bottom-8 text-primary opacity-[0.03] rotate-12">
@@ -132,9 +132,9 @@ const Dashboard = () => {
                 {/* Recent Activity List */}
                 <Card className="lg:col-span-2 border-none shadow-sm bg-white overflow-hidden flex flex-col">
                     <CardHeader className="flex flex-row items-center justify-between border-b py-4 bg-gray-50/30">
-                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Activité des Rapports</CardTitle>
+                        <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground"><span>Activité des Rapports</span></CardTitle>
                         <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/5" onClick={() => navigate('/reports')}>
-                            Voir Tout <ChevronRight size={12} className="ml-1" />
+                            <span>Voir Tout</span> <ChevronRight size={12} className="ml-1" />
                         </Button>
                     </CardHeader>
                     <CardContent className="p-0 flex-1 overflow-auto">
@@ -147,7 +147,7 @@ const Dashboard = () => {
                         ) : allReports.length === 0 ? (
                             <div className="p-12 text-center">
                                 <FileText size={40} className="mx-auto mb-4 text-gray-200" />
-                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Aucune activité récente</p>
+                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest"><span>Aucune activité récente</span></p>
                             </div>
                         ) : (
                             <div className="divide-y divide-gray-100">
@@ -174,7 +174,7 @@ const Dashboard = () => {
                                         </div>
                                         <div className="flex flex-col items-end gap-1.5">
                                             <StatusBadge status={report.reportStatus} className="text-[9px] px-2 py-0.5 border-2 rounded-full h-auto" />
-                                            <Badge variant="ghost" className="h-4 p-0 px-1 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity">OUVRIR</Badge>
+                                            <Badge variant="ghost" className="h-4 p-0 px-1 text-[8px] opacity-0 group-hover:opacity-100 transition-opacity"><span>OUVRIR</span></Badge>
                                         </div>
                                     </div>
                                 ))}
@@ -191,8 +191,8 @@ const Dashboard = () => {
                         <FileText size={22} />
                     </div>
                     <div className="text-left">
-                        <p className="text-sm font-bold text-gray-900">Nouveau Rapport</p>
-                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Saisie mensuelle</p>
+                        <p className="text-sm font-bold text-gray-900"><span>Nouveau Rapport</span></p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Saisie mensuelle</span></p>
                     </div>
                 </Button>
                 <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-accent/30 hover:bg-accent/5 group transition-all rounded-2xl" onClick={() => navigate('/meetings/new')}>
@@ -200,8 +200,8 @@ const Dashboard = () => {
                         <Calendar size={22} />
                     </div>
                     <div className="text-left">
-                        <p className="text-sm font-bold text-gray-900">Planifier Réunion</p>
-                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Agenda administratif</p>
+                        <p className="text-sm font-bold text-gray-900"><span>Planifier Réunion</span></p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Agenda administratif</span></p>
                     </div>
                 </Button>
                 <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-primary/30 hover:bg-primary/5 group transition-all rounded-2xl" onClick={() => navigate('/chat')}>
@@ -209,8 +209,8 @@ const Dashboard = () => {
                         <MessageSquare size={22} />
                     </div>
                     <div className="text-left">
-                        <p className="text-sm font-bold text-gray-900">Messagerie</p>
-                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Discussions directes</p>
+                        <p className="text-sm font-bold text-gray-900"><span>Messagerie</span></p>
+                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Discussions directes</span></p>
                     </div>
                 </Button>
             </div>

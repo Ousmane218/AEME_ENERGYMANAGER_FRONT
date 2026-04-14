@@ -11,6 +11,18 @@ L.Icon.Default.mergeOptions({
 
 // Default Constants
 export const SENEGAL_CENTER = [14.4974, -14.4524];
+export const AEME_HQ        = [14.6653, -17.4339];
+
+// Institutional reference points (always visible)
+export const REFERENCE_MARKERS = [
+    {
+        id: 'aeme-hq',
+        name: 'Siège Social AEME',
+        address: '15 Boulevard de la République, Dakar',
+        coords: AEME_HQ,
+        type: 'HEADQUARTERS'
+    }
+];
 
 // Helper to group users by service for markers
 export const groupByService = (users) => {
@@ -18,10 +30,21 @@ export const groupByService = (users) => {
     
     // Internal helper to safely extract coordinates (handles strings, numbers, and Keycloak arrays)
     const getSafeCoord = (val) => {
-        if (!val) return null;
+        if (val === null || val === undefined) return null;
+        
         let finalVal = val;
         // Handle Keycloak attributes which are often arrays: ["14.49"]
-        if (Array.isArray(val) && val.length > 0) finalVal = val[0];
+        if (Array.isArray(val)) {
+            if (val.length === 0) return null; // Reject empty arrays
+            finalVal = val[0];
+        }
+        
+        // Handle empty strings or string "null"
+        if (typeof finalVal === 'string') {
+            const trimmed = finalVal.trim();
+            if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return null;
+            finalVal = trimmed;
+        }
         
         const num = parseFloat(finalVal);
         return isNaN(num) ? null : num;
