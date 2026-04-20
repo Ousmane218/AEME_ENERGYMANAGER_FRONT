@@ -10,7 +10,12 @@ L.Icon.Default.mergeOptions({
 });
 
 // Default Constants
-export const SENEGAL_CENTER = [14.4974, -14.4524];
+export const SENEGAL_CENTER = [14.5, -14.5];
+export const DAKAR_CENTER   = [14.6937, -17.4441];
+export const SENEGAL_BOUNDS = [
+    [12.28, -17.55], // Sud-Ouest
+    [16.70, -11.35]  // Nord-Est
+];
 export const AEME_HQ        = [14.6653, -17.4339];
 
 // Institutional reference points (always visible)

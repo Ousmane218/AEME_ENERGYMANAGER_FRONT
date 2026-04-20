@@ -43,8 +43,17 @@ export const getAllUsersWithLocation = async () => {
 export const searchGeocode = async (query) => {
     if (!query || query.trim().length < 3) return [];
     try {
+        // Geographic bias: restrict results to Senegal and provide a preferred viewbox
+        const params = new URLSearchParams({
+            q: query,
+            countrycodes: 'sn',
+            // viewbox: [minLon, minLat, maxLon, maxLat]
+            viewbox: '-17.55,12.28,-11.35,16.70',
+            bounded: '1' // Strong preference for the viewbox
+        });
+        
         // Safe GET request -> will trigger safe retries on network failures
-        const data = await api.get(`/geocode/search?q=${encodeURIComponent(query)}`);
+        const data = await api.get(`/geocode/search?${params.toString()}`);
         return data;
     } catch (error) {
         console.error("Geocode search failed. Fallback to empty array.");

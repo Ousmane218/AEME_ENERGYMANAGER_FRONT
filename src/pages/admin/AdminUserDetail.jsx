@@ -273,18 +273,18 @@ const AdminUserDetail = () => {
 
                         {/* Status & Actions Area */}
                         <div className="flex flex-col items-center lg:items-end gap-6 border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-12 w-full lg:w-auto">
-                            <div className="flex items-center gap-8">
-                                <div className="text-center lg:text-right">
+                            <div className="flex flex-col sm:flex-row items-center gap-6 sm:gap-8">
+                                <div className="text-center sm:text-right">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Impact Score</p>
-                                    <div className="flex items-center gap-2 justify-center lg:justify-end">
+                                    <div className="flex items-center gap-2 justify-center sm:justify-end">
                                         <TrendingUp size={16} className={scoreColor} />
                                         <span className={`text-2xl font-black ${scoreColor}`}>
                                             {score !== null ? `${score >= 0 ? '+' : ''}${score}` : '0'}
                                         </span>
                                     </div>
                                 </div>
-                                <div className="h-10 w-px bg-gray-100" />
-                                <div className="text-center lg:text-right">
+                                <div className="hidden sm:block h-10 w-px bg-gray-100" />
+                                <div className="text-center sm:text-right">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Accès</p>
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                                         user?.role === 'admin' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-blue-100 text-blue-700 border-blue-200'
@@ -294,19 +294,18 @@ const AdminUserDetail = () => {
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                                 <button 
                                     onClick={handleChat} 
-                                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                                 >
                                     <MessageSquare size={16} /> <span>Chat Direct</span>
                                 </button>
                                 <button 
                                     onClick={handleDeleteUser} 
-                                    className="p-3 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all group"
-                                    title="Supprimer l'utilisateur"
+                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all group font-black text-[10px] uppercase tracking-widest border border-red-100/50"
                                 >
-                                    <Trash2 size={18} />
+                                    <Trash2 size={16} /> <span className="sm:hidden">Supprimer l'Expert</span>
                                 </button>
                             </div>
                         </div>
@@ -330,8 +329,8 @@ const AdminUserDetail = () => {
                         { label: 'Date de nomination',value: userProfile?.dateNomination, icon: Calendar },
                     ]},
                     { title: "3. Formation & Expertise", icon: GraduationCap, fields: [
-                        { label: 'Cohorte 1',         value: userProfile?.cohorte1,       icon: GraduationCap },
-                        { label: 'Cohorte 2',         value: userProfile?.cohorte2,       icon: GraduationCap },
+                        { label: 'Cohorte',           value: userProfile?.cohorte,        icon: GraduationCap },
+                        { label: 'Mise à niveau',     value: userProfile?.derniereMiseANiveau, icon: TrendingUp },
                         { label: "Date d'installation",value: userProfile?.dateInstallation,icon: Calendar },
                         { label: 'Date de formation', value: userProfile?.dateFormation,  icon: Calendar },
                     ]},

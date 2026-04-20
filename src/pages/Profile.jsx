@@ -10,6 +10,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile, updateMyLocation, updateMyProfile, searchGeocode } from '../services/profileService';
+import { SENEGAL_CENTER, DAKAR_CENTER, SENEGAL_BOUNDS, AEME_HQ } from '../lib/mapUtils';
 import keycloak from '../Keycloak';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -19,10 +20,6 @@ L.Icon.Default.mergeOptions({
     shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// Default Constants
-export const SENEGAL_CENTER = [14.4974, -14.4524];
-export const DAKAR_CENTER   = [14.6937, -17.4441]; // More useful default city center
-export const AEME_HQ        = [14.6653, -17.4339];
 const API_URL = import.meta.env.VITE_API_URL;
 
 const LocationPicker = ({ onPick }) => {
@@ -57,7 +54,7 @@ const Profile = () => {
     const [editForm, setEditForm] = useState({
         genre: '', dateNaissance: '', contact1: '', contact2: '', emailSecondaire: '',
         departement: '', posteOccupe: '', dateNomination: '',
-        cohorte1: '', cohorte2: '', dateInstallation: '', dateFormation: '',
+        cohorte: '', dateInstallation: '', dateFormation: '',
         derniereMiseANiveau: '', nombreSitesGeres: '', typeBatiment: ''
     });
 
@@ -91,8 +88,7 @@ const Profile = () => {
                     departement:         data.departement         || '',
                     posteOccupe:         data.posteOccupe         || '',
                     dateNomination:      data.dateNomination      || '',
-                    cohorte1:            data.cohorte1            || '',
-                    cohorte2:            data.cohorte2            || '',
+                    cohorte:             data.cohorte             || '',
                     dateInstallation:    data.dateInstallation    || '',
                     dateFormation:       data.dateFormation       || '',
                     derniereMiseANiveau: data.derniereMiseANiveau || '',
@@ -287,11 +283,11 @@ const Profile = () => {
                     </div>
                 )}
 
-                {/* Premium Hero Banner */}
-                <div className="relative group overflow-hidden px-2">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/10 to-primary/20 rounded-[3rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
-                    <div className="relative bg-white/70 backdrop-blur-3xl border border-white p-8 rounded-[2.5rem] shadow-2xl shadow-black/5">
-                        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                {/* Premium Profile Hero */}
+                <div className="relative group overflow-hidden">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/10 to-primary/20 rounded-[2.5rem] md:rounded-[3rem] blur-2xl opacity-40 group-hover:opacity-100 transition duration-1000"></div>
+                    <div className="relative bg-white/70 backdrop-blur-3xl border border-white p-6 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-2xl shadow-black/5">
+                        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
                             {/* Avatar Area */}
                             <div className="relative shrink-0">
                                 <div className="h-36 w-36 rounded-[2.5rem] bg-accent flex items-center justify-center text-white text-6xl font-black shadow-2xl shadow-accent/20 rotate-3 group-hover:rotate-0 transition-transform duration-500">
@@ -303,10 +299,10 @@ const Profile = () => {
                             </div>
 
                             {/* Essential Info */}
-                            <div className="flex-1 text-center lg:text-left space-y-3">
-                                <h2 className="text-4xl font-black tracking-tighter text-gray-900 uppercase leading-loose">
+                            <div className="flex-1 text-center lg:text-left space-y-3 md:space-y-4">
+                                <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-gray-900 uppercase leading-[0.9]">
                                     {displayName}
-                                </h2>
+                                </h1>
                                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                     <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
                                         <Mail size={16} className="text-primary/40" />
@@ -368,8 +364,7 @@ const Profile = () => {
                             { label: 'Date de nomination',   value: profile?.dateNomination,   icon: Calendar },
                         ]},
                         { title: "3. Formation (AEME)", icon: GraduationCap, fields: [
-                            { label: 'Cohorte 1',               value: profile?.cohorte1,            icon: GraduationCap },
-                            { label: 'Cohorte 2',               value: profile?.cohorte2,            icon: GraduationCap },
+                            { label: 'Cohorte',                 value: profile?.cohorte,             icon: GraduationCap },
                             { label: 'Date d\'installation',    value: profile?.dateInstallation,    icon: Calendar },
                             { label: 'Date de formation',       value: profile?.dateFormation,       icon: Calendar },
                             { label: 'Dernière mise à niveau',  value: profile?.derniereMiseANiveau, icon: Calendar },
@@ -505,13 +500,9 @@ const Profile = () => {
                             <div className="space-y-4">
                                 <h4 className="text-sm font-bold text-primary border-b pb-2">3. Parcours de Formation (Spécifique AEME)</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Cohorte 1</label>
-                                        <input type="text" value={editForm.cohorte1} onChange={e => setEditForm({ ...editForm, cohorte1: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Cohorte 2</label>
-                                        <input type="text" value={editForm.cohorte2} onChange={e => setEditForm({ ...editForm, cohorte2: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                    <div className="md:col-span-2">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Cohorte (Formation)</label>
+                                        <input type="text" placeholder="Ex: Cohorte 2024, Session Spéciale..." value={editForm.cohorte} onChange={e => setEditForm({ ...editForm, cohorte: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Date d'installation</label>
@@ -587,7 +578,7 @@ const Profile = () => {
                                 <Search size={15} className="text-gray-400 flex-shrink-0" />
                                 <input
                                     type="text"
-                                    placeholder="Rechercher un lieu au Sénégal..."
+                                    placeholder="Chercher une adresse au Sénégal..."
                                     value={searchQuery}
                                     onChange={(e) => handleSearchInput(e.target.value)}
                                     className="flex-1 bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400"
@@ -620,6 +611,9 @@ const Profile = () => {
                             <MapContainer 
                                 center={(pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1])) ? pickedCoords : DAKAR_CENTER} 
                                 zoom={pickedCoords ? 14 : 12} 
+                                minZoom={7}
+                                maxBounds={SENEGAL_BOUNDS}
+                                maxBoundsViscosity={1.0}
                                 style={{ height: '100%', width: '100%' }}
                             >
                                 <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />

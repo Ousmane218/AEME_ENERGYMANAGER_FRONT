@@ -137,16 +137,18 @@ const Users = () => {
                             <p className="text-sm">Ajustez vos critères de recherche.</p>
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-gray-50/50">
-                                <TableRow>
-                                    <TableHead className="w-[300px] font-bold text-gray-900">Utilisateur</TableHead>
-                                    <TableHead className="font-bold text-gray-900">Email & Service</TableHead>
-                                    <TableHead className="font-bold text-gray-900">Rôle & Statut</TableHead>
-                                    <TableHead className="text-right font-bold text-gray-900">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <>
+                        <div className="hidden md:block overflow-x-auto">
+                            <Table className="min-w-[800px]">
+                                <TableHeader className="bg-gray-50/50">
+                                    <TableRow>
+                                        <TableHead className="w-[300px] font-bold text-gray-900">Utilisateur</TableHead>
+                                        <TableHead className="font-bold text-gray-900">Email & Service</TableHead>
+                                        <TableHead className="font-bold text-gray-900">Rôle & Statut</TableHead>
+                                        <TableHead className="text-right font-bold text-gray-900">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
                                 {filteredUsers.map((user) => (
                                     <TableRow 
                                         key={user.id}
@@ -178,7 +180,7 @@ const Users = () => {
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 whitespace-nowrap">
                                                 <Badge 
                                                     className={cn(
                                                         "text-[10px] font-black uppercase tracking-tighter px-2 h-5 rounded-md",
@@ -217,7 +219,66 @@ const Users = () => {
                                     </TableRow>
                                 ))}
                             </TableBody>
-                        </Table>
+                            </Table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-gray-100">
+                            {filteredUsers.map((user) => (
+                                <div key={user.id} className="p-5 space-y-4 hover:bg-gray-50/50 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <Avatar className="h-12 w-12 border shadow-sm">
+                                            <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
+                                                {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-bold text-gray-900 leading-tight truncate">{user.fullName || '—'}</div>
+                                            <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 mt-1">
+                                                <Mail size={10} /> {user.email}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-3">
+                                        <Badge 
+                                            className={cn(
+                                                "text-[9px] font-black uppercase px-2 h-5 rounded-md",
+                                                user.role === 'admin' 
+                                                    ? "bg-primary text-white" 
+                                                    : "bg-primary/10 text-primary"
+                                            )}
+                                        >
+                                            {user.role === 'admin' ? 'ADMIN' : 'EXPERT'}
+                                        </Badge>
+                                        <div className="text-[9px] text-primary/70 font-black uppercase tracking-tight flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-md">
+                                            <Shield size={10} />
+                                            {user.membershipService || 'AUCUN SERVICE'}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 pt-2">
+                                        <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            className="flex-1 font-bold text-xs h-10 rounded-xl"
+                                            onClick={() => navigate(`/admin/users/${user.id}`)}
+                                        >
+                                            Gérer l'Expert
+                                        </Button>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
+                                            onClick={() => handleDeleteUser(user.id)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

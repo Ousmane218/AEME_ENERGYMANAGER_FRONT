@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import L from 'leaflet';
 import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, UserPlus } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import { getAllUsersWithLocation, searchGeocode } from '../services/profileService';
 import { getAllUsers, getUserAuthProfile } from '../services/adminService';
-import { SENEGAL_CENTER, groupByService, REFERENCE_MARKERS } from '../lib/mapUtils';
+import { SENEGAL_CENTER, SENEGAL_BOUNDS, groupByService, REFERENCE_MARKERS } from '../lib/mapUtils';
 import { Card } from "@/components/ui/card";
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -39,6 +39,7 @@ const MapPage = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [searching, setSearching] = useState(false);
     const [pickedLocation, setPickedLocation] = useState(null);
+    const searchTimeoutRef = useRef(null);
 
     const fetchMarkers = useCallback(async (isManual = false) => {
         try {
@@ -102,19 +103,25 @@ const MapPage = () => {
 
     const handleSearch = async (val) => {
         setSearchQuery(val);
+        
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        
         if (!val.trim() || val.length < 3) {
             setSearchResults([]);
             return;
         }
+
         setSearching(true);
-        try {
-            const results = await searchGeocode(val);
-            setSearchResults(results || []);
-        } catch {
-            setSearchResults([]);
-        } finally {
-            setSearching(false);
-        }
+        searchTimeoutRef.current = setTimeout(async () => {
+            try {
+                const results = await searchGeocode(val);
+                setSearchResults(results || []);
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setSearching(false);
+            }
+        }, 500);
     };
 
     const handleSelectResult = (result) => {
@@ -227,8 +234,8 @@ const MapPage = () => {
                     </Button>
                 </div>
 
-                {/* Floating Search Bar */}
-                <div className="absolute top-4 left-4 z-[20] w-full max-w-[300px] hidden md:block">
+                {/* Floating Search Bar - Now Persistent and Responsive */}
+                <div className="absolute top-4 left-4 z-[20] w-[calc(100%-100px)] md:max-w-[300px]">
                     <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-white/50 p-1.5 flex flex-col gap-1">
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50/50 rounded-xl border border-gray-100/50">
                             <Search size={14} className="text-gray-400 shrink-0" />
@@ -236,7 +243,7 @@ const MapPage = () => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => handleSearch(e.target.value)}
-                                placeholder="Chercher une adresse..."
+                                placeholder="Chercher une adresse au Sénégal..."
                                 className="w-full bg-transparent text-[11px] font-bold outline-none placeholder:text-gray-400"
                             />
                             {searching && <Loader2 size={12} className="animate-spin text-primary shrink-0" />}
@@ -284,9 +291,13 @@ const MapPage = () => {
                         </div>
                     ) : (
                         <MapContainer
-                            center={markers.length === 1 ? markers[0].coords : SENEGAL_CENTER}
-                            zoom={markers.length === 1 ? 14 : 7}
-                            style={{ height: '100%', width: '100%', zIndex: 10 }}
+                            center={SENEGAL_CENTER}
+                            zoom={7}
+                            minZoom={7}
+                            maxBounds={SENEGAL_BOUNDS}
+                            maxBoundsViscosity={1.0}
+                            className="h-[450px] md:h-[650px] w-full"
+                            style={{ zIndex: 10 }}
                         >
                             <TileLayer
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, Search, Loader2, Check } from 'lucide-react';
 import { MapContainer, TileLayer, useMapEvents, Marker, useMap } from 'react-leaflet';
 import { updateMyLocation, searchGeocode } from '../../services/profileService';
-import { SENEGAL_CENTER } from '../../lib/mapUtils';
+import { SENEGAL_CENTER, SENEGAL_BOUNDS } from '../../lib/mapUtils';
 
 const LocationPicker = ({ onPick }) => {
     useMapEvents({
@@ -104,7 +104,7 @@ export const LocationPickerModal = ({
                         <Search size={15} className="text-gray-400 flex-shrink-0" />
                         <input
                             type="text"
-                            placeholder="Rechercher un lieu au Sénégal... (min. 3 caractères)"
+                            placeholder="Chercher une adresse au Sénégal..."
                             value={searchQuery}
                             onChange={(e) => handleSearchInput(e.target.value)}
                             className="flex-1 bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400 font-medium"
@@ -159,6 +159,9 @@ export const LocationPickerModal = ({
                     <MapContainer
                         center={pickedCoords || SENEGAL_CENTER}
                         zoom={pickedCoords ? 14 : 7}
+                        minZoom={7}
+                        maxBounds={SENEGAL_BOUNDS}
+                        maxBoundsViscosity={1.0}
                         style={{ height: '100%', width: '100%', zIndex: 10 }}
                     >
                         <TileLayer
