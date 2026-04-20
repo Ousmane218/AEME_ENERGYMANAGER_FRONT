@@ -143,7 +143,7 @@ const ReportDetails = () => {
                                 <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase leading-none">
                                     <span>{report.nomGestionnaire}</span>
                                 </h2>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]"><span>Code Rapport: {id?.substring(0, 8)}</span></p>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]"><span>Référence: {id?.substring(0, 8)}</span></p>
                             </div>
                             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                 <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
@@ -333,8 +333,8 @@ const ReportDetails = () => {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-3xl font-black italic tracking-tighter leading-tight"><span>Rapport en cours d'audit par l'AEME.</span></h3>
-                                <p className="text-[11px] font-bold opacity-70 leading-relaxed uppercase tracking-tight"><span>Le secrétariat technique procède à la vérification des données transmises.</span></p>
+                                <h3 className="text-3xl font-black italic tracking-tighter leading-tight"><span>Rapport en cours d'audit.</span></h3>
+                                <p className="text-[11px] font-bold opacity-70 leading-relaxed uppercase tracking-tight"><span>Vérification des données transmises par les services techniques.</span></p>
                             </div>
                             <div className="pt-4 border-t border-white/10 flex items-center gap-4">
                                 <div className="h-3 w-3 rounded-full bg-green-400 animate-pulse shadow-[0_0_10px_rgba(74,222,128,0.5)]" />

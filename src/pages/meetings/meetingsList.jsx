@@ -157,7 +157,7 @@ const MeetingsList = () => {
                 <div>
                     <h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">Coordination & Meetings</h1>
                     <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-primary border-primary/20 font-bold uppercase tracking-tighter bg-primary/5">AEME CONNECT</Badge>
+                        <Badge variant="outline" className="text-primary border-primary/20 font-bold uppercase tracking-tighter bg-primary/5">Visioconférence</Badge>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Plateforme de visioconférence sécurisée</p>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/navbar';
 import Sidebar from './components/Sidebar';
@@ -16,6 +16,7 @@ import Users from './pages/admin/Users';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import UserReports from './pages/admin/UserReports';
 import ErrorBoundary from './components/ErrorBoundary';
+import { cn } from './lib/utils';
 
 const AdminRoute = ({ children }) => {
     const { user, isLoading } = useAuth();
@@ -25,6 +26,8 @@ const AdminRoute = ({ children }) => {
 
 function App() {
     const { isLoading } = useAuth();
+    const location = useLocation();
+    const isChat = location.pathname === '/chat';
 
     if (isLoading) {
         return (
@@ -47,8 +50,14 @@ function App() {
                     <Navbar isMobileOnly />
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
-                    <div className="w-full xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto">
+                <main className={cn(
+                    "flex-1 overflow-hidden",
+                    !isChat && "p-4 md:p-8 lg:p-12 overflow-y-auto"
+                )}>
+                    <div className={cn(
+                        "h-full",
+                        !isChat && "w-full xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto"
+                    )}>
                         <Routes>
                             <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/dashboard" element={<Dashboard />} />

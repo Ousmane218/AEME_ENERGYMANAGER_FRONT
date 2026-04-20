@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import L from 'leaflet';
 import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, UserPlus } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
 import { getAllUsersWithLocation, searchGeocode } from '../services/profileService';
 import { getAllUsers, getUserAuthProfile } from '../services/adminService';
-import { SENEGAL_CENTER, SENEGAL_BOUNDS, groupByService, REFERENCE_MARKERS } from '../lib/mapUtils';
+import { SENEGAL_CENTER, DAKAR_CENTER, SENEGAL_BOUNDS, groupByService, REFERENCE_MARKERS } from '../lib/mapUtils';
 import { Card } from "@/components/ui/card";
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -148,7 +148,7 @@ const MapPage = () => {
                         Carte des Services
                     </h1>
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50 mt-1">
-                        Localisation globale des infrastructures AEME
+                        Cartographie des points de service
                     </p>
                 </div>
                 
@@ -157,7 +157,7 @@ const MapPage = () => {
                         {enriching && (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 text-primary rounded-lg animate-pulse">
                                 <Loader2 size={12} className="animate-spin" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Sychronisation Keycloak...</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest">Mise à jour des profils...</span>
                             </div>
                         )}
                         <Button 
@@ -291,14 +291,16 @@ const MapPage = () => {
                         </div>
                     ) : (
                         <MapContainer
-                            center={SENEGAL_CENTER}
-                            zoom={7}
+                            center={DAKAR_CENTER}
+                            zoom={12}
                             minZoom={7}
                             maxBounds={SENEGAL_BOUNDS}
                             maxBoundsViscosity={1.0}
                             className="h-[450px] md:h-[650px] w-full"
                             style={{ zIndex: 10 }}
+                            zoomControl={false}
                         >
+                            <ZoomControl position="bottomright" />
                             <TileLayer
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

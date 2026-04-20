@@ -164,7 +164,7 @@ const Chat = () => {
     });
 
     return (
-        <div className="flex h-[calc(100vh-10rem)] bg-white rounded-3xl shadow-2xl shadow-black/5 border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+        <div className="flex h-full bg-white overflow-hidden animate-in fade-in duration-500">
 
             {/* Sidebar / Conversation List */}
             <div className={cn(
@@ -175,7 +175,6 @@ const Chat = () => {
                 <div className="p-6 border-b border-gray-100/50 bg-white flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 tracking-tight">Messagerie</h2>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Plateforme AEME</p>
                     </div>
                     <Button
                         variant="outline"
@@ -301,7 +300,7 @@ const Chat = () => {
                         </div>
                         <h3 className="text-xl font-bold text-gray-900 tracking-tight">Votre Espace de Discussion</h3>
                         <p className="text-sm text-muted-foreground max-w-xs text-center mt-2 font-medium opacity-60 leading-relaxed uppercase tracking-tighter">Sélectionnez un expert pour démarrer une communication sécurisée.</p>
-                        <Badge variant="outline" className="mt-8 border-primary/10 text-primary/40 font-black tracking-[0.2em] px-4 py-1.5 uppercase text-[9px]">AEME SECURE CHAT v2</Badge>
+                        <Badge variant="outline" className="mt-8 border-primary/10 text-primary/40 font-black tracking-[0.2em] px-4 py-1.5 uppercase text-[9px]">Communication Sécurisée</Badge>
                     </div>
                 ) : (
                     <>
@@ -328,9 +327,6 @@ const Chat = () => {
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                                            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest opacity-40">
-                                                En ligne · Expert AEME
-                                            </p>
                                         </div>
                                     </div>
                                 </div>

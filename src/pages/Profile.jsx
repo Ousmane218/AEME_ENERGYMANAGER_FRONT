@@ -363,7 +363,7 @@ const Profile = () => {
                             { label: 'Poste occupé',         value: profile?.posteOccupe,      icon: Briefcase },
                             { label: 'Date de nomination',   value: profile?.dateNomination,   icon: Calendar },
                         ]},
-                        { title: "3. Formation (AEME)", icon: GraduationCap, fields: [
+                        { title: "3. Expertise & Formations", icon: GraduationCap, fields: [
                             { label: 'Cohorte',                 value: profile?.cohorte,             icon: GraduationCap },
                             { label: 'Date d\'installation',    value: profile?.dateInstallation,    icon: Calendar },
                             { label: 'Date de formation',       value: profile?.dateFormation,       icon: Calendar },
@@ -498,7 +498,7 @@ const Profile = () => {
 
                             {/* Section 3 */}
                             <div className="space-y-4">
-                                <h4 className="text-sm font-bold text-primary border-b pb-2">3. Parcours de Formation (Spécifique AEME)</h4>
+                                <h4 className="text-sm font-bold text-primary border-b pb-2">3. Parcours & Certifications</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Cohorte (Formation)</label>

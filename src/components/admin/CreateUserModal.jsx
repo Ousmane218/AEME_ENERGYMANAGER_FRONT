@@ -20,7 +20,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
         firstName: '',
         lastName: '',
         role: 'user',
-        membershipService: 'SENELEC',
+        membershipService: '',
         serviceLatitude: null,
         serviceLongitude: null
     });
@@ -101,7 +101,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                 firstName: '',
                 lastName: '',
                 role: 'user',
-                membershipService: 'SENELEC',
+                membershipService: '',
                 serviceLatitude: null,
                 serviceLongitude: null
             });

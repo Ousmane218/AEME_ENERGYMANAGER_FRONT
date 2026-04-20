@@ -45,7 +45,7 @@ const NewMeeting = () => {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-black tracking-tight text-gray-900 uppercase">Nouvelle Réunion</h1>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Planifier une session de coordination AEME</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Organiser une nouvelle réunion</p>
                 </div>
             </div>
 
@@ -114,9 +114,6 @@ const NewMeeting = () => {
                 </CardContent>
             </Card>
 
-            <div className="text-center italic opacity-30 text-[10px] font-bold uppercase tracking-tighter">
-                Plateforme de Gouvernance Énergétique · AEME Sénégal
-            </div>
         </div>
     );
 };

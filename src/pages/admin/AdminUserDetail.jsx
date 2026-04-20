@@ -211,14 +211,6 @@ const AdminUserDetail = () => {
     const scoreColor = score >= 0 ? 'text-green-700' : 'text-red-700';
     const scoreBg    = score >= 0 ? 'bg-green-50'    : 'bg-red-50';
 
-    const InfoRow = ({ label, value }) => (
-        <div className="flex justify-between text-sm py-2 border-b border-gray-50">
-            <span className="text-gray-500">{label}</span>
-            <span className={`font-medium text-right max-w-[180px] truncate ${value ? 'text-gray-900' : 'text-gray-300 italic'}`}>
-                {value || 'Non renseigné'}
-            </span>
-        </div>
-    );
 
     return (
         <div className="space-y-10 animate-in fade-in duration-700">
@@ -393,7 +385,7 @@ const AdminUserDetail = () => {
                                                 </div>
                                                 <div className="min-w-0">
                                                     <h4 className="font-bold text-gray-900 text-[13px] group-hover:text-primary transition-colors truncate">
-                                                        Expertise du {report.reportDate ? new Date(report.reportDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                                                        Rapport du {report.reportDate ? new Date(report.reportDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
                                                     </h4>
                                                     <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-400 mt-1">
                                                         {report.serviceAppartenance || 'Service non défini'}

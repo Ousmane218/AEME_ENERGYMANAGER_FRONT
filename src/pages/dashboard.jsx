@@ -61,7 +61,7 @@ const Dashboard = () => {
                         {!loading && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5 px-2 py-0"><span>LIVE</span></Badge>}
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium">
-                        Heureux de vous revoir, <span className="text-primary font-bold">{profile?.firstName || 'Utilisateur'}</span>. Voici l'état de votre consommation et de vos rapports.
+                        Heureux de vous revoir, <span className="text-primary font-bold">{profile?.firstName || 'Utilisateur'}</span>.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -73,28 +73,28 @@ const Dashboard = () => {
 
             {/* Metrics Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <MetricCard 
+                <MetricCard
                     title="Rapports Envoyés"
                     value={myReports.length}
                     icon={FileText}
                     colorClass="bg-blue-100/50 text-blue-600"
                     gradient="bg-gradient-to-br from-white to-blue-50/20"
                 />
-                <MetricCard 
+                <MetricCard
                     title="En Attente"
                     value={pending}
                     icon={Clock}
                     colorClass="bg-amber-100/50 text-amber-600"
                     gradient="bg-gradient-to-br from-white to-amber-50/20"
                 />
-                <MetricCard 
+                <MetricCard
                     title="Approuvés"
                     value={approved}
                     icon={CheckCircle}
                     colorClass="bg-green-100/50 text-green-600"
                     gradient="bg-gradient-to-br from-white to-green-50/20"
                 />
-                <MetricCard 
+                <MetricCard
                     title="Rejetés"
                     value={rejected}
                     icon={XCircle}
@@ -152,8 +152,8 @@ const Dashboard = () => {
                         ) : (
                             <div className="divide-y divide-gray-100">
                                 {allReports.slice(0, 5).map((report) => (
-                                    <div 
-                                        key={report.id} 
+                                    <div
+                                        key={report.id}
                                         className="flex items-center justify-between p-4 hover:bg-gray-50/50 transition-all cursor-pointer group border-l-4 border-l-transparent hover:border-l-primary"
                                         onClick={() => navigate(`/reports/${report.id}`)}
                                     >

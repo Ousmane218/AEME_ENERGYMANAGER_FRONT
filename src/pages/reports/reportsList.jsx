@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { FileText, Plus, Search, Trash2, Filter, Download, MoreHorizontal, ChevronRight, Calendar, Building2 } from 'lucide-react';
+import { FileText, Plus, Trash2, Filter, Download, MoreHorizontal, ChevronRight, Calendar, Building2 } from 'lucide-react';
 import { getMyReports, deleteReport, getAllReports } from '../../services/reportService';
 import { 
     Table, 
@@ -24,7 +24,6 @@ const ReportsList = () => {
     const targetedUserId = searchParams.get('userId');
     const [reports, setReports] = useState([]);
     const [filter, setFilter] = useState('All');
-    const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -72,15 +71,10 @@ const ReportsList = () => {
     };
 
     const filteredReports = reports.filter(report => {
-        const matchFilter =
-            filter === 'All' ||
+        return filter === 'All' ||
             (filter === 'Submitted' && report.reportStatus === 'SUBMITTED') ||
             (filter === 'Approved'  && report.reportStatus === 'APPROVED')  ||
             (filter === 'Rejected'  && report.reportStatus === 'REJECTED');
-        const matchSearch =
-            report.nomGestionnaire?.toLowerCase().includes(search.toLowerCase()) ||
-            report.serviceAppartenance?.toLowerCase().includes(search.toLowerCase());
-        return matchFilter && matchSearch;
     });
 
     return (
@@ -130,15 +124,6 @@ const ReportsList = () => {
                                 </button>
                             ))}
                         </div>
-                        <div className="relative w-full md:w-96 group">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
-                            <Input
-                                placeholder="Rechercher par gestionnaire ou service..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="pl-12 h-12 text-sm bg-white shadow-sm border-2 border-transparent focus:border-primary/20 rounded-2xl transition-all"
-                            />
-                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -168,7 +153,7 @@ const ReportsList = () => {
                                 <p className="text-xl font-bold text-gray-900 uppercase tracking-tight"><span>Aucun document trouvé</span></p>
                                 <p className="text-sm text-muted-foreground font-medium"><span>Affinez vos filtres ou créez votre premier rapport.</span></p>
                             </div>
-                            <Button variant="outline" onClick={() => {setFilter('All'); setSearch('');}} className="rounded-xl border-gray-200"><span>Effacer les filtres</span></Button>
+                            <Button variant="outline" onClick={() => {setFilter('All');}} className="rounded-xl border-gray-200"><span>Effacer les filtres</span></Button>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -238,7 +223,7 @@ const ReportsList = () => {
                     )}
                 </CardContent>
                 <div className="p-6 bg-gray-50/50 border-t flex items-center justify-between px-8">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40 italic"><span>Interface Gouvernementale Sécurisée</span></p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40 italic"><span>Certification des données</span></p>
                     <div className="flex items-center gap-2">
                          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest"><span>Base de données à jour</span></span>
