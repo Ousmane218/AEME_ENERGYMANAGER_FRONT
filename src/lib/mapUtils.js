@@ -86,3 +86,42 @@ export const groupByService = (users) => {
     // Return only services that have at least one coordinate
     return Object.values(map).filter(m => m.coords !== null);
 };
+
+/**
+ * Group users under official structures for map display
+ */
+export const groupUsersUnderStructures = (users, structures) => {
+    if (!structures) return [];
+
+    // 1. Initialize result with all structures
+    const structureMarkers = structures.map(s => ({
+        id: s.id,
+        name: s.name,
+        ministere: s.ministere,
+        region: s.region,
+        zone: s.zone,
+        coords: [parseFloat(s.latitude), parseFloat(s.longitude)],
+        type: 'STRUCTURE',
+        members: []
+    }));
+
+    // 2. Create a lookup map (by name as fallback since we store name in membershipService)
+    const structMap = {};
+    structureMarkers.forEach(m => {
+        structMap[m.name.toLowerCase().trim()] = m;
+    });
+
+    // 3. Distribute users
+    users.forEach(u => {
+        const svcName = (u.membershipService || '').toLowerCase().trim();
+        if (structMap[svcName]) {
+            structMap[svcName].members.push({
+                id: u.id,
+                name: u.fullName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Expert',
+                role: u.role
+            });
+        }
+    });
+
+    return structureMarkers.filter(m => !isNaN(m.coords[0]) && !isNaN(m.coords[1]));
+};

@@ -11,7 +11,8 @@ import {
     ChevronRight,
     MapPin,
     PanelLeftClose,
-    PanelLeftOpen
+    PanelLeftOpen,
+    Building2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
@@ -32,7 +33,8 @@ const Sidebar = () => {
     ];
 
     if (user?.isAdmin) {
-        navItems.push({ name: 'Administration', path: '/admin', icon: ShieldCheck });
+        navItems.push({ name: 'Gestionnaires', path: '/admin/users', icon: ShieldCheck });
+        navItems.push({ name: 'Structures',   path: '/admin/structures', icon: Building2 });
     }
 
     const isActive = (path) => {

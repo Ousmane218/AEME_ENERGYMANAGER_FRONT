@@ -13,6 +13,7 @@ import Chat from './pages/chat/Chat';
 import Profile from './pages/Profile';
 import MapPage from './pages/MapPage';
 import Users from './pages/admin/Users';
+import Structures from './pages/admin/Structures';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import UserReports from './pages/admin/UserReports';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -76,6 +77,10 @@ function App() {
                             <Route 
                                 path="/admin/users" 
                                 element={<AdminRoute><Users /></AdminRoute>} 
+                            />
+                            <Route 
+                                path="/admin/structures" 
+                                element={<AdminRoute><Structures /></AdminRoute>} 
                             />
                             <Route 
                                 path="/admin/users/:userId" 

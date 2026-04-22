@@ -105,3 +105,12 @@ export const rejectReport = async (reportId) => {
         throw new Error('Erreur lors du rejet du rapport');
     }
 };
+
+export const getStatsByRegion = async () => {
+    try {
+        return await api.get('/stats/regions');
+    } catch (error) {
+        console.error('Error fetching regional stats:', error);
+        return [];
+    }
+};

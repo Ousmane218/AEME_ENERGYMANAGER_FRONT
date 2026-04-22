@@ -9,8 +9,9 @@ import { MapContainer, TileLayer, useMapEvents, Marker, useMap } from 'react-lea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, updateMyLocation, updateMyProfile, searchGeocode } from '../services/profileService';
+import { getUserProfile, updateMyLocation, updateMyProfile } from '../services/profileService';
 import { SENEGAL_CENTER, DAKAR_CENTER, SENEGAL_BOUNDS, AEME_HQ } from '../lib/mapUtils';
+import { StructureSelector } from '../components/StructureSelector';
 import keycloak from '../Keycloak';
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -131,60 +132,8 @@ const Profile = () => {
         } catch { alert('Erreur lors de la sauvegarde de la position'); }
     };
 
-    const handleSearch = async (query) => {
-        const q = query.trim().toLowerCase();
-        if (!q || q.length < 3) { setSearchResults([]); return; }
-        
-        try {
-            setSearching(true);
-            const data = await searchGeocode(query);
-            
-            // Intelligent suggestion: if user types "AEME" or "Siege", inject official HQ
-            let finalResults = data || [];
-            if (q.includes('aeme') || q.includes('siege') || q.includes('siège')) {
-                const hqResult = {
-                    display_name: "Siège Social AEME, 15 Boulevard de la République, Dakar",
-                    lat: AEME_HQ[0].toString(),
-                    lon: AEME_HQ[1].toString(),
-                    isOfficial: true
-                };
-                // Prepend to results if not already broadly present
-                finalResults = [hqResult, ...finalResults];
-            }
-            
-            setSearchResults(finalResults);
-        } catch (err) {
-            setSearchResults([]);
-        } finally {
-            setSearching(false);
-        }
-    };
-
-    const handleSearchInput = (val) => {
-        setSearchQuery(val);
-        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = setTimeout(() => handleSearch(val), 500);
-    };
-
-    const handleSelectResult = async (result) => {
-        const lat = parseFloat(result.lat);
-        const lng = parseFloat(result.lon);
-        if (isNaN(lat) || isNaN(lng)) return;
-        setPickedCoords([lat, lng]);
-        setSearchQuery(result.display_name.split(',')[0]);
-        setSearchResults([]);
-        try {
-            await updateMyLocation(lat, lng);
-            setLocationSaved(true);
-            setTimeout(() => setLocationSaved(false), 2000);
-        } catch { alert('Erreur lors de la sauvegarde de la position'); }
-    };
-
     const handleCloseModal = () => {
         setShowLocationModal(false);
-        setSearchQuery('');
-        setSearchResults([]);
-        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
 
     const handleSaveEdit = async () => {
@@ -558,77 +507,80 @@ const Profile = () => {
                 </div>
             )}
 
-            {/* Modal Localisation */}
+            {/* Modal Localisation (Updated to Structure Selection) */}
             {showLocationModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-50">
                             <div>
-                                <h2 className="text-lg font-bold text-primary">Localiser mon service</h2>
-                                <p className="text-xs text-gray-400 mt-0.5">
-                                    Recherchez ou cliquez sur la carte pour {displayService}
+                                <h2 className="text-xl font-black text-primary uppercase tracking-tight">Rattachement à une Structure</h2>
+                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
+                                    Sélectionnez votre structure officielle pour la géolocalisation.
                                 </p>
                             </div>
-                            <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-lg text-gray-500">
+                            <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
                                 <X size={20} />
                             </button>
                         </div>
-                        <div className="px-4 py-3 border-b border-gray-100 relative">
-                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-                                <Search size={15} className="text-gray-400 flex-shrink-0" />
-                                <input
-                                    type="text"
-                                    placeholder="Chercher une adresse au Sénégal..."
-                                    value={searchQuery}
-                                    onChange={(e) => handleSearchInput(e.target.value)}
-                                    className="flex-1 bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400"
+                        
+                        <div className="p-10 space-y-8">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-1">
+                                    Choisir dans le référentiel
+                                </label>
+                                <StructureSelector 
+                                    onSelect={async (s) => {
+                                        try {
+                                            setSearching(true);
+                                            // We update BOTH the name and the coordinates
+                                            // The backend updateMyLocation might need to be enhanced to also update the name
+                                            // For now we use the lat/lng and we'll assume the name is updated via updateMyProfile if needed
+                                            await updateMyLocation(parseFloat(s.latitude), parseFloat(s.longitude));
+                                            
+                                            // Update the name too via updateMyProfile to keep consistency
+                                            await updateMyProfile({ membershipService: s.name });
+                                            
+                                            setProfile(prev => ({ 
+                                                ...prev, 
+                                                membershipService: s.name,
+                                                serviceLatitude: s.latitude,
+                                                serviceLongitude: s.longitude
+                                            }));
+                                            setPickedCoords([parseFloat(s.latitude), parseFloat(s.longitude)]);
+                                            
+                                            setLocationSaved(true);
+                                            setTimeout(() => {
+                                                setLocationSaved(false);
+                                                handleCloseModal();
+                                            }, 1500);
+                                        } catch (err) {
+                                            alert("Erreur lors du rattachement : " + err.message);
+                                        } finally {
+                                            setSearching(false);
+                                        }
+                                    }}
                                 />
-                                {searching && <Loader2 size={14} className="animate-spin text-gray-400 flex-shrink-0" />}
-                                {searchQuery && !searching && (
-                                    <button onClick={() => { setSearchQuery(''); setSearchResults([]); }}>
-                                        <X size={14} className="text-gray-400 hover:text-gray-600" />
-                                    </button>
-                                )}
                             </div>
-                            {searchResults.length > 0 && (
-                                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[1000] overflow-hidden">
-                                    {searchResults.map((result, i) => (
-                                        <button key={i} onClick={() => handleSelectResult(result)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">{result.display_name.split(',')[0]}</p>
-                                            <p className="text-xs text-gray-400 truncate">{result.display_name}</p>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            {!searching && searchQuery.length >= 3 && searchResults.length === 0 && (
-                                <div className="absolute left-4 right-4 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[1000] px-4 py-3">
-                                    <p className="text-sm text-gray-400 text-center">Aucun résultat — cliquez directement sur la carte</p>
-                                </div>
-                            )}
-                        </div>
 
-                        <div style={{ height: '360px' }}>
-                            <MapContainer 
-                                center={(pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1])) ? pickedCoords : SENEGAL_CENTER} 
-                                zoom={pickedCoords ? 14 : 7} 
-                                minZoom={7}
-                                maxBounds={SENEGAL_BOUNDS}
-                                maxBoundsViscosity={1.0}
-                                style={{ height: '100%', width: '100%' }}
-                            >
-                                <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                <LocationPicker onPick={handlePickLocation} />
-                                <MapRecenter coords={pickedCoords} />
-                                {pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1]) && <Marker position={pickedCoords} />}
-                            </MapContainer>
-                        </div>
-
-                        <div className="px-6 py-4 border-t border-gray-100 text-center">
                             {locationSaved ? (
-                                <p className="text-sm text-green-600 font-medium flex items-center justify-center gap-2"><Check size={16} /> Position sauvegardée !</p>
+                                <div className="flex items-center justify-center gap-3 py-4 bg-green-50 rounded-2xl border border-green-100 animate-in slide-in-from-bottom-4">
+                                    <CheckCircle size={20} className="text-green-500" />
+                                    <span className="text-sm font-bold text-green-700">Rattachement réussi !</span>
+                                </div>
                             ) : (
-                                <p className="text-xs text-gray-400">Recherchez un lieu ou cliquez directement sur la carte</p>
+                                <div className="bg-gray-50 rounded-2xl p-6 flex items-start gap-4 border border-dashed border-gray-200">
+                                    <MapPin size={20} className="text-primary/40 shrink-0 mt-1" />
+                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                                        En choisissant une structure, votre position sur la carte nationale sera automatiquement synchronisée avec les coordonnées officielles de l'établissement.
+                                    </p>
+                                </div>
                             )}
+                        </div>
+
+                        <div className="px-8 py-6 border-t border-gray-50 bg-gray-50/50 flex justify-end">
+                            <Button variant="ghost" onClick={handleCloseModal} className="font-bold text-xs uppercase tracking-widest text-gray-400">
+                                Fermer
+                            </Button>
                         </div>
                     </div>
                 </div>

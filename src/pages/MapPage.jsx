@@ -3,15 +3,17 @@ import L from 'leaflet';
 import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, UserPlus } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'react-leaflet';
 import { getAllUsersWithLocation, searchGeocode } from '../services/profileService';
-import { getAllUsers, getUserAuthProfile } from '../services/adminService';
-import { SENEGAL_CENTER, DAKAR_CENTER, SENEGAL_BOUNDS, groupByService, REFERENCE_MARKERS } from '../lib/mapUtils';
+import { getAllUsers, getUserAuthProfile, getStatsByRegion } from '../services/adminService';
+import { getAllStructures } from '../services/structureService';
+import { SENEGAL_CENTER, DAKAR_CENTER, SENEGAL_BOUNDS, groupUsersUnderStructures, REFERENCE_MARKERS } from '../lib/mapUtils';
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getOrCreateConversation } from '../services/chatService';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Search, X, Building2 as HQIcon } from 'lucide-react';
+import { Search, X, Building2, Building2 as HQIcon } from 'lucide-react';
 
 const MapRecenter = ({ coords }) => {
     const map = useMap();
@@ -33,6 +35,9 @@ const MapPage = () => {
     const [enriching, setEnriching] = useState(false);
     const [error, setError]     = useState(null);
     const [debugMode, setDebugMode] = useState(false);
+    const [regionalStats, setRegionalStats] = useState([]);
+    const [structures, setStructures] = useState([]);
+    const [statsLoading, setStatsLoading] = useState(true);
 
     // Address Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +45,25 @@ const MapPage = () => {
     const [searching, setSearching] = useState(false);
     const [pickedLocation, setPickedLocation] = useState(null);
     const searchTimeoutRef = useRef(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setStatsLoading(true);
+                const [stats, structList] = await Promise.all([
+                    getStatsByRegion(),
+                    getAllStructures()
+                ]);
+                setRegionalStats(stats || []);
+                setStructures(structList || []);
+            } catch (err) {
+                console.error("Failed to fetch regional data", err);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
 
     const fetchMarkers = useCallback(async (isManual = false) => {
         try {
@@ -50,6 +74,7 @@ const MapPage = () => {
             let users = await getAllUsersWithLocation() || [];
             
             // 2. Admin Enrichment: Show users who haven't validated their email (like Daouda)
+            let enrichedUsers = [];
             if (currentUser?.isAdmin) {
                 setEnriching(true);
                 try {
@@ -75,32 +100,33 @@ const MapPage = () => {
                             })
                         );
                         
-                        const enrichedUsers = enrichmentResults.filter(u => {
+                        enrichedUsers = enrichmentResults.filter(u => {
                             if (!u || !u.serviceLatitude) return false;
                             // Check for empty Keycloak arrays or "null" strings
                             const lat = u.serviceLatitude;
                             if (Array.isArray(lat)) return lat.length > 0 && lat[0] !== '' && lat[0] !== 'null';
                             return String(lat).trim() !== '' && String(lat) !== 'null';
                         });
-                        users = [...users, ...enrichedUsers];
                     }
                 } catch (adminErr) {
                     console.warn("Failed to enrich map data:", adminErr);
-                } finally {
-                    setEnriching(false);
                 }
             }
-
-            setRawData(users);
-            setMarkers(groupByService(users));
+            
+            // 4. Group all users under official structures
+            const combinedUsers = [...users, ...enrichedUsers];
+            setRawData(combinedUsers);
+            const finalMarkers = groupUsersUnderStructures(combinedUsers, structures);
+            setMarkers(finalMarkers);
             setError(null);
         } catch (err) {
-            setError('Impossible de charger les positions.');
+            setError(err.message);
         } finally {
             setLoading(false);
             setRefreshing(false);
+            setEnriching(false);
         }
-    }, [currentUser]);
+    }, [currentUser, structures]);
 
     const handleSearch = async (val) => {
         setSearchQuery(val);
@@ -346,15 +372,22 @@ const MapPage = () => {
                                         <div className="text-sm min-w-[220px] p-1">
                                             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
                                                 <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                                    <MapPin size={16} />
+                                                    <Building2 size={16} />
                                                 </div>
-                                                <p className="font-black text-gray-900 uppercase tracking-tight text-[11px] truncate">
-                                                    {m.service}
-                                                </p>
+                                                <div className="min-w-0">
+                                                    <p className="font-black text-gray-900 uppercase tracking-tight text-[11px] truncate">
+                                                        {m.name}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{m.region}</span>
+                                                        <span className="h-0.5 w-0.5 rounded-full bg-gray-200" />
+                                                        <span className="text-[8px] text-gray-500 font-medium truncate">{m.ministere}</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                             
                                             <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.15em] mb-3">
-                                                Membres ({m.members.length})
+                                                Gestionnaires ({m.members.length})
                                             </p>
                                             
                                             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1 customize-scrollbar">
@@ -423,6 +456,65 @@ const MapPage = () => {
                     </div>
                 )}
             </Card>
+
+            {/* Regional Stats Section */}
+            <div className="space-y-6 pt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
+                    <div>
+                        <h2 className="text-2xl font-black tracking-tight text-gray-900 uppercase">
+                            Répartition Régionale
+                        </h2>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 mt-1">
+                            Couverture nationale des experts et infrastructures
+                        </p>
+                    </div>
+                    <div className="h-px flex-1 bg-gradient-to-r from-gray-100 via-gray-100 to-transparent hidden md:block mx-8 mb-2" />
+                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[10px] uppercase font-bold py-1 px-4 self-start md:self-auto">
+                        {regionalStats.length} RÉGIONS ACTIVES
+                    </Badge>
+                </div>
+
+                {statsLoading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {[1, 2, 3, 4].map(i => (
+                            <Card key={i} className="h-32 bg-gray-50/50 border-none animate-pulse" />
+                        ))}
+                    </div>
+                ) : regionalStats.length === 0 ? (
+                    <div className="bg-white p-12 rounded-[2.5rem] border border-gray-100 text-center">
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Aucune donnée statistique disponible</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {regionalStats.map((stat, idx) => (
+                            <Card key={idx} className="group overflow-hidden border-none shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 bg-white p-6">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-primary/10 group-hover:bg-primary transition-colors" />
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter group-hover:text-primary transition-colors">
+                                        {stat.region}
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Gestionnaires</p>
+                                            <div className="flex items-center gap-2">
+                                                <User size={14} className="text-primary/40" />
+                                                <span className="text-xl font-black text-gray-900">{stat.gestionnaires}</span>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Structures</p>
+                                            <div className="flex items-center gap-2">
+                                                <Building2 size={14} className="text-accent/40" />
+                                                <span className="text-xl font-black text-gray-900">{stat.structures}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

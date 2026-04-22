@@ -30,27 +30,6 @@ const Dashboard = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    const approved = myReports.filter(r => r.reportStatus === 'APPROVED').length;
-    const rejected = myReports.filter(r => r.reportStatus === 'REJECTED').length;
-    const pending = myReports.filter(r => r.reportStatus === 'PENDING' || r.reportStatus === 'EN ATTENTE').length;
-
-    const MetricCard = ({ title, value, icon: Icon, colorClass, gradient }) => (
-        <Card className={`border-none shadow-sm overflow-hidden ${gradient}`}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
-                    <span>{title}</span>
-                </CardTitle>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center ${colorClass} shadow-sm`}>
-                    <Icon size={14} />
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold text-gray-900">{loading ? <Skeleton className="h-8 w-16" /> : value}</div>
-                <p className="text-[10px] text-muted-foreground mt-1 font-medium italic">Données consolidées</p>
-            </CardContent>
-        </Card>
-    );
-
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Header Section */}
@@ -71,36 +50,57 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                <MetricCard
-                    title="Rapports Envoyés"
-                    value={myReports.length}
-                    icon={FileText}
-                    colorClass="bg-blue-100/50 text-blue-600"
-                    gradient="bg-gradient-to-br from-white to-blue-50/20"
-                />
-                <MetricCard
-                    title="En Attente"
-                    value={pending}
-                    icon={Clock}
-                    colorClass="bg-amber-100/50 text-amber-600"
-                    gradient="bg-gradient-to-br from-white to-amber-50/20"
-                />
-                <MetricCard
-                    title="Approuvés"
-                    value={approved}
-                    icon={CheckCircle}
-                    colorClass="bg-green-100/50 text-green-600"
-                    gradient="bg-gradient-to-br from-white to-green-50/20"
-                />
-                <MetricCard
-                    title="Rejetés"
-                    value={rejected}
-                    icon={XCircle}
-                    colorClass="bg-red-100/50 text-red-600"
-                    gradient="bg-gradient-to-br from-white to-red-50/20"
-                />
+            
+            {/* Ressources & Documents */}
+            <div className="space-y-4 pt-4">
+                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground/40 px-1">Ressources & Documents</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="border-2 border-dashed border-gray-200 bg-gray-50/30 hover:border-green-500/30 hover:bg-green-50/10 transition-all group relative overflow-hidden">
+                        <div className="p-6 flex items-start gap-5">
+                            <div className="h-14 w-14 rounded-2xl bg-green-100 text-green-600 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                                <Download size={28} />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <h3 className="text-base font-black text-gray-900 tracking-tight uppercase">Cadastre Énergétique</h3>
+                                <p className="text-[11px] text-muted-foreground font-medium leading-relaxed max-w-[280px]">
+                                    Téléchargez le référentiel complet du cadastre énergétique national (Format Excel).
+                                </p>
+                                <div className="pt-3 flex items-center gap-3">
+                                    <a 
+                                        href="/documents/cadastre_energetique.xlsx" 
+                                        download 
+                                        className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors"
+                                    >
+                                        <FileText size={14} /> Télécharger maintenant
+                                    </a>
+                                    <span className="h-1 w-1 rounded-full bg-gray-300" />
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">XLSX • 2.4 MB</span>
+                                </div>
+                            </div>
+                        </div>
+                        {/* Decorative background icon */}
+                        <div className="absolute -right-6 -bottom-6 text-green-500/5 rotate-12 group-hover:rotate-0 transition-transform duration-700">
+                            <FileText size={120} />
+                        </div>
+                    </Card>
+
+                    <Card className="border-2 border-dashed border-gray-200 bg-gray-50/30 hover:border-blue-500/30 hover:bg-blue-50/10 transition-all group relative overflow-hidden">
+                        <div className="p-6 flex items-start gap-5">
+                            <div className="h-14 w-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                                <Zap size={28} />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                                <h3 className="text-base font-black text-gray-900 tracking-tight uppercase">Guide Utilisateur</h3>
+                                <p className="text-[11px] text-muted-foreground font-medium leading-relaxed max-w-[280px]">
+                                    Manuel complet d'utilisation de la plateforme Energy Manager.
+                                </p>
+                                <div className="pt-3 flex items-center gap-3 text-gray-400">
+                                    <span className="text-[10px] font-black uppercase tracking-widest italic opacity-60">Bientôt disponible</span>
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Video, MessageSquare, User, Menu, X, LogOut, ShieldCheck, ChevronRight, MapPin } from 'lucide-react';
+import { LayoutDashboard, FileText, Video, MessageSquare, User, Menu, X, LogOut, ShieldCheck, ChevronRight, MapPin, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
@@ -52,7 +52,8 @@ const Navbar = ({ isMobileOnly = false }) => {
     ];
 
     if (user?.isAdmin) {
-        navItems.push({ name: 'Administration', path: '/admin', icon: ShieldCheck });
+        navItems.push({ name: 'Gestionnaires', path: '/admin/users', icon: ShieldCheck });
+        navItems.push({ name: 'Structures',   path: '/admin/structures', icon: Building2 });
     }
 
     const isActive = (path) => {

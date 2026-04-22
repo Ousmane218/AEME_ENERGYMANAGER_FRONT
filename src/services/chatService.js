@@ -33,6 +33,9 @@ export const deleteConversation = async (id) => {
 };
 
 export const getUserById = async (userId) => {
+    if (!userId || userId === '_' || userId === 'undefined') {
+        return { fullName: 'Utilisateur inconnu' };
+    }
     try {
         return await api.get(`/auth/users/${userId}`);
     } catch (error) {

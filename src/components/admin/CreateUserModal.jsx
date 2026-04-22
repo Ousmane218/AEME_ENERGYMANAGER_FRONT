@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { X, MapPin, Loader2, CheckCircle, AlertCircle, Search } from 'lucide-react';
+import { X, MapPin, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { inviteUser } from '../../services/adminService';
-import { searchGeocode } from '../../services/profileService';
+import { StructureSelector } from '../StructureSelector';
 import { cn } from "@/lib/utils";
 
 export const CreateUserModal = ({ show, onClose, onCreated }) => {
@@ -179,83 +179,26 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                                Service Affilié
-                                {localizationStatus === 'success' && (
+                                Structure de Rattachement
+                                {newUserData.serviceLatitude && (
                                     <span className="text-[9px] text-green-600 flex items-center gap-1 normal-case font-bold animate-in fade-in slide-in-from-right-2">
-                                        <CheckCircle size={10} /> Localisé sur la carte
+                                        <CheckCircle size={10} /> Localisation définie
                                     </span>
                                 )}
                             </label>
-                            <div className="relative" ref={suggestionRef}>
-                                <div className="relative group">
-                                    <Input
-                                        type="text"
-                                        required
-                                        className={cn(
-                                            "h-10 text-sm border-gray-200 focus:ring-primary shadow-sm pr-24",
-                                            localizationStatus === 'success' && "border-green-200 bg-green-50/20"
-                                        )}
-                                        value={newUserData.membershipService}
-                                        onChange={e => {
-                                            setNewUserData({...newUserData, membershipService: e.target.value, serviceLatitude: null, serviceLongitude: null});
-                                            setLocalizationStatus('idle');
-                                        }}
-                                        placeholder="ex: SENELEC, ASER, Cabinet..."
-                                    />
-                                    <div className="absolute right-1 top-1 bottom-1 flex items-center">
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant={localizationStatus === 'success' ? 'ghost' : 'secondary'}
-                                            disabled={localizing || !newUserData.membershipService || newUserData.membershipService.length < 3}
-                                            onClick={handleAutoLocalize}
-                                            className={cn(
-                                                "h-full px-3 text-[9px] font-black uppercase tracking-tighter gap-1.5 rounded-md transition-all",
-                                                localizationStatus === 'success' && "text-green-600 hover:bg-green-100",
-                                                localizationStatus === 'error' && "text-red-500"
-                                            )}
-                                        >
-                                            {localizing ? (
-                                                <Loader2 size={12} className="animate-spin" />
-                                            ) : localizationStatus === 'success' ? (
-                                                <MapPin size={12} className="fill-green-600" />
-                                            ) : localizationStatus === 'error' ? (
-                                                <AlertCircle size={12} />
-                                            ) : (
-                                                <MapPin size={12} />
-                                            )}
-                                            {localizing ? '...' : localizationStatus === 'success' ? 'Épinglé' : localizationStatus === 'error' ? 'Échec' : 'Localiser'}
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* Autocomplete Suggestions Dropdown */}
-                                {showSuggestions && suggestions.length > 0 && (
-                                    <div className="absolute z-[110] left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
-                                        {suggestions.map((suggestion, index) => (
-                                            <button
-                                                key={index}
-                                                type="button"
-                                                onClick={() => handleSelectSuggestion(suggestion)}
-                                                className="w-full text-left px-4 py-3 hover:bg-primary/5 transition-colors border-b last:border-0 border-gray-50 group flex items-start gap-3"
-                                            >
-                                                <Search size={14} className="mt-0.5 text-gray-300 group-hover:text-primary transition-colors" />
-                                                <div className="min-w-0">
-                                                    <p className="text-[11px] font-bold text-gray-900 group-hover:text-primary transition-colors truncate">
-                                                        {suggestion.display_name.split(',')[0]}
-                                                    </p>
-                                                    <p className="text-[9px] text-gray-400 truncate">
-                                                        {suggestion.display_name.split(',').slice(1).join(',').trim()}
-                                                    </p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            {localizationStatus === 'error' && (
-                                <p className="text-[9px] text-red-500 font-bold mt-1 animate-in fade-in">
-                                    Impossible de trouver ce lieu. Veuillez préciser (ex: SENELEC Dakar).
+                            <StructureSelector 
+                                onSelect={(s) => {
+                                    setNewUserData({
+                                        ...newUserData,
+                                        membershipService: s.name,
+                                        serviceLatitude: s.latitude,
+                                        serviceLongitude: s.longitude
+                                    });
+                                }}
+                            />
+                            {!newUserData.membershipService && (
+                                <p className="text-[9px] text-amber-600 font-bold mt-1">
+                                    Veuillez sélectionner une structure pour la géolocalisation.
                                 </p>
                             )}
                         </div>

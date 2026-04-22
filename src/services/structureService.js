@@ -1,34 +1,45 @@
 import api from "../lib/apiClient";
 
 /**
- * Service to manage Structures (Bureaus/Departments)
- * Interacts with the backend /structures endpoints
+ * Service for managing energy management structures
  */
 
-/**
- * Fetches all available structures.
- * Returns an empty array if the response is malformed to prevent UI crashes.
- */
 export const getAllStructures = async () => {
     try {
-        const data = await api.get('/structures');
-        // Defensive check: ensure the UI always receives an array
-        return Array.isArray(data) ? data : [];
+        return await api.get('/structures');
     } catch (error) {
-        console.error("Error fetching structures:", error);
         throw new Error('Erreur lors du chargement des structures');
     }
 };
 
-/**
- * Fetches a specific structure by its unique ID.
- */
 export const getStructureById = async (id) => {
     try {
-        if (!id) throw new Error('ID de structure manquant');
         return await api.get(`/structures/${id}`);
     } catch (error) {
-        console.error(`Error fetching structure ${id}:`, error);
         throw new Error('Structure introuvable');
+    }
+};
+
+export const createStructure = async (data) => {
+    try {
+        return await api.post('/structures', data);
+    } catch (error) {
+        throw new Error('Erreur lors de la création de la structure');
+    }
+};
+
+export const updateStructure = async (id, data) => {
+    try {
+        return await api.patch(`/structures/${id}`, data);
+    } catch (error) {
+        throw new Error('Erreur lors de la mise à jour de la structure');
+    }
+};
+
+export const deleteStructure = async (id) => {
+    try {
+        return await api.delete(`/structures/${id}`);
+    } catch (error) {
+        throw new Error('Erreur lors de la suppression de la structure');
     }
 };
