@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getReportsByUser, getAllUsers, deleteUser, approveReport, rejectReport } from '../services/adminService';
+import { getReportsByUser, getUserById, deleteUser, approveReport, rejectReport } from '../services/adminService';
 import { getOrCreateConversation } from '../services/chatService';
 
 export const useAdminUser = (userId, navigate) => {
@@ -13,11 +13,11 @@ export const useAdminUser = (userId, navigate) => {
         const fetchData = async () => {
             try {
                 setLoading(true);
-                const [allUsers, reportsData] = await Promise.all([
-                    getAllUsers(),
+                const [userData, reportsData] = await Promise.all([
+                    getUserById(userId),
                     getReportsByUser(userId)
                 ]);
-                const userData = allUsers.find(u => u.id === userId);
+                
                 setUser(userData);
                 setReports(reportsData || []);
                 const approved = (reportsData || []).filter(r => r.reportStatus === 'APPROVED').length;

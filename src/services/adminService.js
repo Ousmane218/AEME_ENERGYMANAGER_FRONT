@@ -1,11 +1,25 @@
 import api from "../lib/apiClient";
 
 // USERS MANAGEMENT
-export const getAllUsers = async () => {
+export const getAllUsers = async (first = 0, max = 20, search = '') => {
     try {
-        return await api.get('/admin/users');
+        const params = { first, max };
+        if (search) params.search = search;
+        
+        const data = await api.get('/admin/users', { params });
+        // The backend returns a wrapper { users: [], total: 0, ... }
+        return data;
     } catch (error) {
         throw new Error('Erreur lors du chargement des utilisateurs');
+    }
+};
+
+export const getUserById = async (userId) => {
+    try {
+        // Direct access to the full user profile
+        return await api.get(`/auth/users/${userId}`);
+    } catch (error) {
+        throw new Error('Erreur lors du chargement de l\'utilisateur');
     }
 };
 

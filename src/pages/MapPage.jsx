@@ -53,7 +53,8 @@ const MapPage = () => {
             if (currentUser?.isAdmin) {
                 setEnriching(true);
                 try {
-                    const allUsers = await getAllUsers();
+                    const data = await getAllUsers(0, 1000);
+                    const allUsers = data.users || [];
                     const existingIds = new Set(users.map(u => u.id));
                     
                     // Find users with a service who are NOT in the active locations list
@@ -291,8 +292,8 @@ const MapPage = () => {
                         </div>
                     ) : (
                         <MapContainer
-                            center={DAKAR_CENTER}
-                            zoom={12}
+                            center={SENEGAL_CENTER}
+                            zoom={7}
                             minZoom={7}
                             maxBounds={SENEGAL_BOUNDS}
                             maxBoundsViscosity={1.0}

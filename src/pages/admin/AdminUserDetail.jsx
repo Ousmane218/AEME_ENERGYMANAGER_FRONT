@@ -5,7 +5,7 @@ import {
     FileText, Download, CheckCircle, XCircle, Loader2, TrendingUp,
     Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, Map, MapPin, Search
 } from 'lucide-react';
-import { getReportsByUser, deleteUser, approveReport, rejectReport, getAllUsers, updateUserMembership } from '../../services/adminService';
+import { getReportsByUser, deleteUser, approveReport, rejectReport, getUserById, updateUserMembership } from '../../services/adminService';
 import { downloadReport } from '../../services/reportService';
 import { getOrCreateConversation } from '../../services/chatService';
 import { searchGeocode } from '../../services/profileService';
@@ -43,22 +43,14 @@ const AdminUserDetail = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const [allUsers, reportsData] = await Promise.all([
-                getAllUsers(),
+            const [userData, reportsData] = await Promise.all([
+                getUserById(userId),
                 getReportsByUser(userId)
             ]);
-            const userData = allUsers.find(u => u.id === userId);
+            
             setUser(userData);
+            setUserProfile(userData);
             setReports(reportsData);
-
-            // Récupère le profil complet avec les nouveaux attributs
-            const profileRes = await fetch(`${API_URL}/auth/users/${userId}`, {
-                headers: { Authorization: `Bearer ${keycloak.token}` }
-            });
-            if (profileRes.ok) {
-                const profileData = await profileRes.json();
-                setUserProfile(profileData);
-            }
 
             const approved = reportsData.filter(r => r.reportStatus === 'APPROVED').length;
             const rejected = reportsData.filter(r => r.reportStatus === 'REJECTED').length;

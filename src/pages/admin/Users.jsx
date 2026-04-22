@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Trash2, FileText, Search, Loader2, Plus, X, Shield, Filter, MoreHorizontal, Mail, ExternalLink } from 'lucide-react';
 import { getAllUsers, deleteUser } from '../../services/adminService';
@@ -21,7 +21,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const Users = () => {
+    const topRef = useRef(null);
     const [users, setUsers] = useState([]);
+    const [totalUsers, setTotalUsers] = useState(0);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [pageSize] = useState(20);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -29,14 +33,22 @@ const Users = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        const timer = setTimeout(() => {
+            fetchUsers(0, searchTerm);
+            setCurrentPage(0);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
-    const fetchUsers = async () => {
+    const fetchUsers = async (page = 0, search = searchTerm) => {
         try {
             setLoading(true);
-            const data = await getAllUsers();
-            setUsers(data);
+            const first = page * pageSize;
+            const data = await getAllUsers(first, pageSize, search);
+            
+            // Handle the paginated response structure
+            setUsers(data.users || []);
+            setTotalUsers(data.total || 0);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -44,33 +56,35 @@ const Users = () => {
         }
     };
 
+    const handlePageChange = (newPage) => {
+        setCurrentPage(newPage);
+        fetchUsers(newPage);
+        // Small delay to ensure the DOM has updated before scrolling
+        setTimeout(() => {
+            topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    };
+
     const handleDeleteUser = async (userId) => {
         if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
         try {
             await deleteUser(userId);
-            setUsers(users.filter(u => u.id !== userId));
+            fetchUsers(currentPage);
         } catch (err) {
             alert('Erreur lors de la suppression: ' + err.message);
         }
     };
 
-    const filteredUsers = useMemo(() => {
-        if (!searchTerm) return users;
-        const lowerSearch = searchTerm.toLowerCase();
-        return users.filter(user => 
-            user.fullName?.toLowerCase().includes(lowerSearch) ||
-            user.email?.toLowerCase().includes(lowerSearch)
-        );
-    }, [users, searchTerm]);
 
-    if (loading) return (
+
+    if (loading && users.length === 0) return (
         <div className="flex items-center justify-center min-h-[400px]">
             <Loader2 className="animate-spin text-primary" size={40} />
         </div>
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div ref={topRef} className="space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -84,7 +98,7 @@ const Users = () => {
                         variant="outline" 
                         size="sm" 
                         className="gap-2 font-semibold shadow-sm"
-                        onClick={fetchUsers}
+                        onClick={() => fetchUsers(currentPage)}
                     >
                         Rafraîchir
                     </Button>
@@ -104,7 +118,7 @@ const Users = () => {
                         <div className="relative w-full md:w-96">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                             <Input
-                                placeholder="Rechercher par nom, email ou service..."
+                                placeholder="Rechercher par nom, email..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 h-10 text-sm bg-white shadow-sm border-gray-200"
@@ -112,13 +126,13 @@ const Users = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <Badge variant="outline" className="h-6 px-3 text-[10px] font-bold uppercase tracking-wider bg-white border-gray-200 shadow-sm">
-                                {filteredUsers.length} Utilisateurs trouvés
+                                {totalUsers} Utilisateurs au total
                             </Badge>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    {loading ? (
+                    {loading && users.length === 0 ? (
                         <div className="p-8 space-y-3">
                             <Skeleton className="h-12 w-full" />
                             <Skeleton className="h-12 w-full" />
@@ -128,9 +142,9 @@ const Users = () => {
                         <div className="p-12 text-center text-destructive flex flex-col items-center gap-2">
                             <X size={32} className="opacity-20" />
                             <p className="font-medium">{error}</p>
-                            <Button variant="outline" size="sm" onClick={fetchUsers}>Réessayer</Button>
+                            <Button variant="outline" size="sm" onClick={() => fetchUsers(currentPage)}>Réessayer</Button>
                         </div>
-                    ) : filteredUsers.length === 0 ? (
+                    ) : users.length === 0 ? (
                         <div className="p-20 text-center text-muted-foreground">
                             <User size={48} className="mx-auto mb-4 opacity-10" />
                             <p className="text-lg font-medium">Aucun utilisateur trouvé</p>
@@ -149,7 +163,7 @@ const Users = () => {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                {filteredUsers.map((user) => (
+                                {users.map((user) => (
                                     <TableRow 
                                         key={user.id}
                                         className="hover:bg-gray-50/80 transition-colors group"
@@ -224,7 +238,7 @@ const Users = () => {
 
                         {/* Mobile Card View */}
                         <div className="md:hidden divide-y divide-gray-100">
-                            {filteredUsers.map((user) => (
+                            {users.map((user) => (
                                 <div key={user.id} className="p-5 space-y-4 hover:bg-gray-50/50 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <Avatar className="h-12 w-12 border shadow-sm">
@@ -277,6 +291,32 @@ const Users = () => {
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                        {/* Pagination Footer */}
+                        <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between bg-gray-50/50 gap-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                Page {currentPage + 1} sur {Math.ceil(totalUsers / pageSize) || 1}
+                            </p>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 0 || loading}
+                                    className="h-8 text-[10px] font-black uppercase tracking-widest rounded-lg"
+                                >
+                                    Précédent
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={(currentPage + 1) * pageSize >= totalUsers || loading}
+                                    className="h-8 text-[10px] font-black uppercase tracking-widest rounded-lg"
+                                >
+                                    Suivant
+                                </Button>
+                            </div>
                         </div>
                         </>
                     )}

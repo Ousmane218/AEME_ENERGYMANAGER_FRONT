@@ -609,8 +609,8 @@ const Profile = () => {
 
                         <div style={{ height: '360px' }}>
                             <MapContainer 
-                                center={(pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1])) ? pickedCoords : DAKAR_CENTER} 
-                                zoom={pickedCoords ? 14 : 12} 
+                                center={(pickedCoords && !isNaN(pickedCoords[0]) && !isNaN(pickedCoords[1])) ? pickedCoords : SENEGAL_CENTER} 
+                                zoom={pickedCoords ? 14 : 7} 
                                 minZoom={7}
                                 maxBounds={SENEGAL_BOUNDS}
                                 maxBoundsViscosity={1.0}
