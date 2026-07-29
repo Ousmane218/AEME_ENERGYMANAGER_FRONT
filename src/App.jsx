@@ -12,6 +12,7 @@ import MeetingRoom from './pages/meetings/meetingRoom';
 import Chat from './pages/chat/Chat';
 import Profile from './pages/Profile';
 import MapPage from './pages/MapPage';
+import LandingPage from './pages/LandingPage';
 import Users from './pages/admin/Users';
 import Structures from './pages/admin/Structures';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
@@ -25,8 +26,8 @@ const AdminRoute = ({ children }) => {
     return user?.isAdmin ? children : <Navigate to="/dashboard" replace />;
 };
 
-function App() {
-    const { isLoading } = useAuth();
+const ProtectedLayout = ({ children }) => {
+    const { isAuthenticated, isLoading } = useAuth();
     const location = useLocation();
     const isChat = location.pathname === '/chat';
 
@@ -38,11 +39,14 @@ function App() {
         );
     }
 
+    if (!isAuthenticated) {
+        return <Navigate to="/" replace />;
+    }
+
     return (
-        <ErrorBoundary>
-            <div className="flex h-screen overflow-hidden bg-gray-50/50">
-                {/* Professional Sidebar */}
-                <Sidebar />
+        <div className="flex h-screen overflow-hidden bg-gray-50/50">
+            {/* Professional Sidebar */}
+            <Sidebar />
 
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Mobile Top Bar */}
@@ -59,8 +63,23 @@ function App() {
                         "h-full",
                         !isChat && "w-full xl:max-w-[1400px] 2xl:max-w-[1600px] mx-auto"
                     )}>
+                        {children}
+                    </div>
+                </main>
+            </div>
+        </div>
+    );
+};
+
+function App() {
+    return (
+        <ErrorBoundary>
+            <Routes>
+                <Route path="/" element={<LandingPage />} />
+                
+                <Route path="/*" element={
+                    <ProtectedLayout>
                         <Routes>
-                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/reports" element={<ReportsList />} />
                             <Route path="/reports/new" element={<NewReport />} />
@@ -87,10 +106,9 @@ function App() {
                                 element={<AdminRoute><AdminUserDetail /></AdminRoute>} 
                             />
                         </Routes>
-                    </div>
-                </main>
-            </div>
-        </div>
+                    </ProtectedLayout>
+                } />
+            </Routes>
         </ErrorBoundary>
     );
 }
