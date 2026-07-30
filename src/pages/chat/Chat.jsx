@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle } from 'lucide-react';
+import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle, Users, Briefcase, GraduationCap } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
     getMyConversations,
@@ -20,6 +20,28 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+
+const GROUP_TYPES = new Set(["GLOBAL", "COHORT", "STRUCTURE"]);
+
+const isGroupConversation = (conversation) =>
+    GROUP_TYPES.has(conversation?.type);
+
+const isDirectConversation = (conversation) =>
+    conversation?.type === "DIRECT" ||
+    (
+        !conversation?.type &&
+        Boolean(conversation?.userOneId || conversation?.userTwoId)
+    );
+
+const getConversationTypeLabel = (type) => {
+    switch (type) {
+        case 'GLOBAL': return 'Groupe général';
+        case 'COHORT': return 'Cohorte';
+        case 'STRUCTURE': return 'Structure';
+        case 'DIRECT': return 'Conversation privée';
+        default: return 'Conversation';
+    }
+};
 
 const Chat = () => {
     const { user } = useAuth();
@@ -53,6 +75,62 @@ const Chat = () => {
         return () => disconnectWebSocket();
     }, [selectedConv]);
 
+    const getOtherUserIdFromConv = (conv) => {
+        if (!user?.id || !isDirectConversation(conv)) return null;
+        return conv.userOneId === user.id ? conv.userTwoId : conv.userOneId;
+    };
+
+    const getConversationDisplayName = (conv) => {
+        if (isDirectConversation(conv)) {
+            const otherId = getOtherUserIdFromConv(conv);
+            if (!otherId) return 'Utilisateur';
+            return userNames[otherId] || 'Chargement...';
+        }
+
+        const name = conv?.name?.trim();
+        if (name) return name;
+
+        if (conv?.type === 'GLOBAL') return 'Groupe général AEME';
+
+        if (conv?.type === 'COHORT') {
+            const refId = conv.referenceId?.trim();
+            if (refId && refId.length < 20) return `Cohorte ${refId}`;
+            return 'Groupe de cohorte';
+        }
+
+        if (conv?.type === 'STRUCTURE') {
+            const refId = conv.referenceId?.trim();
+            if (refId && refId.length < 20) return `Structure ${refId}`;
+            return 'Groupe de structure';
+        }
+
+        return 'Conversation';
+    };
+
+    const getMessageSenderName = (message, conversation) => {
+        if (isGroupConversation(conversation)) {
+            return message.senderFullName?.trim() || "Auteur inconnu";
+        }
+        return (
+            userNames[message.senderId] ||
+            message.senderFullName?.trim() ||
+            "Utilisateur"
+        );
+    };
+
+    const renderGroupAvatar = (conv) => {
+        switch (conv?.type) {
+            case 'GLOBAL':
+                return <Users className="h-6 w-6 text-primary" />;
+            case 'COHORT':
+                return <GraduationCap className="h-6 w-6 text-primary" />;
+            case 'STRUCTURE':
+                return <Briefcase className="h-6 w-6 text-primary" />;
+            default:
+                return <Users className="h-6 w-6 text-primary" />;
+        }
+    };
+
     const fetchUserName = async (userId) => {
         if (!userId || userNames[userId]) return;
         try {
@@ -68,7 +146,15 @@ const Chat = () => {
             setLoading(true);
             const data = await getMyConversations();
             setConversations(data);
-            data.forEach(conv => fetchUserName(getOtherUserIdFromConv(conv)));
+
+            data.forEach(conv => {
+                if (isDirectConversation(conv)) {
+                    const otherUserId = getOtherUserIdFromConv(conv);
+                    if (otherUserId) {
+                        fetchUserName(otherUserId);
+                    }
+                }
+            });
 
             const targetConvId = location.state?.conversationId;
 
@@ -121,7 +207,12 @@ const Chat = () => {
                 const exists = prev.find(c => c.id === conv.id);
                 return exists ? prev : [conv, ...prev];
             });
-            fetchUserName(newUserId.trim());
+            if (isDirectConversation(conv)) {
+                const otherUserId = getOtherUserIdFromConv(conv);
+                if (otherUserId) {
+                    fetchUserName(otherUserId);
+                }
+            }
             setSelectedConv(conv);
             setShowNewConv(false);
             setNewUserId('');
@@ -148,19 +239,22 @@ const Chat = () => {
         }
     };
 
-    const getOtherUserIdFromConv = (conv) => {
-        return conv.userOneId === user?.id ? conv.userTwoId : conv.userOneId;
-    };
-
     const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('fr-FR', {
         hour: '2-digit', minute: '2-digit'
     });
 
     const filteredConversations = conversations.filter(conv => {
-        const otherUserId = getOtherUserIdFromConv(conv);
-        const name = userNames[otherUserId] || '';
-        return name.toLowerCase().includes(search.toLowerCase()) ||
-               otherUserId.toLowerCase().includes(search.toLowerCase());
+        const displayName = getConversationDisplayName(conv);
+        const searchLower = search.toLowerCase();
+
+        if (displayName.toLowerCase().includes(searchLower)) return true;
+
+        if (isDirectConversation(conv)) {
+            const otherUserId = getOtherUserIdFromConv(conv);
+            if (otherUserId?.toLowerCase().includes(searchLower)) return true;
+        }
+
+        return false;
     });
 
     return (
@@ -237,28 +331,40 @@ const Chat = () => {
                         </div>
                     ) : (
                         filteredConversations.map((conv) => {
-                            const otherUserId = getOtherUserIdFromConv(conv);
+                            const isDirect = isDirectConversation(conv);
+                            const displayName = getConversationDisplayName(conv);
                             const isSelected = selectedConv?.id === conv.id;
+                            const typeLabel = getConversationTypeLabel(conv?.type);
+
                             return (
                                 <div
                                     key={conv.id}
                                     onClick={() => handleSelectConversation(conv)}
                                     className={cn(
                                         "group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2",
-                                        isSelected 
-                                            ? "bg-white border-primary/10 shadow-lg shadow-black/5 -translate-y-0.5" 
+                                        isSelected
+                                            ? "bg-white border-primary/10 shadow-lg shadow-black/5 -translate-y-0.5"
                                             : "border-transparent hover:bg-white hover:border-gray-100"
                                     )}
                                 >
                                     <div className="relative">
-                                        <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                                            <AvatarFallback className={cn(
-                                                "font-bold text-xs",
-                                                isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary"
+                                        {isDirect ? (
+                                            <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                                <AvatarFallback className={cn(
+                                                    "font-bold text-xs",
+                                                    isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary"
+                                                )}>
+                                                    {(displayName || 'C').charAt(0)}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                        ) : (
+                                            <div className={cn(
+                                                "h-12 w-12 rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-gray-100",
+                                                isSelected ? "bg-primary/10" : "bg-gray-50"
                                             )}>
-                                                {(userNames[otherUserId] || 'C').charAt(0)}
-                                            </AvatarFallback>
-                                        </Avatar>
+                                                {renderGroupAvatar(conv)}
+                                            </div>
+                                        )}
                                         <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white ring-1 ring-black/5" />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -267,20 +373,22 @@ const Chat = () => {
                                                 "font-bold text-sm truncate",
                                                 isSelected ? "text-primary" : "text-gray-900"
                                             )}>
-                                                {userNames[otherUserId] || 'Chargement...'}
+                                                {displayName}
                                             </p>
                                             <Clock size={10} className="text-gray-300" />
                                         </div>
-                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-40">
-                                            ID: {otherUserId.substring(0, 12)}...
+                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-60">
+                                            {typeLabel}
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={(e) => handleDeleteConversation(e, conv.id)}
-                                        className="opacity-0 group-hover:opacity-100 transition-all p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                                    >
-                                        <X size={14} />
-                                    </button>
+                                    {isDirect && (
+                                        <button
+                                            onClick={(e) => handleDeleteConversation(e, conv.id)}
+                                            className="opacity-0 group-hover:opacity-100 transition-all p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })
@@ -307,26 +415,35 @@ const Chat = () => {
                         {/* Chat Header */}
                         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
                             <div className="flex items-center gap-4">
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
                                     onClick={() => setShowMobileMessages(false)}
                                     className="md:hidden h-10 w-10 text-gray-400 hover:text-primary rounded-xl"
                                 >
                                     <ArrowLeft size={20} />
                                 </Button>
                                 <div className="flex items-center gap-3">
-                                    <Avatar className="h-10 w-10 border-2 border-primary/10">
-                                        <AvatarFallback className="bg-primary/5 text-primary font-bold text-sm">
-                                            {(userNames[getOtherUserIdFromConv(selectedConv)] || 'U').charAt(0).toUpperCase()}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    {isDirectConversation(selectedConv) ? (
+                                        <Avatar className="h-10 w-10 border-2 border-primary/10">
+                                            <AvatarFallback className="bg-primary/5 text-primary font-bold text-sm">
+                                                {(getConversationDisplayName(selectedConv) || 'U').charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    ) : (
+                                        <div className="h-10 w-10 rounded-full flex items-center justify-center border-2 border-primary/10 bg-primary/5">
+                                            {renderGroupAvatar(selectedConv)}
+                                        </div>
+                                    )}
                                     <div>
                                         <h3 className="text-base font-bold text-gray-900">
-                                            {userNames[getOtherUserIdFromConv(selectedConv)] || 'Utilisateur'}
+                                            {getConversationDisplayName(selectedConv)}
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                                            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">
+                                                {getConversationTypeLabel(selectedConv?.type)}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -350,6 +467,8 @@ const Chat = () => {
                             ) : (
                                 messages.map((msg, idx) => {
                                     const isMe = msg.senderId === user?.id;
+                                    const senderName = getMessageSenderName(msg, selectedConv);
+
                                     return (
                                         <div
                                             key={msg.id || idx}
@@ -360,13 +479,13 @@ const Chat = () => {
                                         >
                                             <div className={cn(
                                                 "max-w-[85%] md:max-w-[70%] p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed transition-all hover:shadow-md",
-                                                isMe 
-                                                    ? "bg-primary text-white rounded-tr-none shadow-primary/10" 
+                                                isMe
+                                                    ? "bg-primary text-white rounded-tr-none shadow-primary/10"
                                                     : "bg-white text-gray-800 rounded-tl-none border border-gray-100"
                                             )}>
                                                 {!isMe && (
                                                     <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2 opacity-60">
-                                                        {userNames[msg.senderId] || 'Expert'}
+                                                        {senderName}
                                                     </p>
                                                 )}
                                                 <p>{msg.content}</p>
@@ -418,4 +537,3 @@ const Chat = () => {
 };
 
 export default Chat;
-;
