@@ -34,20 +34,12 @@ const PlatformCapabilities = () => {
 
                 {/* Capability 2: Cartographie (Full Width Green background variation) */}
                 <div className="relative w-full bg-primary text-white py-20 px-8 lg:px-16 flex flex-col lg:flex-row-reverse items-center gap-12 lg:gap-24 shadow-sm">
-                    {/* Abstract Map Preview Component Representation */}
-                    <div className="w-full lg:w-1/2 aspect-video bg-white/5 border border-white/10 relative overflow-hidden backdrop-blur-sm flex items-center justify-center p-8 group">
-                         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
-                         <div className="bg-white/10 p-4 backdrop-blur-md border border-white/20 transition-transform duration-700 group-hover:-translate-y-2">
-                             <div className="flex items-center gap-4 mb-4 border-b border-white/20 pb-4">
-                                <MapPin className="text-accent" size={24} />
-                                <div>
-                                    <p className="text-xs font-bold uppercase tracking-widest text-white">Couverture Nationale</p>
-                                    <p className="text-xs text-gray-300">Aperçu cartographique</p>
-                                </div>
-                             </div>
-                             <div className="w-48 h-2 bg-white/20 rounded-full mb-2" />
-                             <div className="w-32 h-2 bg-white/10 rounded-full" />
-                         </div>
+                    <div className="w-full lg:w-1/2 aspect-video relative overflow-hidden group shadow-md border border-white/10 bg-white/5">
+                        <img 
+                            src="/carte.jpeg" 
+                            alt="Cartographie Nationale" 
+                            className="object-cover object-center w-full h-full opacity-90 transition-transform duration-1000 group-hover:scale-105 group-hover:opacity-100"
+                        />
                     </div>
                     <div className="w-full lg:w-1/2 flex flex-col justify-center">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-accent mb-4">02. Localisation</span>

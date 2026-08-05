@@ -26,8 +26,8 @@ const MissionStatement = () => {
                         {/* Placeholder Small Image */}
                         <div className="aspect-square w-full mt-4 bg-gray-200 overflow-hidden relative">
                             <img 
-                                src="https://images.unsplash.com/photo-1541888081622-1d57574b5936?q=80&w=800&auto=format&fit=crop" 
-                                alt="Administration" 
+                                src="/Efficacite-energetique.jpg" 
+                                alt="Efficacité énergétique" 
                                 className="object-cover w-full h-full grayscale opacity-80 hover:grayscale-0 hover:opacity-100 transition-all duration-700 hover:scale-105"
                             />
                             <div className="absolute bottom-4 left-4">

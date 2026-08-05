@@ -42,11 +42,11 @@ const LandingHero = () => {
             </div>
 
             {/* Right Visual (45%) */}
-            <div className="w-full md:w-[45%] min-h-[400px] md:min-h-full relative bg-gray-100 hidden md:block">
+            <div className="w-full md:w-[45%] min-h-[400px] md:min-h-full relative bg-white hidden md:block">
                 {/* Placeholder Image: Solar installation in Africa / Admin building */}
                 <div 
-                    className="absolute inset-0 bg-cover bg-center transition-transform duration-[10s] hover:scale-[1.03]"
-                    style={{ backgroundImage: "url('https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?q=80&w=2000&auto=format&fit=crop')" }} 
+                    className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-[10000ms] hover:scale-[1.03]"
+                    style={{ backgroundImage: "url('/laanding1.jpeg')" }} 
                 />
                 
                 {/* Elegant Overlay */}
