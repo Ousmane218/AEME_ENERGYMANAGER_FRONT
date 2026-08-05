@@ -7,7 +7,8 @@ import {
     getMessages,
     getOrCreateConversation,
     deleteConversation,
-    getUserById
+    getUserById,
+    getConversationCounterpart
 } from '../../services/chatService';
 import {
     connectWebSocket,
@@ -54,7 +55,8 @@ const Chat = () => {
     const [newUserId, setNewUserId] = useState('');
     const [showNewConv, setShowNewConv] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [userNames, setUserNames] = useState({});
+    const [counterpartNames, setCounterpartNames] = useState({});
+    const fetchingCounterparts = useRef(new Set());
     const [showMobileMessages, setShowMobileMessages] = useState(false);
     const messagesEndRef = useRef(null);
 
@@ -82,9 +84,7 @@ const Chat = () => {
 
     const getConversationDisplayName = (conv) => {
         if (isDirectConversation(conv)) {
-            const otherId = getOtherUserIdFromConv(conv);
-            if (!otherId) return 'Utilisateur';
-            return userNames[otherId] || 'Chargement...';
+            return counterpartNames[conv.id] || 'Chargement...';
         }
 
         const name = conv?.name?.trim();
@@ -112,9 +112,9 @@ const Chat = () => {
             return message.senderFullName?.trim() || "Auteur inconnu";
         }
         return (
-            userNames[message.senderId] ||
-            message.senderFullName?.trim() ||
-            "Utilisateur"
+            message.senderId === user?.id
+                ? (user?.fullName || "Moi")
+                : (counterpartNames[conversation?.id] || message.senderFullName?.trim() || "Utilisateur")
         );
     };
 
@@ -131,13 +131,16 @@ const Chat = () => {
         }
     };
 
-    const fetchUserName = async (userId) => {
-        if (!userId || userNames[userId]) return;
+    const fetchCounterpart = async (convId) => {
+        if (!convId || counterpartNames[convId] || fetchingCounterparts.current.has(convId)) return;
+        fetchingCounterparts.current.add(convId);
         try {
-            const data = await getUserById(userId);
-            setUserNames(prev => ({ ...prev, [userId]: data.fullName || 'Utilisateur' }));
+            const data = await getConversationCounterpart(convId);
+            setCounterpartNames(prev => ({ ...prev, [convId]: data?.data?.fullName || data?.fullName || 'Utilisateur' }));
         } catch (err) {
-            setUserNames(prev => ({ ...prev, [userId]: 'Utilisateur' }));
+            setCounterpartNames(prev => ({ ...prev, [convId]: 'Utilisateur' }));
+        } finally {
+            fetchingCounterparts.current.delete(convId);
         }
     };
 
@@ -149,10 +152,7 @@ const Chat = () => {
 
             data.forEach(conv => {
                 if (isDirectConversation(conv)) {
-                    const otherUserId = getOtherUserIdFromConv(conv);
-                    if (otherUserId) {
-                        fetchUserName(otherUserId);
-                    }
+                    fetchCounterpart(conv.id);
                 }
             });
 
@@ -208,10 +208,7 @@ const Chat = () => {
                 return exists ? prev : [conv, ...prev];
             });
             if (isDirectConversation(conv)) {
-                const otherUserId = getOtherUserIdFromConv(conv);
-                if (otherUserId) {
-                    fetchUserName(otherUserId);
-                }
+                fetchCounterpart(conv.id);
             }
             setSelectedConv(conv);
             setShowNewConv(false);
