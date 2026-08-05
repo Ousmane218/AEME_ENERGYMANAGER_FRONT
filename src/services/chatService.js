@@ -42,3 +42,15 @@ export const getUserById = async (userId) => {
         return { fullName: 'Utilisateur' };
     }
 };
+
+export const getConversationCounterpart = async (conversationId) => {
+    if (!conversationId) {
+        return { fullName: 'Utilisateur' };
+    }
+    try {
+        const response = await api.get(`/chat/conversations/${conversationId}/counterpart`);
+        return response; // Assuming interceptor returns data directly or we return the whole object
+    } catch (error) {
+        return { fullName: 'Utilisateur' };
+    }
+};
