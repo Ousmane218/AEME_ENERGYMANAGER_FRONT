@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     keycloak
       .init({
-        onLoad: 'login-required',
+        onLoad: 'check-sso',
         checkLoginIframe: false,
       })
       .then((authenticated) => {
@@ -48,12 +48,17 @@ export const AuthProvider = ({ children }) => {
     keycloak.logout({ redirectUri: window.location.origin });
   };
 
+  const login = () => {
+    keycloak.login();
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
       token,
       isAuthenticated: !!user,
       isLoading,
+      login,
       logout,
     }}>
       {children}
