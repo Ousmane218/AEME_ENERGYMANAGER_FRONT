@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle, Users, Briefcase, GraduationCap } from 'lucide-react';
+import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle, Users, Briefcase, GraduationCap, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
     getMyConversations,
@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { AdminGroupsModal } from './components/AdminGroupsModal';
 
 const GROUP_TYPES = new Set(["GLOBAL", "COHORT", "STRUCTURE"]);
 
@@ -54,6 +55,7 @@ const Chat = () => {
     const [search, setSearch] = useState('');
     const [newUserId, setNewUserId] = useState('');
     const [showNewConv, setShowNewConv] = useState(false);
+    const [showAdminModal, setShowAdminModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [counterpartNames, setCounterpartNames] = useState({});
     const fetchingCounterparts = useRef(new Set());
@@ -267,14 +269,25 @@ const Chat = () => {
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 tracking-tight">Messagerie</h2>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setShowNewConv(!showNewConv)}
-                        className="h-10 w-10 rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
-                    >
-                        <Plus size={18} />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {user?.isAdmin && (
+                            <button
+                                onClick={() => setShowAdminModal(true)}
+                                className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
+                                title="Administration des groupes"
+                            >
+                                <Settings size={20} />
+                            </button>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setShowNewConv(!showNewConv)}
+                            className="h-10 w-10 rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
+                        >
+                            <Plus size={18} />
+                        </Button>
+                    </div>
                 </div>
 
                 {/* New Conversation Modal/Overlay (simplified directly in sidebar) */}
@@ -529,6 +542,11 @@ const Chat = () => {
                     </>
                 )}
             </div>
+
+            {/* Modal Admin Groups */}
+            {showAdminModal && (
+                <AdminGroupsModal onClose={() => setShowAdminModal(false)} />
+            )}
         </div>
     );
 };
