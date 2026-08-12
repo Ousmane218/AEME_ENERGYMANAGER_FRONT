@@ -10,7 +10,7 @@ export const createReport = async (formData) => {
             }
         });
         return data;
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors de la création du rapport');
     }
 };
@@ -18,7 +18,7 @@ export const createReport = async (formData) => {
 export const getMyReports = async () => {
     try {
         return await api.get('/reports');
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du chargement des rapports');
     }
 };
@@ -26,7 +26,7 @@ export const getMyReports = async () => {
 export const getReportById = async (id) => {
     try {
         return await api.get(`/reports/${id}`);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du chargement du rapport');
     }
 };
@@ -34,7 +34,7 @@ export const getReportById = async (id) => {
 export const deleteReport = async (id) => {
     try {
         return await api.delete(`/reports/${id}`);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors de la suppression');
     }
 };
@@ -50,7 +50,7 @@ export const downloadReport = async (id, fileType = 'illustrations', fileName) =
         a.download = fileName;
         a.click();
         window.URL.revokeObjectURL(url);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du téléchargement');
     }
 };
@@ -58,7 +58,7 @@ export const downloadReport = async (id, fileType = 'illustrations', fileName) =
 export const getAllReports = async () => {
     try {
         return await api.get('/reports/all');
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du chargement des rapports');
     }
 };
