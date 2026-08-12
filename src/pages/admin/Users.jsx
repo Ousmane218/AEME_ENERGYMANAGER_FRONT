@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Trash2, FileText, Search, Loader2, Plus, X, Shield, Filter, MoreHorizontal, Mail, ExternalLink } from 'lucide-react';
-import { getAllUsers, deleteUser } from '../../services/adminService';
+import { getAllUsers } from '../../services/adminService';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import { 
     Table, 
@@ -38,9 +38,9 @@ const Users = () => {
             setCurrentPage(0);
         }, 500);
         return () => clearTimeout(timer);
-    }, [searchTerm]);
+    }, [searchTerm, pageSize, fetchUsers]);
 
-    const fetchUsers = async (page = 0, search = searchTerm) => {
+    const fetchUsers = useCallback(async (page = 0, search = searchTerm) => {
         try {
             setLoading(true);
             const first = page * pageSize;
@@ -54,7 +54,7 @@ const Users = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [pageSize, searchTerm]);
 
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
@@ -68,7 +68,7 @@ const Users = () => {
     const handleDeleteUser = async (userId) => {
         if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
         try {
-            await deleteUser(userId);
+            await (userId);
             fetchUsers(currentPage);
         } catch (err) {
             alert('Erreur lors de la suppression: ' + err.message);

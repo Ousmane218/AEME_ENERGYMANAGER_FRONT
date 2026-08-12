@@ -1,15 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
     User, ArrowLeft, Trash2, MessageSquare, Shield,
     FileText, Download, CheckCircle, XCircle, Loader2, TrendingUp,
     Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, Map, MapPin, Search
 } from 'lucide-react';
-import { getReportsByUser, deleteUser, approveReport, rejectReport, getUserById, updateUserMembership } from '../../services/adminService';
-import { downloadReport } from '../../services/reportService';
+import { getReportsByUser, approveReport, rejectReport, getUserById, updateUserActivation } from '../../services/adminService';
 import { getOrCreateConversation } from '../../services/chatService';
 import { searchGeocode } from '../../services/profileService';
-import keycloak from '../../Keycloak';
 import { cn } from "@/lib/utils";
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -22,6 +20,7 @@ const AdminUserDetail = () => {
     const [reports, setReports] = useState([]);
     const [score, setScore] = useState(null);
     const [loading, setLoading] = useState(true);
+
     const [error, setError] = useState(null);
     const [showMembershipModal, setShowMembershipModal] = useState(false);
     const [membershipData, setMembershipData] = useState({
@@ -31,23 +30,22 @@ const AdminUserDetail = () => {
     });
     const [localizing, setLocalizing] = useState(false);
     const [localizationStatus, setLocalizationStatus] = useState('idle');
-    const [saveLoading, setSaveLoading] = useState(false);
-    const [suggestions, setSuggestions] = useState([]);
+        const [suggestions, setSuggestions] = useState([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const suggestionRef = useRef(null);
 
     useEffect(() => {
         fetchData();
-    }, [userId]);
+    }, [localizationStatus, fetchData]);
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const [userData, reportsData] = await Promise.all([
                 getUserById(userId),
                 getReportsByUser(userId)
             ]);
-            
+
             setUser(userData);
             setUserProfile(userData);
             setReports(reportsData);
@@ -56,11 +54,11 @@ const AdminUserDetail = () => {
             const rejected = reportsData.filter(r => r.reportStatus === 'REJECTED').length;
             setScore(approved * 4 - rejected * 5);
         } catch (err) {
-            setError(err.message);
+            setError(err.message || 'Erreur lors du chargement');
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
 
     // Handle debounced search for suggestions
     useEffect(() => {
@@ -70,7 +68,7 @@ const AdminUserDetail = () => {
                     const results = await searchGeocode(`${membershipData.membershipService}, Senegal`);
                     setSuggestions(results || []);
                     setShowSuggestions(true);
-                } catch (err) {
+                } catch {
                     setSuggestions([]);
                 }
             } else {
@@ -80,7 +78,7 @@ const AdminUserDetail = () => {
         }, 600);
 
         return () => clearTimeout(timer);
-    }, [membershipData.membershipService, showMembershipModal]);
+    }, [membershipData.membershipService, showMembershipModal, localizationStatus]);
 
     // Close suggestions on click outside
     useEffect(() => {
@@ -91,7 +89,7 @@ const AdminUserDetail = () => {
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [fetchData]);
 
     const handleSelectSuggestion = (suggestion) => {
         setMembershipData({
@@ -138,31 +136,28 @@ const AdminUserDetail = () => {
     };
 
     const handleSaveMembership = async () => {
-        try {
-            setSaveLoading(true);
-            await updateUserMembership(userId, membershipData);
-            await fetchData(); // Refresh
-            setShowMembershipModal(false);
-        } catch (err) { alert(err.message); }
-        finally { setSaveLoading(false); }
+        alert("La modification d'affiliation n'est plus supportée dans cette version.");
+        setShowMembershipModal(false);
     };
 
     const handleChat = async () => {
         try {
             const conv = await getOrCreateConversation(userId);
             navigate('/chat', { state: { conversationId: conv.id } });
-        } catch (err) {
+        } catch {
             alert('Erreur lors de la création de la conversation');
         }
     };
 
-    const handleDeleteUser = async () => {
-        if (!window.confirm('Supprimer cet utilisateur définitivement ?')) return;
+    const handleToggleActivation = async () => {
+        const action = user?.actif ? 'désactiver' : 'réactiver';
+        if (!window.confirm(`Voulez-vous ${action} cet utilisateur ?`)) return;
         try {
-            await deleteUser(userId);
-            navigate('/admin/users');
+            await updateUserActivation(userId, !user?.actif);
+            fetchData();
         } catch (err) {
-            alert(err.message);
+            const message = err.response?.data?.message || err.response?.data?.error || err.message || 'Erreur lors de la modification';
+            alert(message);
         }
     };
 
@@ -174,8 +169,8 @@ const AdminUserDetail = () => {
             const approved = updated.filter(r => r.reportStatus === 'APPROVED').length;
             const rejected = updated.filter(r => r.reportStatus === 'REJECTED').length;
             setScore(approved * 4 - rejected * 5);
-        } catch (err) {
-            alert(err.message);
+        } catch (e) {
+            alert(e.message);
         }
     };
 
@@ -187,8 +182,8 @@ const AdminUserDetail = () => {
             const approved = updated.filter(r => r.reportStatus === 'APPROVED').length;
             const rejected = updated.filter(r => r.reportStatus === 'REJECTED').length;
             setScore(approved * 4 - rejected * 5);
-        } catch (err) {
-            alert(err.message);
+        } catch (e) {
+            alert(e.message);
         }
     };
 
@@ -201,7 +196,6 @@ const AdminUserDetail = () => {
     if (error) return <div className="p-4 text-red-600">{error}</div>;
 
     const scoreColor = score >= 0 ? 'text-green-700' : 'text-red-700';
-    const scoreBg    = score >= 0 ? 'bg-green-50'    : 'bg-red-50';
 
 
     return (
@@ -226,7 +220,7 @@ const AdminUserDetail = () => {
                         {/* Avatar Area */}
                         <div className="relative shrink-0">
                             <div className="h-32 w-32 rounded-[2.5rem] bg-accent flex items-center justify-center text-white text-5xl font-black shadow-2xl shadow-accent/20 rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                                {user?.fullName ? user.fullName.charAt(0).toUpperCase() : '?'}
+                                {user?.prenom ? user.prenom.charAt(0).toUpperCase() : '?'}
                             </div>
                             <div className="absolute -bottom-2 -right-2 h-10 w-10 bg-white rounded-2xl flex items-center justify-center shadow-lg border-2 border-gray-50 text-primary">
                                 <Shield size={18} />
@@ -236,7 +230,7 @@ const AdminUserDetail = () => {
                         {/* Essential Info */}
                         <div className="flex-1 text-center lg:text-left space-y-2">
                             <h1 className="text-4xl font-black tracking-tighter text-gray-900 uppercase leading-none">
-                                {user?.fullName || '—'}
+                                {user?.prenom} {user?.nom}
                             </h1>
                             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4">
                                 <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
@@ -244,12 +238,12 @@ const AdminUserDetail = () => {
                                     {user?.email || '—'}
                                 </div>
                                 <div className="h-1 w-1 rounded-full bg-gray-300 hidden sm:block" />
-                                <div 
+                                <div
                                     className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary/60 bg-primary/5 px-3 py-1 rounded-lg cursor-pointer hover:bg-primary/10 transition-colors group/edit"
                                     onClick={handleEditMembership}
                                 >
                                     <Building2 size={14} />
-                                    <span>{user?.membershipService || 'Sans Service'}</span>
+                                    <span>{user?.structure?.nom || user?.ministere?.nom || 'Sans Service'}</span>
                                     <MapPin size={12} className={cn("ml-1", isGeocoded(userProfile?.serviceLatitude) ? "text-green-500 fill-green-500" : "text-gray-300")} />
                                 </div>
                             </div>
@@ -271,25 +265,25 @@ const AdminUserDetail = () => {
                                 <div className="text-center sm:text-right">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Accès</p>
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                                        user?.role === 'admin' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-blue-100 text-blue-700 border-blue-200'
+                                        user?.role === 'ADMIN' ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-blue-100 text-blue-700 border-blue-200'
                                     }`}>
-                                        {user?.role === 'admin' ? 'Admin' : 'Expert'}
+                                        {user?.role}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                                <button 
-                                    onClick={handleChat} 
+                                <button
+                                    onClick={handleChat}
                                     className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                                 >
                                     <MessageSquare size={16} /> <span>Chat Direct</span>
                                 </button>
-                                <button 
-                                    onClick={handleDeleteUser} 
-                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-all group font-black text-[10px] uppercase tracking-widest border border-red-100/50"
+                                <button
+                                    onClick={handleToggleActivation}
+                                    className={cn("w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl hover:text-white transition-all group font-black text-[10px] uppercase tracking-widest border", user?.actif ? "bg-red-50 text-red-500 hover:bg-red-500 border-red-100/50" : "bg-green-50 text-green-500 hover:bg-green-500 border-green-100/50")}
                                 >
-                                    <Trash2 size={16} /> <span className="sm:hidden">Supprimer l'Expert</span>
+                                    {user?.actif ? <XCircle size={16} /> : <CheckCircle size={16} />} <span className="sm:hidden">{user?.actif ? 'Désactiver' : 'Réactiver'}</span>
                                 </button>
                             </div>
                         </div>
@@ -303,12 +297,12 @@ const AdminUserDetail = () => {
                     { title: "1. Identité & Contact", icon: User, fields: [
                         { label: 'Genre',             value: userProfile?.genre,          icon: Users },
                         { label: 'Date de naissance', value: userProfile?.dateNaissance,  icon: Calendar },
-                        { label: 'Contact Principal', value: userProfile?.contact1,       icon: Phone },
-                        { label: 'Contact Secondaire',value: userProfile?.contact2,       icon: Phone },
+                        { label: 'Contact Principal', value: userProfile?.telephonePrincipal,       icon: Phone },
+                        { label: 'Contact Secondaire',value: userProfile?.telephoneSecondaire,       icon: Phone },
                         { label: 'Email Alternatif',  value: userProfile?.emailSecondaire,icon: Mail },
                     ]},
                     { title: "2. Profil Professionnel", icon: Briefcase, fields: [
-                        { label: 'Département',       value: userProfile?.departement,    icon: Building2 },
+                        { label: 'Département',       value: userProfile?.departementAdministratif,    icon: Building2 },
                         { label: 'Poste occupé',      value: userProfile?.posteOccupe,    icon: Briefcase },
                         { label: 'Date de nomination',value: userProfile?.dateNomination, icon: Calendar },
                     ]},
@@ -359,15 +353,15 @@ const AdminUserDetail = () => {
                         <span className="px-2 py-0.5 bg-gray-100 text-[10px] rounded-lg text-gray-400">{reports.length}</span>
                     </h3>
                 </div>
-                
+
                 <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
                     <div className="max-h-[500px] overflow-y-auto px-4 py-8 customize-scrollbar">
                         {reports.length > 0 ? (
                             <div className="space-y-4">
                                 {reports.map(report => (
-                                    <div 
-                                        key={report.id} 
-                                        onClick={() => navigate(`/reports/${report.id}`)} 
+                                    <div
+                                        key={report.id}
+                                        onClick={() => navigate(`/reports/${report.id}`)}
                                         className="p-6 border border-gray-100 rounded-[1.5rem] hover:border-primary/20 hover:shadow-xl hover:shadow-black/5 transition-all cursor-pointer bg-gray-50/30 hover:bg-white group"
                                     >
                                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -384,33 +378,33 @@ const AdminUserDetail = () => {
                                                     </p>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="flex items-center gap-4 w-full md:w-auto">
                                                 <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border ${
                                                     report.reportStatus === 'APPROVED' ? 'bg-green-100 text-green-700 border-green-200' :
                                                     report.reportStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-blue-100 text-blue-700 border-blue-200'
                                                 }`}>
-                                                    {report.reportStatus === 'APPROVED' ? 'Approuvé' : 
+                                                    {report.reportStatus === 'APPROVED' ? 'Approuvé' :
                                                      report.reportStatus === 'REJECTED' ? 'Rejeté' : 'Soumis'}
                                                 </span>
-                                                
+
                                                 {report.reportStatus === 'SUBMITTED' && (
                                                     <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); handleApprove(report.id); }} 
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleApprove(report.id); }}
                                                             className="h-9 w-9 bg-green-500 text-white rounded-xl flex items-center justify-center hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all font-black text-[10px] uppercase tracking-widest px-8 w-auto min-w-[120px]"
                                                         >
                                                             <CheckCircle size={14} className="mr-2" /> Approuver
                                                         </button>
-                                                        <button 
-                                                            onClick={(e) => { e.stopPropagation(); handleReject(report.id); }} 
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleReject(report.id); }}
                                                             className="h-9 w-9 bg-red-50 text-red-700 rounded-xl flex items-center justify-center hover:bg-red-100 transition-all font-black text-[10px] uppercase tracking-widest px-8 w-auto min-w-[100px]"
                                                         >
                                                             Rejeter
                                                         </button>
                                                     </div>
                                                 )}
-                                                
+
                                                 <div className="h-10 w-10 flex items-center justify-center text-gray-300 opacity-0 group-hover:opacity-100 transition-all">
                                                     <ArrowLeft className="rotate-180" size={20} />
                                                 </div>
@@ -444,13 +438,13 @@ const AdminUserDetail = () => {
                                 <XCircle size={20} className="text-gray-400" />
                             </button>
                         </div>
-                        
+
                         <div className="p-8 space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Service du Gestionnaire</label>
                                 <div className="relative" ref={suggestionRef}>
                                     <div className="relative">
-                                        <input 
+                                        <inpu
                                             className={cn(
                                                 "w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none transition-all",
                                                 localizationStatus === 'success' && "border-green-100 bg-green-50/20"
@@ -496,8 +490,8 @@ const AdminUserDetail = () => {
                                 disabled={localizing || !membershipData.membershipService}
                                 className={cn(
                                     "w-full flex items-center justify-center gap-3 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border",
-                                    localizationStatus === 'success' 
-                                        ? "bg-green-50 text-green-600 border-green-100" 
+                                    localizationStatus === 'success'
+                                        ? "bg-green-50 text-green-600 border-green-100"
                                         : "bg-white border-primary/20 text-primary hover:bg-primary/5"
                                 )}
                             >
@@ -528,18 +522,18 @@ const AdminUserDetail = () => {
                         </div>
 
                         <div className="p-8 bg-gray-50 border-t flex gap-3">
-                            <button 
+                            <button
                                 onClick={() => setShowMembershipModal(false)}
                                 className="flex-1 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:bg-gray-100 rounded-xl transition-all"
                             >
                                 <span>Annuler</span>
                             </button>
-                            <button 
+                            <button
                                 onClick={handleSaveMembership}
-                                disabled={saveLoading || !membershipData.membershipService}
+                                disabled={!membershipData.membershipService}
                                 className="flex-2 bg-primary text-white py-4 px-10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
-                                <span>{saveLoading ? 'Enregistrement...' : 'Confirmer'}</span>
+                                <span>Confirmer</span>
                             </button>
                         </div>
                     </div>

@@ -1,115 +1,47 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { X, MapPin, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { inviteUser } from '../../services/adminService';
+import { X, CheckCircle } from 'lucide-react';
+import { createUser } from '../../services/adminService';
 import { StructureSelector } from '../StructureSelector';
-import { cn } from "@/lib/utils";
+import { MinistereSelector } from '../MinistereSelector';
+import { CohorteSelector } from '../CohorteSelector';
 
 export const CreateUserModal = ({ show, onClose, onCreated }) => {
     const [createLoading, setCreateLoading] = useState(false);
-    const [localizing, setLocalizing] = useState(false);
-    const [localizationStatus, setLocalizationStatus] = useState('idle'); // idle, loading, success, error
-    const [suggestions, setSuggestions] = useState([]);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const suggestionRef = useRef(null);
-    
+
     const [newUserData, setNewUserData] = useState({
         email: '',
-        firstName: '',
-        lastName: '',
-        role: 'user',
-        membershipService: '',
-        serviceLatitude: null,
-        serviceLongitude: null
+        prenom: '',
+        nom: '',
+        role: 'GESTIONNAIRE',
+        ministereId: null,
+        structureId: null,
+        cohorteId: null
     });
 
-    // Handle debounced search for suggestions
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (newUserData.membershipService && newUserData.membershipService.length >= 3 && localizationStatus !== 'success') {
-                try {
-                    const results = await searchGeocode(`${newUserData.membershipService}, Senegal`);
-                    setSuggestions(results || []);
-                    setShowSuggestions(true);
-                } catch (err) {
-                    setSuggestions([]);
-                }
-            } else {
-                setSuggestions([]);
-                setShowSuggestions(false);
-            }
-        }, 600); // 600ms debounce
 
-        return () => clearTimeout(timer);
-    }, [newUserData.membershipService]);
-
-    // Close suggestions on click outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (suggestionRef.current && !suggestionRef.current.contains(event.target)) {
-                setShowSuggestions(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    const handleSelectSuggestion = (suggestion) => {
-        setNewUserData({
-            ...newUserData,
-            membershipService: suggestion.display_name.split(',')[0], // Take only the name part
-            serviceLatitude: suggestion.lat,
-            serviceLongitude: suggestion.lon
-        });
-        setLocalizationStatus('success');
-        setSuggestions([]);
-        setShowSuggestions(false);
-    };
-
-    const handleAutoLocalize = async () => {
-        if (!newUserData.membershipService || newUserData.membershipService.length < 3) return;
-        
-        try {
-            setLocalizing(true);
-            setLocalizationStatus('loading');
-            
-            const query = `${newUserData.membershipService}, Senegal`;
-            const results = await searchGeocode(query);
-            
-            if (results && results.length > 0) {
-                const bestMatch = results[0];
-                handleSelectSuggestion(bestMatch);
-            } else {
-                setLocalizationStatus('error');
-            }
-        } catch (err) {
-            setLocalizationStatus('error');
-        } finally {
-            setLocalizing(false);
-        }
-    };
 
     const handleCreateUser = async (e) => {
         e.preventDefault();
         try {
             setCreateLoading(true);
-            await inviteUser(newUserData);
+            await createUser(newUserData);
             setNewUserData({
                 email: '',
-                firstName: '',
-                lastName: '',
-                role: 'user',
-                membershipService: '',
-                serviceLatitude: null,
-                serviceLongitude: null
+                prenom: '',
+                nom: '',
+                role: 'GESTIONNAIRE',
+        ministereId: null,
+        structureId: null,
+        cohorteId: null
             });
-            setLocalizationStatus('idle');
+
             onClose();
             if (onCreated) onCreated();
         } catch (err) {
-            alert(err.message);
+            alert(err.message || 'Erreur lors de la création');
         } finally {
             setCreateLoading(false);
         }
@@ -135,7 +67,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                     <CardContent className="p-6 space-y-4">
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Email Professionnel</label>
-                            <Input
+                            <Inpu
                                 type="email"
                                 required
                                 className="h-10 text-sm border-gray-200 focus:ring-primary shadow-sm"
@@ -147,22 +79,22 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Prénom</label>
-                                <Input
+                                <Inpu
                                     type="text"
                                     required
                                     className="h-10 text-sm border-gray-200 focus:ring-primary shadow-sm"
-                                    value={newUserData.firstName}
-                                    onChange={e => setNewUserData({...newUserData, firstName: e.target.value})}
+                                    value={newUserData.prenom}
+                                    onChange={e => setNewUserData({...newUserData, prenom: e.target.value})}
                                 />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Nom</label>
-                                <Input
+                                <Inpu
                                     type="text"
                                     required
                                     className="h-10 text-sm border-gray-200 focus:ring-primary shadow-sm"
-                                    value={newUserData.lastName}
-                                    onChange={e => setNewUserData({...newUserData, lastName: e.target.value})}
+                                    value={newUserData.nom}
+                                    onChange={e => setNewUserData({...newUserData, nom: e.target.value})}
                                 />
                             </div>
                         </div>
@@ -171,37 +103,69 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                             <select
                                 className="w-full h-10 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-white text-sm shadow-sm"
                                 value={newUserData.role}
-                                onChange={e => setNewUserData({...newUserData, role: e.target.value})}
-                            >
-                                <option value="user">Utilisateur Standard</option>
-                                <option value="admin">Administrateur Système</option>
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-                                Structure de Rattachement
-                                {newUserData.serviceLatitude && (
-                                    <span className="text-[9px] text-green-600 flex items-center gap-1 normal-case font-bold animate-in fade-in slide-in-from-right-2">
-                                        <CheckCircle size={10} /> Localisation définie
-                                    </span>
-                                )}
-                            </label>
-                            <StructureSelector 
-                                onSelect={(s) => {
+                                onChange={e => {
+                                    const newRole = e.target.value;
                                     setNewUserData({
                                         ...newUserData,
-                                        membershipService: s.name,
-                                        serviceLatitude: s.latitude,
-                                        serviceLongitude: s.longitude
+                                        role: newRole,
+                                        ministereId: null,
+                                        structureId: null,
+                                        cohorteId: null
                                     });
                                 }}
-                            />
-                            {!newUserData.membershipService && (
-                                <p className="text-[9px] text-amber-600 font-bold mt-1">
-                                    Veuillez sélectionner une structure pour la géolocalisation.
-                                </p>
-                            )}
+                            >
+                                <option value="GESTIONNAIRE">Gestionnaire</option>
+                                <option value="DAGE">DAGE</option>
+                                <option value="ADMIN">Administrateur Système</option>
+                            </select>
                         </div>
+
+                        {newUserData.role === 'DAGE' && (
+                            <div className="space-y-2">
+                                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                    Ministère
+                                </label>
+                                <MinistereSelector
+                                    onSelect={(s) => setNewUserData({...newUserData, ministereId: s.id})}
+                                />
+                                {!newUserData.ministereId && (
+                                    <p className="text-[9px] text-amber-600 font-bold mt-1">
+                                        Veuillez sélectionner un ministère.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                        {newUserData.role === 'GESTIONNAIRE' && (
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                        Structure de Rattachemen
+                                    </label>
+                                    <StructureSelector
+                                        onSelect={(s) => setNewUserData({...newUserData, structureId: s.id})}
+                                    />
+                                    {!newUserData.structureId && (
+                                        <p className="text-[9px] text-amber-600 font-bold mt-1">
+                                            Veuillez sélectionner une structure.
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                        Cohorte
+                                    </label>
+                                    <CohorteSelector
+                                        onSelect={(c) => setNewUserData({...newUserData, cohorteId: c.id})}
+                                    />
+                                    {!newUserData.cohorteId && (
+                                        <p className="text-[9px] text-amber-600 font-bold mt-1">
+                                            Veuillez sélectionner une cohorte.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                     </CardContent>
                     <div className="p-6 bg-gray-50 border-t flex gap-3">
                         <Button
