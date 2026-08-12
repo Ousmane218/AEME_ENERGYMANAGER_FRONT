@@ -1,24 +1,20 @@
-import api from "../lib/apiClient";
+import api, { API_ROOT_URL } from "../lib/apiClient";
 
 // USERS MANAGEMENT
-export const getAllUsers = async (first = 0, max = 20, search = '') => {
+export const getAllUsers = async (page = 0, size = 20) => {
     try {
-        const params = { first, max };
-        if (search) params.search = search;
-        
-        const data = await api.get('/admin/users', { params });
-        // The backend returns a wrapper { users: [], total: 0, ... }
+        const data = await api.get(`${API_ROOT_URL}/api/v2/admin/utilisateurs`, { params: { page, size } });
         return data;
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du chargement des utilisateurs');
     }
 };
 
 export const getUserById = async (userId) => {
     try {
-        // Direct access to the full user profile
-        return await api.get(`/auth/users/${userId}`);
-    } catch (error) {
+        const data = await api.get(`${API_ROOT_URL}/api/v2/admin/utilisateurs/${userId}`);
+        return data;
+    } catch {
         throw new Error('Erreur lors du chargement de l\'utilisateur');
     }
 };
@@ -27,65 +23,34 @@ export const getUserAuthProfile = async (userId) => {
     try {
         // Direct access to the auth profile (Keycloak attributes)
         return await api.get(`/auth/users/${userId}`);
-    } catch (error) {
+    } catch {
         console.warn(`Could not fetch auth profile for user ${userId}`);
         return null;
     }
 };
 
-export const deleteUser = async (userId) => {
+export const createUser = async (payload) => {
     try {
-        return await api.delete(`/admin/users/${userId}`);
-    } catch (error) {
-        throw new Error('Erreur lors de la suppression de l\'utilisateur');
-    }
-};
-
-export const inviteUser = async ({ email, firstName, lastName, role, membershipService, serviceLatitude, serviceLongitude }) => {
-    try {
-        const payload = { 
-            email, 
-            firstName, 
-            lastName, 
-            role, 
-            membershipService,
-            // Shotgun approach: send under multiple names to ensure backend/Keycloak mapping
-            serviceLatitude: serviceLatitude ? String(serviceLatitude) : null,
-            serviceLongitude: serviceLongitude ? String(serviceLongitude) : null,
-            latitude: serviceLatitude ? String(serviceLatitude) : null,
-            longitude: serviceLongitude ? String(serviceLongitude) : null
-        };
-
-        return await api.post('/admin/users', payload);
-    } catch (error) {
-        if (error.response && error.response.status === 409) {
+        const data = await api.post(`${API_ROOT_URL}/api/v2/admin/utilisateurs`, payload);
+        return data;
+    } catch (e) {
+        if (e.response && e.response.status === 409) {
             throw new Error('Email déjà utilisé');
         }
-        throw new Error("Erreur lors de l'invitation");
+        throw e;
     }
 };
 
-export const updateUserMembership = async (userId, { membershipService, serviceLatitude, serviceLongitude }) => {
-    try {
-        const payload = { 
-            membershipService,
-            serviceLatitude: serviceLatitude ? String(serviceLatitude) : null,
-            serviceLongitude: serviceLongitude ? String(serviceLongitude) : null,
-            latitude: serviceLatitude ? String(serviceLatitude) : null,
-            longitude: serviceLongitude ? String(serviceLongitude) : null
-        };
-
-        return await api.patch(`/admin/users/${userId}/membership`, payload);
-    } catch (error) {
-        throw new Error('Erreur lors de la mise à jour du membership');
-    }
+export const updateUserActivation = async (userId, actif) => {
+    await api.patch(`${API_ROOT_URL}/api/v2/admin/utilisateurs/${userId}/activation`, { actif });
 };
+
 
 // REPORTS MANAGEMENT
 export const getReportsByUser = async (userId) => {
     try {
         return await api.get(`/admin/users/${userId}/reports`);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du chargement des rapports de l\'utilisateur');
     }
 };
@@ -93,7 +58,7 @@ export const getReportsByUser = async (userId) => {
 export const approveReport = async (reportId) => {
     try {
         return await api.patch(`/admin/reports/${reportId}/status`, { status: 'APPROVED' });
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors de l\'approbation du rapport');
     }
 };
@@ -101,7 +66,7 @@ export const approveReport = async (reportId) => {
 export const rejectReport = async (reportId) => {
     try {
         return await api.patch(`/admin/reports/${reportId}/status`, { status: 'REJECTED' });
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du rejet du rapport');
     }
 };
@@ -109,8 +74,8 @@ export const rejectReport = async (reportId) => {
 export const getStatsByRegion = async () => {
     try {
         return await api.get('/stats/regions');
-    } catch (error) {
-        console.error('Error fetching regional stats:', error);
+    } catch (e) {
+        console.error('Error fetching regional stats:', e);
         return [];
     }
 };
