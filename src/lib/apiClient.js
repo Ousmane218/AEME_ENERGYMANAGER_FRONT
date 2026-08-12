@@ -3,6 +3,7 @@ import axiosRetry from 'axios-retry';
 import keycloak from '../Keycloak';
 
 const API_URL = import.meta.env.VITE_API_URL;
+export const API_ROOT_URL = API_URL.replace(/\/api\/v1\/?$/, '');
 
 const api = axios.create({
     baseURL: API_URL,

@@ -1,7 +1,7 @@
-import api from "../lib/apiClient";
+import api, { API_ROOT_URL } from "../lib/apiClient";
 
 export const getCurrentProfile = async () => {
-    const data = await api.get('/api/v2/me');
+    const data = await api.get(`${API_ROOT_URL}/api/v2/me`);
     return data;
 };
 
