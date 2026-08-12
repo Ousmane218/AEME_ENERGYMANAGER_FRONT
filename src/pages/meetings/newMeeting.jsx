@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Video, Calendar, Clock, Info, ShieldCheck, AlertCircle } from 'lucide-react';
-import { createMeeting } from '../../services/meetingService';
+import { createMeeting, createGlobalMeeting, createMinistereMeeting, createStructureMeeting, createCohortMeeting } from '../../services/meetingService';
+import { useAuth } from '../../context/AuthContext';
+import { MinistereSelector } from '../../components/MinistereSelector';
+import { StructureSelector } from '../../components/StructureSelector';
+import { CohorteSelector } from '../../components/CohorteSelector';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,19 +14,42 @@ import { Label } from "@/components/ui/label";
 
 const NewMeeting = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [scheduledAt, setScheduledAt] = useState('');
+    const [meetingType, setMeetingType] = useState('DIRECT');
+    const [targetId, setTargetId] = useState('');
+
+    const handleTypeChange = (e) => {
+        setMeetingType(e.target.value);
+        setTargetId('');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             setLoading(true);
             setError(null);
-            const meeting = await createMeeting({
-                scheduledAt: scheduledAt + ':00',
-                participantIds: [],
-            });
+            let meeting;
+
+            const scheduleFormatted = scheduledAt + ':00';
+
+            if (meetingType === 'DIRECT') {
+                meeting = await createMeeting({
+                    scheduledAt: scheduleFormatted,
+                    participantIds: [],
+                });
+            } else if (meetingType === 'GLOBAL') {
+                meeting = await createGlobalMeeting({ scheduledAt: scheduleFormatted, targetId: null });
+            } else if (meetingType === 'MINISTERE') {
+                meeting = await createMinistereMeeting({ scheduledAt: scheduleFormatted, targetId: Number(targetId) });
+            } else if (meetingType === 'STRUCTURE') {
+                meeting = await createStructureMeeting({ scheduledAt: scheduleFormatted, targetId: Number(targetId) });
+            } else if (meetingType === 'COHORT') {
+                meeting = await createCohortMeeting({ scheduledAt: scheduleFormatted, targetId: Number(targetId) });
+            }
+
             navigate(`/meetings/${meeting.id}`);
         } catch (err) {
             setError(err.message);
@@ -35,9 +62,9 @@ const NewMeeting = () => {
         <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-700">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => navigate(-1)}
                     className="rounded-full hover:bg-gray-100"
                 >
@@ -66,6 +93,45 @@ const NewMeeting = () => {
                 </CardHeader>
                 <CardContent className="p-8">
                     <form onSubmit={handleSubmit} className="space-y-8">
+                        {user?.role === 'ADMIN' && (
+                            <div className="space-y-3">
+                                <Label htmlFor="meetingType" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                                    Type de Réunion
+                                </Label>
+                                <select
+                                    id="meetingType"
+                                    value={meetingType}
+                                    onChange={handleTypeChange}
+                                    className="w-full h-14 px-4 bg-gray-50/50 border-2 border-gray-100 focus:border-primary/30 outline-none transition-all text-sm font-bold rounded-2xl"
+                                >
+                                    <option value="DIRECT">Directe</option>
+                                    <option value="GLOBAL">Globale (Tous)</option>
+                                    <option value="MINISTERE">Ministère</option>
+                                    <option value="STRUCTURE">Structure</option>
+                                    <option value="COHORT">Cohorte</option>
+                                </select>
+                            </div>
+                        )}
+
+                        {meetingType === 'MINISTERE' && (
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sélectionner un Ministère</Label>
+                                <MinistereSelector selectedId={targetId} onSelect={(val) => setTargetId(val?.id || val)} required />
+                            </div>
+                        )}
+                        {meetingType === 'STRUCTURE' && (
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sélectionner une Structure</Label>
+                                <StructureSelector selectedId={targetId} onSelect={(val) => setTargetId(val?.id || val)} required />
+                            </div>
+                        )}
+                        {meetingType === 'COHORT' && (
+                            <div className="space-y-3">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Sélectionner une Cohorte</Label>
+                                <CohorteSelector selectedId={targetId} onSelect={(val) => setTargetId(val?.id || val)} required />
+                            </div>
+                        )}
+
                         <div className="space-y-3">
                             <Label htmlFor="scheduledAt" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                                 Date et Heure de Début
@@ -104,7 +170,7 @@ const NewMeeting = () => {
                                     <>Configuration...</>
                                 ) : (
                                     <>
-                                        Créer la Réunion 
+                                        Créer la Réunion
                                         <Video size={18} className="ml-2 group-hover:scale-110 transition-transform" />
                                     </>
                                 )}

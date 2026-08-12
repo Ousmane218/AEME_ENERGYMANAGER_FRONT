@@ -80,9 +80,9 @@ function App() {
                             <Route path="/reports" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportsList /></RoleGuard>} />
                             <Route path="/reports/new" element={<RoleGuard allowedRoles={['GESTIONNAIRE']}><NewReport /></RoleGuard>} />
                             <Route path="/reports/:id" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportDetails /></RoleGuard>} />
-                            <Route path="/meetings" element={<MeetingsList />} />
-                            <Route path="/meetings/new" element={<NewMeeting />} />
-                            <Route path="/meetings/:id" element={<MeetingRoom />} />
+                            <Route path="/meetings" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><MeetingsList /></RoleGuard>} />
+                            <Route path="/meetings/new" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><NewMeeting /></RoleGuard>} />
+                            <Route path="/meetings/:id" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><MeetingRoom /></RoleGuard>} />
                             <Route path="/chat" element={<Chat />} />
                             <Route path="/map" element={<MapPage />} />
                             <Route path="/profile" element={<Profile />} />

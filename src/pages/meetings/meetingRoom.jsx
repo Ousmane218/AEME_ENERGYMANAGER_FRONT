@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Video, Loader2, Check, Copy } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getMeetingById, updateMeetingStatus } from '../../services/meetingService';
+import { getMeetingById, updateMeetingStatus, updateManagedMeetingStatus, isManagedMeeting } from '../../services/meetingService';
 import { useAuth } from '../../context/AuthContext';
 
 const MeetingRoom = () => {
@@ -24,17 +24,31 @@ const MeetingRoom = () => {
                 jitsiApiRef.current.dispose();
             }
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
+
+
+    const handleStatusUpdate = async (meetingData, status) => {
+        const isDirectCreator = meetingData.type === 'DIRECT' && meetingData.createdByUserId === user?.keycloakId;
+        const isManagedAdmin = isManagedMeeting(meetingData) && user?.role === 'ADMIN';
+
+
+        if (isDirectCreator) {
+            await updateMeetingStatus(id, status);
+        } else if (isManagedAdmin) {
+            await updateManagedMeetingStatus(id, status);
+        }
+    };
 
     const fetchMeeting = async () => {
         try {
             const data = await getMeetingById(id);
             setMeeting(data);
-            if (data.status === 'SCHEDULED' && data.createdByUserId === user?.id) {
-                await updateMeetingStatus(id, 'IN_PROGRESS');
+            if (data.status === 'SCHEDULED') {
+                await handleStatusUpdate(data, 'IN_PROGRESS');
             }
             loadJitsiScript(data);
-        } catch (err) {
+        } catch {
             navigate('/meetings');
         } finally {
             setLoading(false);
@@ -83,17 +97,13 @@ const MeetingRoom = () => {
         api.addEventListener('videoConferenceLeft', async () => {
             api.dispose();
             jitsiApiRef.current = null;
-            if (meetingData.createdByUserId === user?.id) {
-                await updateMeetingStatus(id, 'ENDED');
-            }
+            await handleStatusUpdate(meetingData, 'ENDED');
             navigate('/meetings');
         });
 
         // Fallback
         api.addEventListener('readyToClose', async () => {
-            if (meetingData.createdByUserId === user?.id) {
-                await updateMeetingStatus(id, 'ENDED');
-            }
+            await handleStatusUpdate(meetingData, 'ENDED');
             navigate('/meetings');
         });
 
@@ -114,9 +124,9 @@ const MeetingRoom = () => {
             {/* Minimal Header */}
             <header className="h-16 bg-neutral-950 border-b border-white/5 flex items-center justify-between px-6 shrink-0 relative z-10">
                 <div className="flex items-center gap-4">
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-white/70 hover:text-white hover:bg-white/10"
                         onClick={() => {
                             if (window.confirm("Voulez-vous vraiment quitter la réunion ?")) {
@@ -138,9 +148,9 @@ const MeetingRoom = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
-                        className="h-8 text-[10px] uppercase font-black tracking-widest bg-transparent text-white border-white/20 hover:bg-white/10" 
+                    <Button
+                        variant="outline"
+                        className="h-8 text-[10px] uppercase font-black tracking-widest bg-transparent text-white border-white/20 hover:bg-white/10"
                         onClick={handleCopyUrl}
                     >
                         {copied ? <><Check size={14} className="mr-2 text-green-500" /> Copié</> : <><Copy size={14} className="mr-2" /> Lien URL</>}
