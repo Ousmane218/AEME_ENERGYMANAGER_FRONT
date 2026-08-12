@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, MessageSquare, ChevronRight, CheckCircle, Clock, XCircle, TrendingUp, Filter, Download, Zap, Plus } from 'lucide-react';
 import { getUserProfile } from '../services/profileService';
+import { useAuth } from '../context/AuthContext';
 import { getMyReports, getAllReports } from '../services/reportService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,21 +15,21 @@ import { formatDate } from "@/lib/utils";
 const Dashboard = () => {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
-    const [myReports, setMyReports] = useState([]);
-    const [allReports, setAllReports] = useState([]);
+        const [allReports, setAllReports] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
-        Promise.all([getUserProfile(), getMyReports(), getAllReports()])
-            .then(([profileData, myReportsData, allReportsData]) => {
+        Promise.all([getUserProfile(), (user?.role === 'ADMIN' || user?.role === 'DAGE') ? getAllReports() : getMyReports()])
+            .then(([profileData, reportsData]) => {
                 const sortDesc = (a, b) => new Date(b.createdAt || b.reportDate || 0) - new Date(a.createdAt || a.reportDate || 0);
                 setProfile(profileData);
-                setMyReports((myReportsData || []).sort(sortDesc));
-                setAllReports((allReportsData || []).sort(sortDesc));
+                const sorted = (reportsData || []).sort(sortDesc);
+                setAllReports(sorted);
             })
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, []);
+    }, [user?.role]);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">

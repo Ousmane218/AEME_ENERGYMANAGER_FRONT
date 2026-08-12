@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
     ArrowLeft, Send, UploadCloud, X, CheckCircle,
     Calendar, ClipboardList, Activity, FileCheck, Info, HelpCircle,
     Loader2, Paperclip
 } from 'lucide-react';
 import { createReport } from '../../services/reportService';
-import { useAuth } from '../../context/AuthContext';
+
 import { getUserProfile } from '../../services/profileService';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,7 @@ const OuiNonField = ({ label, value, onChange }) => (
                     onClick={() => onChange(val)}
                     className={cn(
                         "px-5 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest",
-                        value === val 
+                        value === val
                             ? val === 'OUI' ? "bg-green-600 text-white shadow-lg shadow-green-200" : "bg-primary text-white shadow-lg shadow-primary/20"
                             : "text-gray-400 hover:text-gray-600"
                     )}
@@ -61,10 +61,10 @@ const OuiNonField = ({ label, value, onChange }) => (
 
 const QuestionBlock = ({ formData, setFormData, fieldName, label, conditionalNode }) => (
     <div className="space-y-3 flex flex-col justify-start">
-        <OuiNonField 
-            label={label} 
-            value={formData[fieldName]} 
-            onChange={(val) => setFormData(prev => ({ ...prev, [fieldName]: val }))} 
+        <OuiNonField
+            label={label}
+            value={formData[fieldName]}
+            onChange={(val) => setFormData(prev => ({ ...prev, [fieldName]: val }))}
         />
         {formData[fieldName] === 'OUI' && conditionalNode && (
             <div className="pl-2 animate-in zoom-in-95 duration-300">
@@ -83,7 +83,7 @@ const FileZone = ({ field, label, accept, formData, handleFile }) => (
                 ? "border-primary bg-primary/5 shadow-inner"
                 : "border-gray-200 bg-gray-50/50 hover:bg-white hover:border-primary/40 hover:shadow-sm"
         )}>
-            <input
+            <inpu
                 type="file"
                 accept={accept}
                 className="sr-only"
@@ -118,7 +118,7 @@ const FileZone = ({ field, label, accept, formData, handleFile }) => (
 
 const NewReport = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -126,8 +126,6 @@ const NewReport = () => {
 
     const [formData, setFormData] = useState({
         nomGestionnaire: '',
-        telephone: '',
-        email: '',
         serviceAppartenance: '',
         reportDate: new Date().toISOString().split('T')[0],
         nombreBatiments: '',
@@ -154,7 +152,7 @@ const NewReport = () => {
         plateformeDigitale: 'NON',
         suiviPlateformeDigitale: 'NON',
         contraintes: '',
-        besoins: '',
+        recommandations: '',
         illustrations: null,
         autresDocuments: null
     });
@@ -203,14 +201,14 @@ const NewReport = () => {
         setError(null);
         try {
             const data = new FormData();
-            
-            // Map the new UI state to the backend's expected schema format
+
+            // Map the new UI state to the backend's expected schema forma
             data.append('reportDate', `${formData.reportDate}T00:00:00`);
             data.append('nomGestionnaire', formData.nomGestionnaire);
             data.append('serviceAppartenance', formData.serviceAppartenance);
             data.append('nombreBatiments', formData.nombreBatiments || '0');
             data.append('numeroPoliceSenelec', formData.numeroPoliceSenelec || '');
-            
+
             if (formData.campagnesCommunication.length > 0) {
                 let camps = [...formData.campagnesCommunication];
                 data.append('campagnesCommunication', JSON.stringify(camps));
@@ -226,39 +224,39 @@ const NewReport = () => {
             if (formData.autreActivitePrecision) {
                 data.append('autreActivitePrecision', formData.autreActivitePrecision);
             }
-            
+
             const mapBool = (val) => val === 'OUI' ? true : false;
             data.append('guidePartageCommande', mapBool(formData.guidePartageCommande));
             data.append('guidePartagePerformance', mapBool(formData.guidePartagePerformance));
             data.append('procedureResiliation', mapBool(formData.procedureResiliation));
             data.append('modificationPuissance', mapBool(formData.modificationPuissance));
-            
+
             if (formData.modificationPuissance === 'OUI' && formData.pieceJustificativeModification) {
                 data.append('pieceJustificativeModification', formData.pieceJustificativeModification);
             }
-            
+
             data.append('consommationsNullesIdentifiees', mapBool(formData.consommationsNullesIdentifiees));
             if (formData.actionConsommationsNulles) data.append('actionConsommationsNulles', formData.actionConsommationsNulles);
-            
+
             data.append('estimationsRecensees', mapBool(formData.estimationsRecensees));
             if (formData.actionEstimations) data.append('actionEstimations', formData.actionEstimations);
-            
+
             data.append('batteriesCondensateursInstallees', mapBool(formData.batteriesCondensateursInstallees));
             if (formData.nombreBatteriesCondensateurs) data.append('nombreBatteriesCondensateurs', formData.nombreBatteriesCondensateurs);
-            
+
             data.append('cadastreEnergetiqueRealise', mapBool(formData.cadastreEnergetiqueRealise));
-            
+
             data.append('indexTransmis', mapBool(formData.indexTransmis));
             if (formData.dateIndexTransmis) data.append('dateIndexTransmis', `${formData.dateIndexTransmis}T00:00:00`);
             if (formData.indexConsommation) data.append('indexConsommation', formData.indexConsommation);
-            
+
             data.append('plateformeDigitale', mapBool(formData.plateformeDigitale));
             if (formData.plateformeDigitale === 'OUI') {
                 data.append('suiviPlateformeDigitale', mapBool(formData.suiviPlateformeDigitale));
             }
 
             if (formData.contraintes) data.append('contraintes', formData.contraintes);
-            if (formData.besoins) data.append('recommandations', formData.besoins);
+            if (formData.recommandations) data.append('recommandations', formData.recommandations);
             if (formData.illustrations) data.append('illustrations', formData.illustrations);
             if (formData.autresDocuments) data.append('autresDocuments', formData.autresDocuments);
 
@@ -394,8 +392,8 @@ const NewReport = () => {
                                         onClick={() => handleCheckbox('campagnesCommunication', opt)}
                                         className={cn(
                                             "p-5 rounded-2xl border-2 text-left transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-sm",
-                                            formData.campagnesCommunication.includes(opt) 
-                                                ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.01]" 
+                                            formData.campagnesCommunication.includes(opt)
+                                                ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.01]"
                                                 : "bg-white border-gray-100 hover:border-primary/20 text-gray-600 hover:bg-primary/5 hover:scale-[1.01]"
                                         )}
                                     >
@@ -429,8 +427,8 @@ const NewReport = () => {
                                         onClick={() => handleCheckbox('autresActivites', opt)}
                                         className={cn(
                                             "p-5 rounded-2xl border-2 text-left transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-sm",
-                                            formData.autresActivites.includes(opt) 
-                                                ? "bg-accent border-accent text-white shadow-xl shadow-accent/20 scale-[1.01]" 
+                                            formData.autresActivites.includes(opt)
+                                                ? "bg-accent border-accent text-white shadow-xl shadow-accent/20 scale-[1.01]"
                                                 : "bg-white border-gray-100 hover:border-accent/20 text-gray-600 hover:bg-accent/5 hover:scale-[1.01]"
                                         )}
                                     >
@@ -472,28 +470,28 @@ const NewReport = () => {
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="guidePartageCommande" label="Avez-vous partagé le guide bâtiment avec les services en charge de la commande au niveau de la structure ?" />
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="guidePartagePerformance" label="Avez-vous partagé le guide pour l'amélioration de la performance énergétique des équipements avec les services en charge de la commande au niveau de la structure ?" />
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="procedureResiliation" label="Avez-vous effectué une procédure de résiliation d’un ou plusieurs contrats d’électricité ?" />
-                            
-                            <QuestionBlock 
-                                formData={formData} 
-                                setFormData={setFormData} 
-                                fieldName="modificationPuissance" 
-                                label="Avez-vous effectué une démarche de modification de la puissance souscrite sur un ou plusieurs contrats d'électricité ?" 
+
+                            <QuestionBlock
+                                formData={formData}
+                                setFormData={setFormData}
+                                fieldName="modificationPuissance"
+                                label="Avez-vous effectué une démarche de modification de la puissance souscrite sur un ou plusieurs contrats d'électricité ?"
                                 conditionalNode={
                                     <FileZone field="pieceJustificativeModification" label="Pièce Jusificative" accept=".pdf,.doc,.docx" formData={formData} handleFile={handleFile} />
                                 }
                             />
 
-                            <QuestionBlock 
-                                formData={formData} 
-                                setFormData={setFormData} 
-                                fieldName="consommationsNullesIdentifiees" 
-                                label="Avez-vous identifié les consommations nulles ?" 
+                            <QuestionBlock
+                                formData={formData}
+                                setFormData={setFormData}
+                                fieldName="consommationsNullesIdentifiees"
+                                label="Avez-vous identifié les consommations nulles ?"
                                 conditionalNode={
                                     <div className="space-y-2 mt-4">
                                         <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Action menée :</Label>
-                                        <select 
+                                        <select
                                             name="actionConsommationsNulles"
-                                            value={formData.actionConsommationsNulles} 
+                                            value={formData.actionConsommationsNulles}
                                             onChange={handleChange}
                                             className="w-full h-11 px-4 rounded-xl border-2 border-gray-100 bg-white text-sm focus:border-primary/40 outline-none transition-all shadow-sm"
                                         >
@@ -505,17 +503,17 @@ const NewReport = () => {
                                 }
                             />
 
-                            <QuestionBlock 
-                                formData={formData} 
-                                setFormData={setFormData} 
-                                fieldName="estimationsRecensees" 
-                                label="Avez-vous recensé les estimations ?" 
+                            <QuestionBlock
+                                formData={formData}
+                                setFormData={setFormData}
+                                fieldName="estimationsRecensees"
+                                label="Avez-vous recensé les estimations ?"
                                 conditionalNode={
                                     <div className="space-y-2 mt-4">
                                         <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Action menée :</Label>
-                                        <select 
+                                        <select
                                             name="actionEstimations"
-                                            value={formData.actionEstimations} 
+                                            value={formData.actionEstimations}
                                             onChange={handleChange}
                                             className="w-full h-11 px-4 rounded-xl border-2 border-gray-100 bg-white text-sm focus:border-primary/40 outline-none transition-all shadow-sm"
                                         >
@@ -528,11 +526,11 @@ const NewReport = () => {
                                 }
                             />
 
-                            <QuestionBlock 
-                                formData={formData} 
-                                setFormData={setFormData} 
-                                fieldName="batteriesCondensateursInstallees" 
-                                label="Avez-vous installé les batteries de condensateurs ?" 
+                            <QuestionBlock
+                                formData={formData}
+                                setFormData={setFormData}
+                                fieldName="batteriesCondensateursInstallees"
+                                label="Avez-vous installé les batteries de condensateurs ?"
                                 conditionalNode={
                                     <div className="space-y-2 mt-4">
                                         <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Nombre d'unités installées :</Label>
@@ -542,12 +540,12 @@ const NewReport = () => {
                             />
 
                             <QuestionBlock formData={formData} setFormData={setFormData} fieldName="cadastreEnergetiqueRealise" label="Avez-vous réalisé le cadastre énergétique de votre bâtiment ?" />
-                            
-                            <QuestionBlock 
-                                formData={formData} 
-                                setFormData={setFormData} 
-                                fieldName="indexTransmis" 
-                                label="Avez-vous relevé et transmis les index de consommation d’énergie pour le suivi des factures ?" 
+
+                            <QuestionBlock
+                                formData={formData}
+                                setFormData={setFormData}
+                                fieldName="indexTransmis"
+                                label="Avez-vous relevé et transmis les index de consommation d’énergie pour le suivi des factures ?"
                                 conditionalNode={
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                                         <div className="space-y-2">
@@ -562,17 +560,17 @@ const NewReport = () => {
                                 }
                             />
 
-                            <QuestionBlock 
-                                formData={formData} 
-                                setFormData={setFormData} 
-                                fieldName="plateformeDigitale" 
-                                label="Disposez-vous d'une plateforme digitale ?" 
+                            <QuestionBlock
+                                formData={formData}
+                                setFormData={setFormData}
+                                fieldName="plateformeDigitale"
+                                label="Disposez-vous d'une plateforme digitale ?"
                                 conditionalNode={
                                     <div className="mt-4 p-5 rounded-2xl bg-primary/5 border border-primary/10">
-                                        <OuiNonField 
-                                            label="Si oui, assurez-vous le suivi ?" 
-                                            value={formData.suiviPlateformeDigitale} 
-                                            onChange={(val) => setFormData(prev => ({ ...prev, suiviPlateformeDigitale: val }))} 
+                                        <OuiNonField
+                                            label="Si oui, assurez-vous le suivi ?"
+                                            value={formData.suiviPlateformeDigitale}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, suiviPlateformeDigitale: val }))}
                                         />
                                     </div>
                                 }
@@ -597,9 +595,9 @@ const NewReport = () => {
                     <CardContent className="p-8 space-y-10">
                         <div className="space-y-3">
                             <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Difficultés & Contraintes</Label>
-                            <textarea 
-                                name="contraintes" 
-                                value={formData.contraintes} 
+                            <textarea
+                                name="contraintes"
+                                value={formData.contraintes}
                                 onChange={handleChange}
                                 placeholder="Quelles difficultés avez-vous rencontré dans la gestion de l'énergie ce mois-ci ?"
                                 className="w-full h-36 p-5 rounded-2xl border-2 border-gray-100 bg-white focus:border-primary/40 focus:ring-0 transition-all font-medium text-sm shadow-sm placeholder:text-gray-300"
@@ -607,9 +605,9 @@ const NewReport = () => {
                         </div>
                         <div className="space-y-3">
                             <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Besoins d'Accompagnement</Label>
-                            <textarea 
-                                name="besoins" 
-                                value={formData.besoins} 
+                            <textarea
+                                name="recommandations"
+                                value={formData.recommandations}
                                 onChange={handleChange}
                                 placeholder="De quel appui technique ou matériel auriez-vous besoin de la part de l'AEME ?"
                                 className="w-full h-36 p-5 rounded-2xl border-2 border-gray-100 bg-white focus:border-primary/40 focus:ring-0 transition-all font-medium text-sm shadow-sm placeholder:text-gray-300"
@@ -633,19 +631,19 @@ const NewReport = () => {
                     </CardHeader>
                     <CardContent className="p-8">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <FileZone 
-                                field="illustrations" 
-                                label="Images & Photos de Sensibilisation" 
-                                accept="image/*" 
-                                formData={formData} 
-                                handleFile={handleFile} 
+                            <FileZone
+                                field="illustrations"
+                                label="Images & Photos de Sensibilisation"
+                                accept="image/*"
+                                formData={formData}
+                                handleFile={handleFile}
                             />
-                            <FileZone 
-                                field="autresDocuments" 
-                                label="Autres Documents Formels (ex: factures, relevés)" 
-                                accept=".pdf,.xlsx,.xls,.doc,.docx" 
-                                formData={formData} 
-                                handleFile={handleFile} 
+                            <FileZone
+                                field="autresDocuments"
+                                label="Autres Documents Formels (ex: factures, relevés)"
+                                accept=".pdf,.xlsx,.xls,.doc,.docx"
+                                formData={formData}
+                                handleFile={handleFile}
                             />
                         </div>
                     </CardContent>
@@ -653,19 +651,19 @@ const NewReport = () => {
 
                 {/* Submit Panel */}
                 <div className="pt-10 flex flex-col items-center">
-                    <Button 
-                        type="submit" 
+                    <Button
+                        type="submit"
                         disabled={submitting}
                         className="h-16 px-16 rounded-3xl text-sm font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary group hover:bg-primary/95"
                     >
                         {submitting ? (
                             <>
-                                <Loader2 className="mr-4 h-6 w-6 animate-spin text-white/50" /> 
+                                <Loader2 className="mr-4 h-6 w-6 animate-spin text-white/50" />
                                 <span>Transmission...</span>
                             </>
                         ) : (
                             <>
-                                <Send className="mr-4 h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" /> 
+                                <Send className="mr-4 h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                                 <span>Envoyer le Rapport</span>
                             </>
                         )}

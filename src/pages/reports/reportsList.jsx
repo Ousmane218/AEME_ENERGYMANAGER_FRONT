@@ -29,6 +29,7 @@ const ReportsList = () => {
 
     useEffect(() => {
         fetchReports();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchReports = async () => {
@@ -47,7 +48,7 @@ const ReportsList = () => {
                 // We'll check for user.id or a similar field. 
                 // In AdminUserDetail it used reportsData directly from getReportsByUser(userId).
                 // I'll add getReportsByUser to reportService if needed, but let's try filtering first.
-                filteredData = (data || []).filter(r => r.userId === targetedUserId || r.createdBy === targetedUserId);
+                filteredData = (data || []).filter(r => r.createdByUserId === targetedUserId);
             }
 
             const sortedData = filteredData.sort((a, b) => new Date(b.createdAt || b.reportDate || 0) - new Date(a.createdAt || a.reportDate || 0));

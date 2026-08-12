@@ -77,9 +77,9 @@ function App() {
                     <ProtectedLayout>
                         <Routes>
                             <Route path="/dashboard" element={<Dashboard />} />
-                            <Route path="/reports" element={<ReportsList />} />
-                            <Route path="/reports/new" element={<NewReport />} />
-                            <Route path="/reports/:id" element={<ReportDetails />} />
+                            <Route path="/reports" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportsList /></RoleGuard>} />
+                            <Route path="/reports/new" element={<RoleGuard allowedRoles={['GESTIONNAIRE']}><NewReport /></RoleGuard>} />
+                            <Route path="/reports/:id" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportDetails /></RoleGuard>} />
                             <Route path="/meetings" element={<MeetingsList />} />
                             <Route path="/meetings/new" element={<NewMeeting />} />
                             <Route path="/meetings/:id" element={<MeetingRoom />} />

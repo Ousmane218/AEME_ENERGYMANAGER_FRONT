@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 
 const Sidebar = () => {
     const location = useLocation();
-    const { user, logout, isLoading } = useAuth();
+    const { user, isLoading } = useAuth();
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const navItems = [
@@ -32,7 +32,7 @@ const Sidebar = () => {
         { name: 'Carte',            path: '/map',       icon: MapPin },
     ];
 
-    if (user?.isAdmin) {
+    if (user?.role === 'ADMIN') {
         navItems.push({ name: 'Gestionnaires', path: '/admin/users', icon: ShieldCheck });
         navItems.push({ name: 'Structures',   path: '/admin/structures', icon: Building2 });
     }
