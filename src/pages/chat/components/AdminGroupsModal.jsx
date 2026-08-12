@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, RefreshCw, Archive, Plus, Users, AlertCircle, Check } from 'lucide-react';
+import { MinistereSelector } from '../../../components/MinistereSelector';
+import { StructureSelector } from '../../../components/StructureSelector';
+import { CohorteSelector } from '../../../components/CohorteSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
     getAdminGroups,
     createGlobalGroup,
+    createMinistereGroup,
     createCohortGroup,
     createStructureGroup,
     syncGroupMembers,
@@ -91,6 +95,8 @@ export const AdminGroupsModal = ({ onClose }) => {
             setActionLoading('create');
             if (newType === 'GLOBAL') {
                 await createGlobalGroup(newName);
+            } else if (newType === 'MINISTERE') {
+                await createMinistereGroup(newRefId, newName);
             } else if (newType === 'COHORT') {
                 await createCohortGroup(newRefId, newName);
             } else if (newType === 'STRUCTURE') {
@@ -145,10 +151,14 @@ export const AdminGroupsModal = ({ onClose }) => {
                                     <label className="text-xs font-bold text-gray-500 uppercase">Type</label>
                                     <select
                                         value={newType}
-                                        onChange={(e) => setNewType(e.target.value)}
+                                                                                onChange={(e) => {
+                                            setNewType(e.target.value);
+                                            setNewRefId('');
+                                        }}
                                         className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm"
                                     >
                                         <option value="GLOBAL">GLOBAL</option>
+                                        <option value="MINISTERE">MINISTERE</option>
                                         <option value="COHORT">COHORT</option>
                                         <option value="STRUCTURE">STRUCTURE</option>
                                     </select>
@@ -166,15 +176,29 @@ export const AdminGroupsModal = ({ onClose }) => {
                                 {newType !== 'GLOBAL' && (
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase">
-                                            {newType === 'COHORT' ? 'Référence de la cohorte' : 'Identifiant de la structure'}
+                                            {newType === 'MINISTERE' ? 'Ministère cible' : newType === 'COHORT' ? 'Cohorte cible' : 'Structure cible'}
                                         </label>
-                                        <Input
-                                            value={newRefId}
-                                            onChange={(e) => setNewRefId(e.target.value)}
-                                            placeholder={newType === 'COHORT' ? "Réf cohorte requise" : "ID structure requis"}
-                                            required
-                                            className="h-10"
-                                        />
+                                        {newType === 'MINISTERE' && (
+                                            <MinistereSelector
+                                                selectedId={newRefId}
+                                                onSelect={(val) => setNewRefId(val?.id ? String(val.id) : '')}
+                                                className="w-full"
+                                            />
+                                        )}
+                                        {newType === 'STRUCTURE' && (
+                                            <StructureSelector
+                                                selectedId={newRefId}
+                                                onSelect={(val) => setNewRefId(val?.id ? String(val.id) : '')}
+                                                className="w-full"
+                                            />
+                                        )}
+                                        {newType === 'COHORT' && (
+                                            <CohorteSelector
+                                                selectedId={newRefId}
+                                                onSelect={(val) => setNewRefId(val?.id ? String(val.id) : '')}
+                                                className="w-full"
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -197,7 +221,7 @@ export const AdminGroupsModal = ({ onClose }) => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-1">
                                             <h4 className="font-bold text-gray-900 truncate">{group.name || 'Sans nom'}</h4>
-                                            <Badge className={getTypeColor(group.type)}>{group.type}</Badge>
+                                            <Badge className={getTypeColor(group.type)}>{group.type === 'GLOBAL' ? 'Globale' : group.type === 'MINISTERE' ? 'Ministère' : group.type === 'STRUCTURE' ? 'Structure' : group.type === 'COHORT' ? 'Cohorte' : group.type}</Badge>
                                             {group.active ? (
                                                 <Badge className="bg-green-100 text-green-700">Actif</Badge>
                                             ) : (

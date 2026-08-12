@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle, Users, Briefcase, GraduationCap, Settings } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -7,8 +7,7 @@ import {
     getMessages,
     getOrCreateConversation,
     deleteConversation,
-    getUserById,
-    getConversationCounterpart
+        getConversationCounterpart
 } from '../../services/chatService';
 import {
     connectWebSocket,
@@ -23,7 +22,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { AdminGroupsModal } from './components/AdminGroupsModal';
 
-const GROUP_TYPES = new Set(["GLOBAL", "COHORT", "STRUCTURE"]);
+const GROUP_TYPES = new Set(["GLOBAL", "COHORT", "STRUCTURE", "MINISTERE"]);
 
 const isGroupConversation = (conversation) =>
     GROUP_TYPES.has(conversation?.type);
@@ -37,7 +36,8 @@ const isDirectConversation = (conversation) =>
 
 const getConversationTypeLabel = (type) => {
     switch (type) {
-        case 'GLOBAL': return 'Groupe général';
+        case 'GLOBAL': return 'Discussion globale';
+        case 'MINISTERE': return 'Ministère';
         case 'COHORT': return 'Cohorte';
         case 'STRUCTURE': return 'Structure';
         case 'DIRECT': return 'Conversation privée';
@@ -64,7 +64,7 @@ const Chat = () => {
 
     useEffect(() => {
         fetchConversations();
-    }, []);
+    }, [fetchConversations]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -80,8 +80,8 @@ const Chat = () => {
     }, [selectedConv]);
 
     const getOtherUserIdFromConv = (conv) => {
-        if (!user?.id || !isDirectConversation(conv)) return null;
-        return conv.userOneId === user.id ? conv.userTwoId : conv.userOneId;
+        if (!user?.keycloakId || !isDirectConversation(conv)) return null;
+        return conv.userOneId === user?.keycloakId ? conv.userTwoId : conv.userOneId;
     };
 
     const getConversationDisplayName = (conv) => {
@@ -94,16 +94,22 @@ const Chat = () => {
 
         if (conv?.type === 'GLOBAL') return 'Groupe général AEME';
 
+        if (conv?.type === 'MINISTERE') {
+            const name = conv?.name?.trim();
+            if (name) return name;
+            return 'Ministère';
+        }
+
         if (conv?.type === 'COHORT') {
             const refId = conv.referenceId?.trim();
             if (refId && refId.length < 20) return `Cohorte ${refId}`;
-            return 'Groupe de cohorte';
+            return 'Cohorte';
         }
 
         if (conv?.type === 'STRUCTURE') {
             const refId = conv.referenceId?.trim();
             if (refId && refId.length < 20) return `Structure ${refId}`;
-            return 'Groupe de structure';
+            return 'Structure';
         }
 
         return 'Conversation';
@@ -114,7 +120,7 @@ const Chat = () => {
             return message.senderFullName?.trim() || "Auteur inconnu";
         }
         return (
-            message.senderId === user?.id
+            message.senderId === user?.keycloakId
                 ? (user?.fullName || "Moi")
                 : (counterpartNames[conversation?.id] || message.senderFullName?.trim() || "Utilisateur")
         );
@@ -133,20 +139,20 @@ const Chat = () => {
         }
     };
 
-    const fetchCounterpart = async (convId) => {
+    const fetchCounterpart = useCallback(async (convId) => {
         if (!convId || counterpartNames[convId] || fetchingCounterparts.current.has(convId)) return;
         fetchingCounterparts.current.add(convId);
         try {
             const data = await getConversationCounterpart(convId);
             setCounterpartNames(prev => ({ ...prev, [convId]: data?.data?.fullName || data?.fullName || 'Utilisateur' }));
-        } catch (err) {
+        } catch {
             setCounterpartNames(prev => ({ ...prev, [convId]: 'Utilisateur' }));
         } finally {
             fetchingCounterparts.current.delete(convId);
         }
-    };
+    }, [counterpartNames]);
 
-    const fetchConversations = async () => {
+    const fetchConversations = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getMyConversations();
@@ -176,7 +182,7 @@ const Chat = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchCounterpart, location.state?.conversationId]);
 
     const fetchMessages = async (conversationId) => {
         try {
@@ -216,7 +222,7 @@ const Chat = () => {
             setShowNewConv(false);
             setNewUserId('');
             setShowMobileMessages(true);
-        } catch (err) {
+        } catch {
             alert('Utilisateur introuvable');
         }
     };
@@ -391,7 +397,7 @@ const Chat = () => {
                                             {typeLabel}
                                         </p>
                                     </div>
-                                    {isDirect && (
+                                    {conv.type === 'DIRECT' && (
                                         <button
                                             onClick={(e) => handleDeleteConversation(e, conv.id)}
                                             className="opacity-0 group-hover:opacity-100 transition-all p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
@@ -476,7 +482,7 @@ const Chat = () => {
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => {
-                                    const isMe = msg.senderId === user?.id;
+                                    const isMe = msg.senderId === user?.keycloakId;
                                     const senderName = getMessageSenderName(msg, selectedConv);
 
                                     return (
