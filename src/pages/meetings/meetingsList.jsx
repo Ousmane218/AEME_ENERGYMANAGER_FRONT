@@ -1,18 +1,69 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    Video, Plus, Copy, Check, Trash2, Calendar, 
+import {
+    Video, Plus, Copy, Check, Trash2, Calendar,
     Clock, Play, CheckCircle, Search, Info,
     VideoIcon, CalendarDays, MoreVertical, Activity
 } from 'lucide-react';
-import { getMyMeetings, deleteMeeting } from '../../services/meetingService';
+import { getMyMeetings, deleteMeeting, deleteManagedMeeting, isManagedMeeting } from '../../services/meetingService';
+import { getAllMinisteres, getAllCohortes } from '../../services/referenceService';
+import { getAllStructures } from '../../services/structureService';
+
 import { useAuth } from '../../context/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn, formatDate } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+
+
+const MeetingTypeBadge = ({ type }) => {
+    const labels = {
+        DIRECT: 'Directe',
+        GLOBAL: 'Globale',
+        MINISTERE: 'Ministère',
+        STRUCTURE: 'Structure',
+        COHORT: 'Cohorte'
+    };
+    return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-200 text-[10px] font-black uppercase tracking-widest px-2.5">
+            {labels[type] || 'Réunion'}
+        </Badge>
+    );
+};
+
+const MeetingReferenceLabel = ({ meeting, references }) => {
+    if (meeting.type === 'DIRECT') return null;
+    if (meeting.type === 'GLOBAL') {
+        return (
+            <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                <Users size={12} /> Tous les utilisateurs
+            </span>
+        );
+    }
+
+    if (!meeting.referenceId) return null;
+
+    let refName = "";
+    if (meeting.type === 'MINISTERE') {
+        const min = references.ministeres.find(m => m.id === meeting.referenceId);
+        refName = min ? min.nom : `Ministère #${meeting.referenceId}`;
+    } else if (meeting.type === 'STRUCTURE') {
+        const struct = references.structures.find(s => s.id === meeting.referenceId);
+        refName = struct ? struct.name || struct.nom : `Structure #${meeting.referenceId}`;
+    } else if (meeting.type === 'COHORT') {
+        const coh = references.cohortes.find(c => c.id === meeting.referenceId);
+        refName = coh ? coh.name || coh.nom : `Cohorte #${meeting.referenceId}`;
+    }
+
+    return (
+        <span className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+            <Info size={12} /> {refName}
+        </span>
+    );
+};
 
 const MeetingStatusBadge = ({ status }) => {
     const variants = {
@@ -32,12 +83,15 @@ const MeetingStatusBadge = ({ status }) => {
     );
 };
 
-const MeetingCard = ({ meeting, onJoin, onCopy, onDelete, copiedId, userId }) => {
+const MeetingCard = ({ meeting, onJoin, onCopy, onDelete, copiedId, user, references }) => {
     const formatTime = (dateStr) => new Date(dateStr).toLocaleTimeString('fr-FR', {
         hour: '2-digit', minute: '2-digit'
     });
 
-    const isCreator = meeting.createdByUserId === userId;
+    const isDirectCreator = meeting.type === 'DIRECT' && meeting.createdByUserId === user?.keycloakId;
+    const isManagedAdmin = isManagedMeeting(meeting) && user?.role === 'ADMIN';
+    const canDelete = isDirectCreator || isManagedAdmin;
+
 
     return (
         <Card className="group border-none shadow-xl shadow-black/5 bg-white transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden">
@@ -50,11 +104,17 @@ const MeetingCard = ({ meeting, onJoin, onCopy, onDelete, copiedId, userId }) =>
                                 <VideoIcon size={20} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-gray-900 tracking-tight uppercase">Réunion Technique #{meeting.id}</h3>
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">ID Session: {meeting.id}</p>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-black text-gray-900 tracking-tight uppercase">Réunion #{meeting.id}</h3>
+                                    <MeetingTypeBadge type={meeting.type} />
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">ID: {meeting.id}</p>
+                                    <MeetingReferenceLabel meeting={meeting} references={references} />
+                                </div>
                             </div>
                         </div>
-                        
+
                         <div className="flex flex-wrap items-center gap-4">
                             <Badge variant="outline" className="bg-gray-50/50 border-gray-100 text-[10px] font-black gap-1.5 px-2">
                                 <CalendarDays size={12} className="text-primary" /> {formatDate(meeting.scheduledAt, { day: '2-digit', month: 'long', year: 'numeric' })}
@@ -66,10 +126,10 @@ const MeetingCard = ({ meeting, onJoin, onCopy, onDelete, copiedId, userId }) =>
                     </div>
                     <div className="flex flex-col items-end gap-3">
                         <MeetingStatusBadge status={meeting.status} />
-                        {isCreator && meeting.status !== 'IN_PROGRESS' && (
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
+                        {canDelete && meeting.status !== 'IN_PROGRESS' && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => onDelete(meeting.id)}
                                 className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-full"
                             >
@@ -109,8 +169,25 @@ const MeetingsList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [copiedId, setCopiedId] = useState(null);
+    const [references, setReferences] = useState({ ministeres: [], structures: [], cohortes: [] });
 
-    useEffect(() => { fetchMeetings(); }, []);
+    useEffect(() => {
+        fetchMeetings();
+        fetchReferences();
+    }, []);
+
+    const fetchReferences = async () => {
+        try {
+            const [min, str, coh] = await Promise.all([
+                getAllMinisteres().catch(() => []),
+                getAllStructures().catch(() => []),
+                getAllCohortes().catch(() => [])
+            ]);
+            setReferences({ ministeres: min, structures: str, cohortes: coh });
+        } catch (err) {
+            console.error("Erreur references", err);
+        }
+    };
 
     const fetchMeetings = async () => {
         try {
@@ -134,7 +211,12 @@ const MeetingsList = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Supprimer ce meeting ?')) return;
         try {
-            await deleteMeeting(id);
+            const meeting = meetings.find(m => m.id === id);
+            if (isManagedMeeting(meeting)) {
+                await deleteManagedMeeting(id);
+            } else {
+                await deleteMeeting(id);
+            }
             setMeetings(prev => prev.filter(m => m.id !== id));
         } catch (err) {
             alert(err.message);
@@ -205,7 +287,8 @@ const MeetingsList = () => {
                                         onCopy={handleCopy}
                                         onDelete={handleDelete}
                                         copiedId={copiedId}
-                                        userId={user?.id}
+                                        user={user}
+                                        references={references}
                                     />
                                 ))}
                             </div>
@@ -236,14 +319,17 @@ const MeetingsList = () => {
                                                     <CheckCircle size={18} />
                                                 </div>
                                                 <div>
-                                                    <h4 className="text-xs font-black text-gray-700 uppercase tracking-tight">Réunion Archvée #{meeting.id}</h4>
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="text-xs font-black text-gray-700 uppercase tracking-tight">Réunion Archivée #{meeting.id}</h4>
+                                                        <MeetingTypeBadge type={meeting.type} />
+                                                    </div>
                                                     <p className="text-[10px] font-bold text-muted-foreground">
                                                         {formatDate(meeting.scheduledAt)} · {formatTime(meeting.scheduledAt)}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {meeting.createdByUserId === user?.id && (
+                                                {((meeting.type === 'DIRECT' && meeting.createdByUserId === user?.keycloakId) || (isManagedMeeting(meeting) && user?.role === 'ADMIN')) && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
