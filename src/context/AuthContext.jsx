@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import keycloak from '../Keycloak';
+import { getCurrentProfile } from '../services/profileService';
+
 
 const AuthContext = createContext(null);
 
@@ -7,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileError, setProfileError] = useState(null);
 
   useEffect(() => {
     keycloak
@@ -14,25 +17,53 @@ export const AuthProvider = ({ children }) => {
         onLoad: 'check-sso',
         checkLoginIframe: false,
       })
-      .then((authenticated) => {
+      .then(async (authenticated) => {
         if (authenticated && keycloak.tokenParsed) {
-          const parsed = keycloak.tokenParsed;
-          const realmRoles = parsed.realm_access?.roles || [];
-          const isAdmin = realmRoles.includes('admin');
-
-          setUser({
-            id:        parsed.sub,
-            email:     parsed.email,
-            firstName: parsed.given_name,
-            lastName:  parsed.family_name,
-            fullName:  parsed.name,
-            username:  parsed.preferred_username,
-            role:      isAdmin ? 'admin' : 'user',
-            membershipService: parsed.membershipService,
-            isAdmin,
-          });
           setToken(keycloak.token);
+          const parsed = keycloak.tokenParsed;
+
+          try {
+            const profile = await getCurrentProfile();
+
+            const isAdmin = profile.role === 'ADMIN';
+            const isDage = profile.role === 'DAGE';
+            const isGestionnaire = profile.role === 'GESTIONNAIRE';
+
+            const membershipFallback = profile.structure?.name || profile.ministere?.name || parsed.membershipService || 'Aucun service assigné';
+
+            setUser({
+              id: profile.id,
+              keycloakId: parsed.sub,
+              role: profile.role,
+              actif: profile.actif,
+              profile: profile,
+              isAdmin,
+              isDage,
+              isGestionnaire,
+              email: profile.email || parsed.email,
+              firstName: profile.prenom || parsed.given_name,
+              lastName: profile.nom || parsed.family_name,
+              fullName: (profile.prenom && profile.nom) ? `${profile.prenom} ${profile.nom}` : parsed.name,
+              username: parsed.preferred_username,
+              membershipService: membershipFallback
+            });
+            setProfileError(null);
+          } catch (error) {
+            const status = error.response?.status;
+            if (status === 401) {
+              keycloak.logout({ redirectUri: window.location.origin });
+            } else if (status === 403) {
+              setUser(null);
+              setProfileError('Accès interdit ou profil inactif');
+            } else {
+              setUser(null);
+              setProfileError('Erreur de chargement du profil métier');
+            }
+          }
         }
+      })
+      .catch((err) => {
+        console.error('Keycloak init error', err);
       })
       .finally(() => setIsLoading(false));
 
@@ -58,6 +89,7 @@ export const AuthProvider = ({ children }) => {
       token,
       isAuthenticated: !!user,
       isLoading,
+      profileError,
       login,
       logout,
     }}>
@@ -66,6 +98,7 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside AuthProvider');

@@ -20,11 +20,7 @@ import UserReports from './pages/admin/UserReports';
 import ErrorBoundary from './components/ErrorBoundary';
 import { cn } from './lib/utils';
 
-const AdminRoute = ({ children }) => {
-    const { user, isLoading } = useAuth();
-    if (isLoading) return null;
-    return user?.isAdmin ? children : <Navigate to="/dashboard" replace />;
-};
+import RoleGuard from './components/RoleGuard';
 
 const ProtectedLayout = ({ children }) => {
     const { isAuthenticated, isLoading } = useAuth();
@@ -76,7 +72,7 @@ function App() {
         <ErrorBoundary>
             <Routes>
                 <Route path="/" element={<LandingPage />} />
-                
+
                 <Route path="/*" element={
                     <ProtectedLayout>
                         <Routes>
@@ -93,17 +89,17 @@ function App() {
 
                             {/* Admin Routes */}
                             <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
-                            <Route 
-                                path="/admin/users" 
-                                element={<AdminRoute><Users /></AdminRoute>} 
+                            <Route
+                                path="/admin/users"
+                                element={<RoleGuard allowedRoles={['ADMIN']}><Users /></RoleGuard>}
                             />
-                            <Route 
-                                path="/admin/structures" 
-                                element={<AdminRoute><Structures /></AdminRoute>} 
+                            <Route
+                                path="/admin/structures"
+                                element={<RoleGuard allowedRoles={['ADMIN']}><Structures /></RoleGuard>}
                             />
-                            <Route 
-                                path="/admin/users/:userId" 
-                                element={<AdminRoute><AdminUserDetail /></AdminRoute>} 
+                            <Route
+                                path="/admin/users/:userId"
+                                element={<RoleGuard allowedRoles={['ADMIN']}><AdminUserDetail /></RoleGuard>}
                             />
                         </Routes>
                     </ProtectedLayout>
