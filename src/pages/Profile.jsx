@@ -1,38 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    ArrowLeft, Mail, User, Building2, Shield, Star, LogOut,
-    Loader2, Hash, Copy, Check, MapPin, X, Search,
+    ArrowLeft, Mail, User, Building2, Shield, LogOut,
+    Loader2, Check, X,
     Edit2, Phone, Briefcase, Calendar, Users, FileText, CheckCircle, GraduationCap, Map
 } from 'lucide-react';
-import { MapContainer, TileLayer, useMapEvents, Marker, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../context/AuthContext';
-import { getUserProfile, updateMyLocation, updateMyProfile } from '../services/profileService';
-import { SENEGAL_CENTER, DAKAR_CENTER, SENEGAL_BOUNDS, AEME_HQ } from '../lib/mapUtils';
-import { StructureSelector } from '../components/StructureSelector';
-import keycloak from '../Keycloak';
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-    iconUrl:       'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-    shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-});
-
-const API_URL = import.meta.env.VITE_API_URL;
-
-const LocationPicker = ({ onPick }) => {
-    useMapEvents({ click(e) { onPick(e.latlng.lat, e.latlng.lng); } });
-    return null;
-};
-
-const MapRecenter = ({ coords }) => {
-    const map = useMap();
-    useEffect(() => { if (coords) map.flyTo(coords, 16); }, [coords]);
-    return null;
-};
+import { getCurrentProfile, updateMyProfile } from '../services/profileService';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -40,70 +14,37 @@ const Profile = () => {
     const [profile, setProfile]               = useState(null);
     const [loading, setLoading]               = useState(true);
     const [error, setError]                   = useState(null);
-    const [copied, setCopied]                 = useState(false);
-    const [showLocationModal, setShowLocationModal] = useState(false);
     const [showEditModal, setShowEditModal]   = useState(false);
-    const [locationSaved, setLocationSaved]   = useState(false);
     const [editSaving, setEditSaving]         = useState(false);
     const [editSaved, setEditSaved]           = useState(false);
-    const [pickedCoords, setPickedCoords]     = useState(null);
-    const [searchQuery, setSearchQuery]       = useState('');
-    const [searchResults, setSearchResults]   = useState([]);
-    const [searching, setSearching]           = useState(false);
-    const searchTimeoutRef                    = useRef(null);
 
     const [editForm, setEditForm] = useState({
-        genre: '', dateNaissance: '', contact1: '', contact2: '', emailSecondaire: '',
-        departement: '', posteOccupe: '', dateNomination: '',
-        cohorte: '', dateInstallation: '', dateFormation: '',
-        derniereMiseANiveau: '', nombreSitesGeres: '', typeBatiment: ''
+        prenom: '', nom: '', genre: '', dateNaissance: '', telephonePrincipal: '', telephoneSecondaire: '', emailSecondaire: '',
+        departementAdministratif: '', posteOccupe: '', dateNomination: '',
+        dateInstallation: '', dateFormation: '', derniereMiseANiveau: ''
     });
-
-    const isGeocoded = (val) => {
-        if (val === null || val === undefined) return false;
-        let finalVal = val;
-        if (Array.isArray(val)) {
-            if (val.length === 0) return false;
-            finalVal = val[0];
-        }
-        if (typeof finalVal === 'string') {
-            const trimmed = finalVal.trim();
-            if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') return false;
-            finalVal = trimmed;
-        }
-        return !isNaN(parseFloat(finalVal));
-    };
 
     useEffect(() => {
         let mounted = true;
-        getUserProfile()
+        getCurrentProfile()
             .then(data => {
                 if (!mounted) return;
                 setProfile(data);
                 setEditForm({
-                    genre:               data.genre               || '',
-                    dateNaissance:       data.dateNaissance       || '',
-                    contact1:            data.contact1            || '',
-                    contact2:            data.contact2            || '',
-                    emailSecondaire:     data.emailSecondaire     || '',
-                    departement:         data.departement         || '',
-                    posteOccupe:         data.posteOccupe         || '',
-                    dateNomination:      data.dateNomination      || '',
-                    cohorte:             data.cohorte             || '',
-                    dateInstallation:    data.dateInstallation    || '',
-                    dateFormation:       data.dateFormation       || '',
-                    derniereMiseANiveau: data.derniereMiseANiveau || '',
-                    nombreSitesGeres:    data.nombreSitesGeres    || '',
-                    typeBatiment:        data.typeBatiment        || '',
+                    prenom:                   data.prenom                   || '',
+                    nom:                      data.nom                      || '',
+                    genre:                    data.genre                    || '',
+                    dateNaissance:            data.dateNaissance            || '',
+                    telephonePrincipal:       data.telephonePrincipal       || '',
+                    telephoneSecondaire:      data.telephoneSecondaire      || '',
+                    emailSecondaire:          data.emailSecondaire          || '',
+                    departementAdministratif: data.departementAdministratif || '',
+                    posteOccupe:              data.posteOccupe              || '',
+                    dateNomination:           data.dateNomination           || '',
+                    dateInstallation:         data.dateInstallation         || '',
+                    dateFormation:            data.dateFormation            || '',
+                    derniereMiseANiveau:      data.derniereMiseANiveau      || ''
                 });
-                
-                if (isGeocoded(data.serviceLatitude) && isGeocoded(data.serviceLongitude)) {
-                    const lat = parseFloat(Array.isArray(data.serviceLatitude) ? data.serviceLatitude[0] : data.serviceLatitude);
-                    const lng = parseFloat(Array.isArray(data.serviceLongitude) ? data.serviceLongitude[0] : data.serviceLongitude);
-                    if (!isNaN(lat) && !isNaN(lng)) {
-                        setPickedCoords([lat, lng]);
-                    }
-                }
             })
             .catch(err => { if (mounted) setError(err.message); })
             .finally(() => { if (mounted) setLoading(false); });
@@ -111,36 +52,15 @@ const Profile = () => {
     }, []);
 
     const getInitial = () => {
-        if (profile?.firstName) return profile.firstName.charAt(0).toUpperCase();
-        if (profile?.username)  return profile.username.charAt(0).toUpperCase();
+        if (profile?.prenom) return profile.prenom.charAt(0).toUpperCase();
         return '?';
-    };
-
-    const handleCopyId = () => {
-        navigator.clipboard.writeText(profile?.id);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    const handlePickLocation = async (lat, lng) => {
-        if (isNaN(lat) || isNaN(lng)) return;
-        setPickedCoords([lat, lng]);
-        try {
-            await updateMyLocation(lat, lng);
-            setLocationSaved(true);
-            setTimeout(() => setLocationSaved(false), 2000);
-        } catch { alert('Erreur lors de la sauvegarde de la position'); }
-    };
-
-    const handleCloseModal = () => {
-        setShowLocationModal(false);
     };
 
     const handleSaveEdit = async () => {
         try {
             setEditSaving(true);
-            await updateMyProfile(editForm);
-            setProfile(prev => ({ ...prev, ...editForm }));
+            const updatedProfile = await updateMyProfile(editForm);
+            setProfile(updatedProfile);
             setEditSaved(true);
             setTimeout(() => {
                 setEditSaved(false);
@@ -150,18 +70,9 @@ const Profile = () => {
         finally { setEditSaving(false); }
     };
 
-    const ScoreBadge = ({ score }) => {
-        const color = score >= 0 ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100';
-        return (
-            <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-sm ${color}`}>
-                {score >= 0 ? '+' : ''}{score} pts
-            </span>
-        );
-    };
-
     const RoleBadge = ({ role }) => {
-        if (role === 'admin') return (
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-yellow-100 text-yellow-800 border border-yellow-200">
+        if (role === 'ADMIN') return (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 border border-amber-200">
                 <Shield size={14} /> Admin
             </span>
         );
@@ -172,11 +83,9 @@ const Profile = () => {
         );
     };
 
-    const getDisplayService = (u) =>
-        (u?.membershipService && u.membershipService.trim() !== "")
-            ? u.membershipService : "Aucun service assigné";
-
-    const profileComplete = profile?.genre && profile?.contact1 && profile?.posteOccupe;
+    const displayService = profile?.structure?.name || profile?.structure?.nom || profile?.ministere?.nom || "Aucun service assigné";
+    const profileComplete = profile?.genre && profile?.telephonePrincipal && profile?.posteOccupe;
+    const displayName = `${profile?.prenom || ''} ${profile?.nom || ''}`.trim() || 'Utilisateur';
 
     if (loading) return (
         <div className="flex items-center justify-center min-h-[400px]">
@@ -184,12 +93,6 @@ const Profile = () => {
         </div>
     );
     if (error) return <div className="p-4 text-red-600 font-medium">{error}</div>;
-
-    const displayService = getDisplayService(profile);
-    const displayName = profile?.fullName
-        || `${profile?.firstName || ''} ${profile?.lastName || ''}`.trim()
-        || 'Utilisateur';
-    const hasLocation = profile?.serviceLatitude && profile?.serviceLongitude;
 
     return (
         <>
@@ -269,26 +172,8 @@ const Profile = () => {
                             <div className="flex flex-col items-center lg:items-end gap-6 border-t lg:border-t-0 lg:border-l border-gray-100 pt-6 lg:pt-0 lg:pl-12 w-full lg:w-auto">
                                 <div className="flex items-center gap-10">
                                     <div className="text-center lg:text-right">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><span>Score Global</span></p>
-                                        <div className="flex items-center gap-2 justify-center lg:justify-end">
-                                            <Star size={18} className="text-amber-500 fill-amber-500" />
-                                            <span className="text-2xl font-black text-gray-900 group-hover:text-primary transition-colors">
-                                                {profile?.score ?? 0}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="h-12 w-px bg-gray-100" />
-                                    <div className="text-center lg:text-right">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1"><span>Accès</span></p>
                                         <RoleBadge role={profile?.role} />
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between w-full lg:w-48 px-4 py-3 bg-gray-50/50 rounded-2xl group/copy cursor-pointer hover:bg-primary/5 transition-all border border-transparent hover:border-primary/10" onClick={handleCopyId}>
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">ID Unique</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-black text-gray-900 truncate max-w-[80px] opacity-70">{profile?.id || '—'}</span>
-                                        {copied ? <Check size={14} className="text-green-500" /> : <Copy size={12} className="text-gray-400 group-hover/copy:text-primary transition-colors" />}
                                     </div>
                                 </div>
                             </div>
@@ -303,17 +188,17 @@ const Profile = () => {
                             { label: 'Prénom & Nom',      value: displayName,             icon: User },
                             { label: 'Genre',             value: profile?.genre,          icon: Users },
                             { label: 'Date de naissance', value: profile?.dateNaissance,  icon: Calendar },
-                            { label: 'Contact N°1',       value: profile?.contact1,       icon: Phone },
-                            { label: 'Contact N°2',       value: profile?.contact2,       icon: Phone },
-                            { label: 'Email Secondaire',  value: profile?.emailSecondaire,icon: Mail },
+                            { label: 'Contact Principal', value: profile?.telephonePrincipal,       icon: Phone },
+                            { label: 'Contact Secondaire',value: profile?.telephoneSecondaire,       icon: Phone },
+                            { label: 'Email Alternatif',  value: profile?.emailSecondaire,icon: Mail },
                         ]},
                         { title: "2. Profil Professionnel", icon: Briefcase, fields: [
-                            { label: 'Direction / Département', value: profile?.departement,      icon: Building2 },
+                            { label: 'Direction / Département', value: profile?.departementAdministratif,      icon: Building2 },
                             { label: 'Poste occupé',         value: profile?.posteOccupe,      icon: Briefcase },
                             { label: 'Date de nomination',   value: profile?.dateNomination,   icon: Calendar },
                         ]},
                         { title: "3. Expertise & Formations", icon: GraduationCap, fields: [
-                            { label: 'Cohorte',                 value: profile?.cohorte,             icon: GraduationCap },
+                            { label: 'Cohorte',                 value: profile?.cohorte?.name || profile?.cohorte?.nom,             icon: GraduationCap },
                             { label: 'Date d\'installation',    value: profile?.dateInstallation,    icon: Calendar },
                             { label: 'Date de formation',       value: profile?.dateFormation,       icon: Calendar },
                             { label: 'Dernière mise à niveau',  value: profile?.derniereMiseANiveau, icon: Calendar },
@@ -321,7 +206,7 @@ const Profile = () => {
                         { title: "4. Périmètre & Carto", icon: Map, fields: [
                             { label: 'Sites gérés', value: profile?.nombreSitesGeres, icon: Map },
                             { label: 'Bâtiment',   value: profile?.typeBatiment,     icon: Building2 },
-                        ], hasAction: true, actionLabel: hasLocation ? 'Mettre à jour position' : 'Définir position', onAction: () => setShowLocationModal(true) }
+                        ]}
                     ].map((section, idx) => (
                         <div key={idx} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-black/5 transition-all duration-500">
                             <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
@@ -331,9 +216,6 @@ const Profile = () => {
                                     </div>
                                     <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em]"><span>{section.title}</span></h3>
                                 </div>
-                                {section.hasAction && (
-                                    <span className={`h-2 w-2 rounded-full ${hasLocation ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                                )}
                             </div>
                             <div className="p-8 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 flex-1">
                                 {section.fields.map((info, i) => (
@@ -350,17 +232,6 @@ const Profile = () => {
                                     </div>
                                 ))}
                             </div>
-                            {section.hasAction && (
-                                <div className="px-8 pb-8 pt-2">
-                                    <button
-                                        onClick={section.onAction}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary hover:bg-primary/95 text-white rounded-2xl shadow-xl shadow-primary/20 transition-all text-[10px] font-black uppercase tracking-[0.2em]"
-                                    >
-                                        <MapPin size={14} />
-                                        <span>{section.actionLabel}</span>
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>
@@ -402,6 +273,14 @@ const Profile = () => {
                                 <h4 className="text-sm font-bold text-primary border-b pb-2">1. Informations Identitaires et Contact</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Prénom</label>
+                                        <input type="text" value={editForm.prenom} onChange={e => setEditForm({ ...editForm, prenom: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Nom</label>
+                                        <input type="text" value={editForm.nom} onChange={e => setEditForm({ ...editForm, nom: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                    </div>
+                                    <div>
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Genre</label>
                                         <select value={editForm.genre} onChange={e => setEditForm({ ...editForm, genre: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-primary/30">
                                             <option value="">Sélectionner</option><option value="Homme">Homme</option><option value="Femme">Femme</option>
@@ -412,12 +291,12 @@ const Profile = () => {
                                         <input type="date" value={editForm.dateNaissance} onChange={e => setEditForm({ ...editForm, dateNaissance: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Contact N°1</label>
-                                        <input type="tel" value={editForm.contact1} onChange={e => setEditForm({ ...editForm, contact1: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Contact Principal</label>
+                                        <input type="tel" value={editForm.telephonePrincipal} onChange={e => setEditForm({ ...editForm, telephonePrincipal: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Contact N°2</label>
-                                        <input type="tel" value={editForm.contact2} onChange={e => setEditForm({ ...editForm, contact2: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Contact Secondaire</label>
+                                        <input type="tel" value={editForm.telephoneSecondaire} onChange={e => setEditForm({ ...editForm, telephoneSecondaire: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Email Secondaire (Personnel)</label>
@@ -432,7 +311,7 @@ const Profile = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Direction / Département</label>
-                                        <input type="text" value={editForm.departement} onChange={e => setEditForm({ ...editForm, departement: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                        <input type="text" value={editForm.departementAdministratif} onChange={e => setEditForm({ ...editForm, departementAdministratif: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Poste occupé</label>
@@ -449,10 +328,6 @@ const Profile = () => {
                             <div className="space-y-4">
                                 <h4 className="text-sm font-bold text-primary border-b pb-2">3. Parcours & Certifications</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="md:col-span-2">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Cohorte (Formation)</label>
-                                        <input type="text" placeholder="Ex: Cohorte 2024, Session Spéciale..." value={editForm.cohorte} onChange={e => setEditForm({ ...editForm, cohorte: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
-                                    </div>
                                     <div>
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Date d'installation</label>
                                         <input type="date" value={editForm.dateInstallation} onChange={e => setEditForm({ ...editForm, dateInstallation: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
@@ -464,21 +339,6 @@ const Profile = () => {
                                     <div className="md:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Dernière mise à niveau</label>
                                         <input type="date" value={editForm.derniereMiseANiveau} onChange={e => setEditForm({ ...editForm, derniereMiseANiveau: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section 4 */}
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-bold text-primary border-b pb-2">4. Périmètre de Gestion (Données Techniques)</h4>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Nombre de sites gérés</label>
-                                        <input type="number" min="0" placeholder="Nb bâtiments/infrastructures" value={editForm.nombreSitesGeres} onChange={e => setEditForm({ ...editForm, nombreSitesGeres: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Type de bâtiment</label>
-                                        <input type="text" placeholder="Bureaux, Hôpitaux, Écoles..." value={editForm.typeBatiment} onChange={e => setEditForm({ ...editForm, typeBatiment: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
                                     </div>
                                 </div>
                             </div>
@@ -502,85 +362,6 @@ const Profile = () => {
                                     </button>
                                 </>
                             )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Localisation (Updated to Structure Selection) */}
-            {showLocationModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-gray-50">
-                            <div>
-                                <h2 className="text-xl font-black text-primary uppercase tracking-tight">Rattachement à une Structure</h2>
-                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">
-                                    Sélectionnez votre structure officielle pour la géolocalisation.
-                                </p>
-                            </div>
-                            <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-                        
-                        <div className="p-10 space-y-8">
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-1">
-                                    Choisir dans le référentiel
-                                </label>
-                                <StructureSelector 
-                                    onSelect={async (s) => {
-                                        try {
-                                            setSearching(true);
-                                            // We update BOTH the name and the coordinates
-                                            // The backend updateMyLocation might need to be enhanced to also update the name
-                                            // For now we use the lat/lng and we'll assume the name is updated via updateMyProfile if needed
-                                            await updateMyLocation(parseFloat(s.latitude), parseFloat(s.longitude));
-                                            
-                                            // Update the name too via updateMyProfile to keep consistency
-                                            await updateMyProfile({ membershipService: s.name });
-                                            
-                                            setProfile(prev => ({ 
-                                                ...prev, 
-                                                membershipService: s.name,
-                                                serviceLatitude: s.latitude,
-                                                serviceLongitude: s.longitude
-                                            }));
-                                            setPickedCoords([parseFloat(s.latitude), parseFloat(s.longitude)]);
-                                            
-                                            setLocationSaved(true);
-                                            setTimeout(() => {
-                                                setLocationSaved(false);
-                                                handleCloseModal();
-                                            }, 1500);
-                                        } catch (err) {
-                                            alert("Erreur lors du rattachement : " + err.message);
-                                        } finally {
-                                            setSearching(false);
-                                        }
-                                    }}
-                                />
-                            </div>
-
-                            {locationSaved ? (
-                                <div className="flex items-center justify-center gap-3 py-4 bg-green-50 rounded-2xl border border-green-100 animate-in slide-in-from-bottom-4">
-                                    <CheckCircle size={20} className="text-green-500" />
-                                    <span className="text-sm font-bold text-green-700">Rattachement réussi !</span>
-                                </div>
-                            ) : (
-                                <div className="bg-gray-50 rounded-2xl p-6 flex items-start gap-4 border border-dashed border-gray-200">
-                                    <MapPin size={20} className="text-primary/40 shrink-0 mt-1" />
-                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">
-                                        En choisissant une structure, votre position sur la carte nationale sera automatiquement synchronisée avec les coordonnées officielles de l'établissement.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="px-8 py-6 border-t border-gray-50 bg-gray-50/50 flex justify-end">
-                            <Button variant="ghost" onClick={handleCloseModal} className="font-bold text-xs uppercase tracking-widest text-gray-400">
-                                Fermer
-                            </Button>
                         </div>
                     </div>
                 </div>

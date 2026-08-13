@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { createReport } from '../../services/reportService';
 
-import { getUserProfile } from '../../services/profileService';
+import { getCurrentProfile } from '../../services/profileService';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -160,7 +160,7 @@ const NewReport = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const profile = await getUserProfile();
+                const profile = await getCurrentProfile();
                 setFormData(prev => ({
                     ...prev,
                     nomGestionnaire: `${profile.firstName} ${profile.lastName}`,

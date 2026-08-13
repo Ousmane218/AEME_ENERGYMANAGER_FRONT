@@ -19,16 +19,6 @@ export const getUserById = async (userId) => {
     }
 };
 
-export const getUserAuthProfile = async (userId) => {
-    try {
-        // Direct access to the auth profile (Keycloak attributes)
-        return await api.get(`/auth/users/${userId}`);
-    } catch {
-        console.warn(`Could not fetch auth profile for user ${userId}`);
-        return null;
-    }
-};
-
 export const createUser = async (payload) => {
     try {
         const data = await api.post(`${API_ROOT_URL}/api/v2/admin/utilisateurs`, payload);
@@ -45,11 +35,10 @@ export const updateUserActivation = async (userId, actif) => {
     await api.patch(`${API_ROOT_URL}/api/v2/admin/utilisateurs/${userId}/activation`, { actif });
 };
 
-
 // REPORTS MANAGEMENT
 export const getReportsByUser = async (userId) => {
     try {
-        return await api.get(`/admin/users/${userId}/reports`);
+        return await api.get(`${API_ROOT_URL}/api/v2/admin/utilisateurs/${userId}/reports`);
     } catch {
         throw new Error('Erreur lors du chargement des rapports de l\'utilisateur');
     }
