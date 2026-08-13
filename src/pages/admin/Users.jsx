@@ -39,8 +39,8 @@ const Users = () => {
             const data = await getAllUsers(first, pageSize, search);
 
             // Handle the paginated response structure
-            setUsers(data.users || []);
-            setTotalUsers(data.total || 0);
+            setUsers(data.content || []);
+            setTotalUsers(data.totalElements || 0);
         } catch (err) {
             setError(err.message);
         } finally {
