@@ -32,14 +32,6 @@ const Users = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchUsers(0, searchTerm);
-            setCurrentPage(0);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm, pageSize, fetchUsers]);
-
     const fetchUsers = useCallback(async (page = 0, search = searchTerm) => {
         try {
             setLoading(true);
@@ -55,6 +47,14 @@ const Users = () => {
             setLoading(false);
         }
     }, [pageSize, searchTerm]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            fetchUsers(0, searchTerm);
+            setCurrentPage(0);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm, pageSize, fetchUsers]);
 
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
