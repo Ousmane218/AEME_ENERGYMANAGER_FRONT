@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { User, Trash2, FileText, Search, Loader2, Plus, X, Shield, Filter, MoreHorizontal, Mail, ExternalLink } from 'lucide-react';
-import { getAllUsers } from '../../services/adminService';
+import { User, Trash2, CheckCircle, XCircle, FileText, Search, Loader2, Plus, X, Shield, Filter, MoreHorizontal, Mail, ExternalLink } from 'lucide-react';
+import { getAllUsers, updateUserActivation } from '../../services/adminService';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
 import {
     Table,
@@ -65,13 +65,14 @@ const Users = () => {
         }, 100);
     };
 
-    const handleDeleteUser = async (userId) => {
-        if (!window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
+    const handleToggleActivation = async (user) => {
+        const action = user.actif ? 'désactiver' : 'réactiver';
+        if (!window.confirm(`Voulez-vous ${action} cet utilisateur ?`)) return;
         try {
-            await (userId);
+            await updateUserActivation(user.id, !user.actif);
             fetchUsers(currentPage);
         } catch (err) {
-            alert('Erreur lors de la suppression: ' + err.message);
+            alert(`Erreur lors de la modification: ` + err.message);
         }
     };
 
@@ -171,12 +172,14 @@ const Users = () => {
                                         <TableCell>
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-10 w-10 border shadow-sm scale-90 group-hover:scale-100 transition-transform">
-                                                    <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
-                                                        {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U'}
+                                                    <AvatarFallback className="bg-primary/10 text-primary font-black text-sm uppercase">
+                                                        {(user.prenom || user.nom) ? `${user.prenom?.charAt(0) || ''}${user.nom?.charAt(0) || ''}` : 'U'}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <div className="font-bold text-gray-900 leading-tight">{user.fullName || '—'}</div>
+                                                    <div className="font-bold text-gray-900 leading-tight">
+                                                        {(user.prenom || user.nom) ? `${user.prenom || ''} ${user.nom || ''}`.trim() : '—'}
+                                                    </div>
                                                     <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-black mt-0.5">ID: {user.id || 'N/A'}</div>
                                                 </div>
                                             </div>
@@ -223,10 +226,10 @@ const Users = () => {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    className={cn("h-8 w-8 hover:text-white transition-colors", user.actif ? "text-red-500 hover:bg-red-500" : "text-green-500 hover:bg-green-500")}
+                                                    onClick={() => handleToggleActivation(user)}
                                                 >
-                                                    <Trash2 size={16} />
+                                                    {user.actif ? <XCircle size={16} /> : <CheckCircle size={16} />}
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -242,12 +245,14 @@ const Users = () => {
                                 <div key={user.id} className="p-5 space-y-4 hover:bg-gray-50/50 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <Avatar className="h-12 w-12 border shadow-sm">
-                                            <AvatarFallback className="bg-primary/10 text-primary font-black text-sm">
-                                                {user.fullName?.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'U'}
+                                            <AvatarFallback className="bg-primary/10 text-primary font-black text-sm uppercase">
+                                                {(user.prenom || user.nom) ? `${user.prenom?.charAt(0) || ''}${user.nom?.charAt(0) || ''}` : 'U'}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <div className="font-bold text-gray-900 leading-tight truncate">{user.fullName || '—'}</div>
+                                            <div className="font-bold text-gray-900 leading-tight truncate">
+                                                {(user.prenom || user.nom) ? `${user.prenom || ''} ${user.nom || ''}`.trim() : '—'}
+                                            </div>
                                             <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 mt-1">
                                                 <Mail size={10} /> {user.email}
                                             </div>
@@ -283,10 +288,10 @@ const Users = () => {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
-                                            onClick={() => handleDeleteUser(user.id)}
+                                            className={cn("h-10 w-10 shrink-0 hover:text-white transition-colors", user.actif ? "text-red-500 hover:bg-red-500" : "text-green-500 hover:bg-green-500")}
+                                            onClick={() => handleToggleActivation(user)}
                                         >
-                                            <Trash2 size={16} />
+                                            {user.actif ? <XCircle size={16} /> : <CheckCircle size={16} />}
                                         </Button>
                                     </div>
                                 </div>
