@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileText, Calendar, MessageSquare, ChevronRight, CheckCircle, Clock, XCircle, TrendingUp, Filter, Download, Zap, Plus } from 'lucide-react';
-import { getUserProfile } from '../services/profileService';
+import { getCurrentProfile } from '../services/profileService';
 import { useAuth } from '../context/AuthContext';
 import { getMyReports, getAllReports } from '../services/reportService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,7 +20,7 @@ const Dashboard = () => {
     const { user } = useAuth();
 
     useEffect(() => {
-        Promise.all([getUserProfile(), (user?.role === 'ADMIN' || user?.role === 'DAGE') ? getAllReports() : getMyReports()])
+        Promise.all([getCurrentProfile(), (user?.role === 'ADMIN' || user?.role === 'DAGE') ? getAllReports() : getMyReports()])
             .then(([profileData, reportsData]) => {
                 const sortDesc = (a, b) => new Date(b.createdAt || b.reportDate || 0) - new Date(a.createdAt || a.reportDate || 0);
                 setProfile(profileData);

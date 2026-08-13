@@ -1,75 +1,12 @@
 import api, { API_ROOT_URL } from "../lib/apiClient";
 
 export const getCurrentProfile = async () => {
-    const data = await api.get(`${API_ROOT_URL}/api/v2/me`);
-    return data;
-};
-
-export const getUserProfile = async () => {
-    try {
-        const data = await api.get('/me/profile');
-        return data;
-    } catch {
-        throw new Error('Erreur lors du chargement du profil');
-    }
-};
-
-export const getBasicInfo = async () => {
-    try {
-        const data = await api.get('/me');
-        return data;
-    } catch {
-        throw new Error('Erreur lors du chargement des infos basiques');
-    }
-};
-
-export const updateMyLocation = async (latitude, longitude) => {
-    try {
-        const data = await api.patch('/me/location', {
-            latitude: String(latitude),
-            longitude: String(longitude)
-        });
-        return data;
-    } catch {
-        throw new Error('Erreur lors de la mise à jour de la position');
-    }
-};
-
-export const getAllUsersWithLocation = async () => {
-    try {
-        // Add timestamp to bypass potential API caching
-        const data = await api.get(`/users/locations?t=${Date.now()}`);
-        return data;
-    } catch {
-        throw new Error('Erreur lors du chargement des positions');
-    }
-};
-
-export const searchGeocode = async (query) => {
-    if (!query || query.trim().length < 3) return [];
-    try {
-        // Geographic bias: restrict results to Senegal and provide a preferred viewbox
-        const params = new URLSearchParams({
-            q: query,
-            countrycodes: 'sn',
-            // viewbox: [minLon, minLat, maxLon, maxLat]
-            viewbox: '-17.55,12.28,-11.35,16.70',
-            bounded: '1' // Strong preference for the viewbox
-        });
-        
-        // Safe GET request -> will trigger safe retries on network failures
-        const data = await api.get(`/geocode/search?${params.toString()}`);
-        return data;
-    } catch {
-        console.error("Geocode search failed. Fallback to empty array.");
-        return []; // Graceful degradation
-    }
+    return await api.get(`${API_ROOT_URL}/api/v2/me`);
 };
 
 export const updateMyProfile = async (data) => {
     try {
-        const response = await api.patch('/me/profile', data);
-        return response;
+        return await api.patch(`${API_ROOT_URL}/api/v2/me`, data);
     } catch {
         throw new Error('Erreur lors de la mise à jour du profil');
     }
