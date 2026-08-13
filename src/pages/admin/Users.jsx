@@ -117,7 +117,7 @@ const Users = () => {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="relative w-full md:w-96">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                            <Inpu
+                            <Input
                                 placeholder="Rechercher par nom, email..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
