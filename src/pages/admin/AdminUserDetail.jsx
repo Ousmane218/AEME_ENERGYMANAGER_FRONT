@@ -18,10 +18,6 @@ const AdminUserDetail = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
-
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
@@ -42,6 +38,10 @@ const AdminUserDetail = () => {
             setLoading(false);
         }
     }, [userId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleChat = async () => {
         if (!user?.keycloakId) {
