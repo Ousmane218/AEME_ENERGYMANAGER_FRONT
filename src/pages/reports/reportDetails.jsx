@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { createElement, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getReportById, downloadReport } from '../../services/reportService';
 import { 
@@ -40,10 +40,10 @@ const BoolIndicator = ({ value }) => {
         : <span className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-red-100"><XCircle size={10} strokeWidth={3} /> <span>NON</span></span>;
 };
 
-const InfoItem = ({ icon: Icon, label, value }) => (
+const InfoItem = ({ icon, label, value }) => (
     <div className="flex items-start gap-4">
         <div className="h-6 w-6 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 text-gray-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-            <Icon size={12} />
+            {createElement(icon, { size: 12 })}
         </div>
         <div className="min-w-0 space-y-0.5">
             <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest"><span>{label}</span></p>
@@ -54,12 +54,12 @@ const InfoItem = ({ icon: Icon, label, value }) => (
     </div>
 );
 
-const QuestionRow = ({ icon: Icon, label, boolValue, subLabel, subValue, customSubNode }) => (
+const QuestionRow = ({ icon, label, boolValue, subLabel, subValue, customSubNode }) => (
     <div className="group/row flex flex-col gap-3 py-4 border-b border-gray-50 last:border-0">
         <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
                 <div className="h-8 w-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover/row:bg-primary/5 group-hover/row:text-primary transition-all duration-300">
-                    <Icon size={14} />
+                    {createElement(icon, { size: 14 })}
                 </div>
                 <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest leading-none group-hover/row:text-gray-900 transition-colors"><span>{label}</span></span>
             </div>

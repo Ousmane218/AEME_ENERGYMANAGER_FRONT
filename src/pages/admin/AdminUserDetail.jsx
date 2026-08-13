@@ -44,8 +44,12 @@ const AdminUserDetail = () => {
     }, [userId]);
 
     const handleChat = async () => {
+        if (!user?.keycloakId) {
+            alert('Impossible de démarrer le chat : identité Keycloak manquante.');
+            return;
+        }
         try {
-            const conv = await getOrCreateConversation(user?.keycloakId || userId);
+            const conv = await getOrCreateConversation(user.keycloakId);
             navigate('/chat', { state: { conversationId: conv.id } });
         } catch {
             alert('Erreur lors de la création de la conversation');
@@ -176,12 +180,14 @@ const AdminUserDetail = () => {
                             </div>
 
                             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-                                <button
-                                    onClick={handleChat}
-                                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
-                                >
-                                    <MessageSquare size={16} /> <span>Chat Direct</span>
-                                </button>
+                                {user?.keycloakId && (
+                                    <button
+                                        onClick={handleChat}
+                                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-primary text-white rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                                    >
+                                        <MessageSquare size={16} /> <span>Chat Direct</span>
+                                    </button>
+                                )}
                                 <button
                                     onClick={handleToggleActivation}
                                     className={cn("w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl hover:text-white transition-all group font-black text-[10px] uppercase tracking-widest border", user?.actif ? "bg-red-50 text-red-500 hover:bg-red-500 border-red-100/50" : "bg-green-50 text-green-500 hover:bg-green-500 border-green-100/50")}

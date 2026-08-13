@@ -7,7 +7,7 @@ import api from "../lib/apiClient";
 export const getAllStructures = async () => {
     try {
         return await api.get('/structures');
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors du chargement des structures');
     }
 };
@@ -15,7 +15,7 @@ export const getAllStructures = async () => {
 export const getStructureById = async (id) => {
     try {
         return await api.get(`/structures/${id}`);
-    } catch (error) {
+    } catch {
         throw new Error('Structure introuvable');
     }
 };
@@ -23,7 +23,7 @@ export const getStructureById = async (id) => {
 export const createStructure = async (data) => {
     try {
         return await api.post('/structures', data);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors de la création de la structure');
     }
 };
@@ -31,7 +31,7 @@ export const createStructure = async (data) => {
 export const updateStructure = async (id, data) => {
     try {
         return await api.patch(`/structures/${id}`, data);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors de la mise à jour de la structure');
     }
 };
@@ -39,7 +39,7 @@ export const updateStructure = async (id, data) => {
 export const deleteStructure = async (id) => {
     try {
         return await api.delete(`/structures/${id}`);
-    } catch (error) {
+    } catch {
         throw new Error('Erreur lors de la suppression de la structure');
     }
 };

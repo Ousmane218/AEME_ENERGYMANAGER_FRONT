@@ -3,13 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { User, Trash2, FileText, Search, Loader2, Plus, X, Shield, Filter, MoreHorizontal, Mail, ExternalLink } from 'lucide-react';
 import { getAllUsers } from '../../services/adminService';
 import { CreateUserModal } from '@/components/admin/CreateUserModal';
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ const Users = () => {
             setLoading(true);
             const first = page * pageSize;
             const data = await getAllUsers(first, pageSize, search);
-            
+
             // Handle the paginated response structure
             setUsers(data.users || []);
             setTotalUsers(data.total || 0);
@@ -94,15 +94,15 @@ const Users = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2 font-semibold shadow-sm"
                         onClick={() => fetchUsers(currentPage)}
                     >
                         Rafraîchir
                     </Button>
-                    <Button 
+                    <Button
                         onClick={() => setShowCreateModal(true)}
                         className="gap-2 shadow-md font-bold bg-primary hover:bg-primary/90"
                     >
@@ -117,7 +117,7 @@ const Users = () => {
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                         <div className="relative w-full md:w-96">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                            <Input
+                            <Inpu
                                 placeholder="Rechercher par nom, email..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -164,7 +164,7 @@ const Users = () => {
                                 </TableHeader>
                                 <TableBody>
                                 {users.map((user) => (
-                                    <TableRow 
+                                    <TableRow
                                         key={user.id}
                                         className="hover:bg-gray-50/80 transition-colors group"
                                     >
@@ -189,21 +189,21 @@ const Users = () => {
                                                 </div>
                                                 <div className="text-[10px] text-primary/70 font-black uppercase tracking-tight flex items-center gap-1">
                                                     <Shield size={10} />
-                                                    {user.membershipService || 'AUCUN SERVICE'}
+                                                    {user.structure?.name || user.ministere?.nom || 'AUCUN SERVICE'}
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2 whitespace-nowrap">
-                                                <Badge 
+                                                <Badge
                                                     className={cn(
                                                         "text-[10px] font-black uppercase tracking-tighter px-2 h-5 rounded-md",
-                                                        user.role === 'admin' 
-                                                            ? "bg-primary text-white hover:bg-primary/90 shadow-md border-none" 
+                                                        user.role === 'ADMIN'
+                                                            ? "bg-primary text-white hover:bg-primary/90 shadow-md border-none"
                                                             : "bg-primary/20 text-primary border-primary/20 hover:bg-primary/30"
                                                     )}
                                                 >
-                                                    {user.role === 'admin' ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
+                                                    {user.role === 'ADMIN' ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
                                                 </Badge>
                                                 {user.isActive !== false && (
                                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -212,17 +212,17 @@ const Users = () => {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button 
-                                                    variant="ghost" 
+                                                <Button
+                                                    variant="ghost"
                                                     size="sm"
                                                     className="font-bold text-primary group-hover:bg-primary/10 transition-colors"
                                                     onClick={() => navigate(`/admin/users/${user.id}`)}
                                                 >
                                                     Gérer <ExternalLink size={14} className="ml-2 opacity-50" />
                                                 </Button>
-                                                <Button 
-                                                    variant="ghost" 
-                                                    size="icon" 
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
                                                     className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                                                     onClick={() => handleDeleteUser(user.id)}
                                                 >
@@ -255,34 +255,34 @@ const Users = () => {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-3">
-                                        <Badge 
+                                        <Badge
                                             className={cn(
                                                 "text-[9px] font-black uppercase px-2 h-5 rounded-md",
-                                                user.role === 'admin' 
-                                                    ? "bg-primary text-white" 
+                                                user.role === 'ADMIN'
+                                                    ? "bg-primary text-white"
                                                     : "bg-primary/10 text-primary"
                                             )}
                                         >
-                                            {user.role === 'admin' ? 'ADMIN' : 'EXPERT'}
+                                            {user.role === 'ADMIN' ? 'ADMIN' : 'EXPERT'}
                                         </Badge>
                                         <div className="text-[9px] text-primary/70 font-black uppercase tracking-tight flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-md">
                                             <Shield size={10} />
-                                            {user.membershipService || 'AUCUN SERVICE'}
+                                            {user.structure?.name || user.ministere?.nom || 'AUCUN SERVICE'}
                                         </div>
                                     </div>
 
                                     <div className="flex items-center gap-2 pt-2">
-                                        <Button 
-                                            variant="outline" 
+                                        <Button
+                                            variant="outline"
                                             size="sm"
                                             className="flex-1 font-bold text-xs h-10 rounded-xl"
                                             onClick={() => navigate(`/admin/users/${user.id}`)}
                                         >
-                                            Gérer l'Expert
+                                            Gérer l'Exper
                                         </Button>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
                                             className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
                                             onClick={() => handleDeleteUser(user.id)}
                                         >
@@ -305,7 +305,7 @@ const Users = () => {
                                     disabled={currentPage === 0 || loading}
                                     className="h-8 text-[10px] font-black uppercase tracking-widest rounded-lg"
                                 >
-                                    Précédent
+                                    Précéden
                                 </Button>
                                 <Button
                                     variant="outline"
@@ -314,7 +314,7 @@ const Users = () => {
                                     disabled={(currentPage + 1) * pageSize >= totalUsers || loading}
                                     className="h-8 text-[10px] font-black uppercase tracking-widest rounded-lg"
                                 >
-                                    Suivant
+                                    Suivan
                                 </Button>
                             </div>
                         </div>
@@ -323,8 +323,8 @@ const Users = () => {
                 </CardContent>
             </Card>
 
-            <CreateUserModal 
-                show={showCreateModal} 
+            <CreateUserModal
+                show={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onCreated={fetchUsers}
             />
