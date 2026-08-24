@@ -37,16 +37,16 @@ const AUTRES_ACTIVITES_OPTIONS = [
 ];
 
 const OuiNonField = ({ label, value, onChange }) => (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-2xl bg-gray-50/40 border border-gray-100 hover:border-primary/20 transition-all group shadow-sm bg-white">
-        <Label className="text-[12px] font-bold text-gray-700 leading-snug md:pr-6 group-hover:text-gray-900 transition-colors uppercase tracking-tight">{label}</Label>
-        <div className="flex shrink-0 p-1 bg-gray-100/50 rounded-xl border border-gray-200/50 shadow-inner">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-5 rounded-2xl bg-gray-50/40 border border-gray-100 hover:border-primary/20 transition-all group shadow-sm bg-white">
+        <Label className="text-[12px] font-bold text-gray-700 leading-relaxed md:pr-6 group-hover:text-gray-900 transition-colors uppercase tracking-tight">{label}</Label>
+        <div className="flex md:shrink-0 w-full md:w-auto p-1 bg-gray-100/50 rounded-xl border border-gray-200/50 shadow-inner">
             {['OUI', 'NON'].map(val => (
                 <button
                     key={val}
                     type="button"
                     onClick={() => onChange(val)}
                     className={cn(
-                        "px-5 py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest",
+                        "flex-1 md:flex-none px-4 md:px-5 py-3 md:py-2 text-[10px] font-bold rounded-lg transition-all uppercase tracking-widest",
                         value === val
                             ? val === 'OUI' ? "bg-green-600 text-white shadow-lg shadow-green-200" : "bg-primary text-white shadow-lg shadow-primary/20"
                             : "text-gray-400 hover:text-gray-600"
@@ -83,7 +83,7 @@ const FileZone = ({ field, label, accept, formData, handleFile }) => (
                 ? "border-primary bg-primary/5 shadow-inner"
                 : "border-gray-200 bg-gray-50/50 hover:bg-white hover:border-primary/40 hover:shadow-sm"
         )}>
-            <inpu
+            <input
                 type="file"
                 accept={accept}
                 className="sr-only"
@@ -163,9 +163,10 @@ const NewReport = () => {
                 const profile = await getCurrentProfile();
                 setFormData(prev => ({
                     ...prev,
-                    nomGestionnaire: `${profile.firstName} ${profile.lastName}`,
+                    nomGestionnaire: [profile.prenom || profile.firstName, profile.nom || profile.lastName].filter(Boolean).join(' ') || '',
                     email: profile.email || '',
-                    serviceAppartenance: profile.membershipService || ''
+                    telephone: profile.telephonePrincipal || profile.telephone || '',
+                    serviceAppartenance: profile.structure?.name || profile.membershipService || ''
                 }));
             } catch (err) {
                 console.error("Failed to fetch profile", err);
@@ -654,16 +655,16 @@ const NewReport = () => {
                     <Button
                         type="submit"
                         disabled={submitting}
-                        className="h-16 px-16 rounded-3xl text-sm font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary group hover:bg-primary/95"
+                        className="w-full sm:w-auto h-14 sm:h-16 px-8 sm:px-16 rounded-2xl sm:rounded-3xl text-xs sm:text-sm font-bold uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary group hover:bg-primary/95"
                     >
                         {submitting ? (
                             <>
-                                <Loader2 className="mr-4 h-6 w-6 animate-spin text-white/50" />
+                                <Loader2 className="mr-3 sm:mr-4 h-5 w-5 sm:h-6 sm:w-6 animate-spin text-white/50" />
                                 <span>Transmission...</span>
                             </>
                         ) : (
                             <>
-                                <Send className="mr-4 h-5 w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
+                                <Send className="mr-3 sm:mr-4 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1 group-hover:-translate-y-1" />
                                 <span>Envoyer le Rapport</span>
                             </>
                         )}

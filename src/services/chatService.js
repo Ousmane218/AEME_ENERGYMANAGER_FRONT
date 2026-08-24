@@ -117,3 +117,11 @@ export const reactivateGroup = async (id) => {
         throw new Error('Erreur lors de la réactivation du groupe');
     }
 };
+
+export const searchChatUsers = async (query) => {
+    try {
+        return await api.get(`/chat/users/search?q=${encodeURIComponent(query)}`);
+    } catch {
+        throw new Error('Erreur lors de la recherche utilisateur');
+    }
+};

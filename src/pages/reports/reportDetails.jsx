@@ -1,8 +1,10 @@
 import { createElement, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getReportById, downloadReport } from '../../services/reportService';
-import { 
-    ArrowLeft, Download, FileText, User, Building2, 
+import { approveReport, rejectReport } from '../../services/adminService';
+import { useAuth } from '../../context/AuthContext';
+import {
+    ArrowLeft, Download, FileText, User, Building2,
     Hash, Calendar, CheckCircle, XCircle, MinusCircle,
     ClipboardList, Info, FileCheck, ExternalLink,
     AlertCircle, Activity, BookOpen, Zap, FileX, Settings,
@@ -14,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 const StatusBadge = ({ status }) => {
     const variants = {
@@ -34,7 +37,7 @@ const StatusBadge = ({ status }) => {
 };
 
 const BoolIndicator = ({ value }) => {
-    if (value === null || value === undefined) return <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest"><span>N/A</span></span>;
+    if (value === null || value === undefined) return <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest"><span>N/D</span></span>;
     return value
         ? <span className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-100"><CheckCircle size={10} strokeWidth={3} /> <span>OUI</span></span>
         : <span className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-red-100"><XCircle size={10} strokeWidth={3} /> <span>NON</span></span>;
@@ -56,22 +59,24 @@ const InfoItem = ({ icon, label, value }) => (
 
 const QuestionRow = ({ icon, label, boolValue, subLabel, subValue, customSubNode }) => (
     <div className="group/row flex flex-col gap-3 py-4 border-b border-gray-50 last:border-0">
-        <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-                <div className="h-8 w-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover/row:bg-primary/5 group-hover/row:text-primary transition-all duration-300">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-4">
+                <div className="h-8 w-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover/row:bg-primary/5 group-hover/row:text-primary transition-all duration-300 shrink-0 mt-1 sm:mt-0">
                     {createElement(icon, { size: 14 })}
                 </div>
-                <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest leading-none group-hover/row:text-gray-900 transition-colors"><span>{label}</span></span>
+                <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest leading-relaxed group-hover/row:text-gray-900 transition-colors"><span>{label}</span></span>
             </div>
-            <BoolIndicator value={boolValue} />
+            <div className="flex justify-start sm:justify-end ml-12 sm:ml-0">
+                <BoolIndicator value={boolValue} />
+            </div>
         </div>
         {boolValue === true && (subValue || customSubNode) && (
-            <div className="ml-12 animate-in slide-in-from-left-2 duration-300">
-                <div className="bg-gray-50/50 backdrop-blur-sm p-3 rounded-2xl border border-gray-100/50 flex items-center justify-between shadow-sm">
+            <div className="ml-4 sm:ml-12 animate-in slide-in-from-left-2 duration-300">
+                <div className="bg-gray-50/50 backdrop-blur-sm p-3 rounded-2xl border border-gray-100/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                     {customSubNode ? customSubNode : (
                         <>
                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{subLabel}</span>
-                            <span className="text-[11px] font-black text-primary px-3 py-1 bg-white rounded-lg shadow-sm border border-gray-100 truncate">{subValue}</span>
+                            <span className="text-[11px] font-black text-primary px-3 py-2 sm:py-1 bg-white rounded-lg shadow-sm border border-gray-100 w-full sm:w-auto text-left sm:text-right break-words whitespace-normal">{subValue}</span>
                         </>
                     )}
                 </div>
@@ -83,9 +88,13 @@ const QuestionRow = ({ icon, label, boolValue, subLabel, subValue, customSubNode
 const ReportDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [report, setReport] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [confirmApproveOpen, setConfirmApproveOpen] = useState(false);
+    const [confirmRejectOpen, setConfirmRejectOpen] = useState(false);
 
     useEffect(() => {
         getReportById(id)
@@ -97,6 +106,38 @@ const ReportDetails = () => {
     if (loading) return <div className="p-10 text-center text-gray-500">Chargement...</div>;
     if (error)   return <div className="p-10 text-center text-red-500">{error}</div>;
     if (!report) return null;
+
+    const handleApprove = async () => {
+        setActionLoading(true);
+        setError(null);
+        try {
+            await approveReport(id);
+            const updated = await getReportById(id);
+            setReport(updated);
+            setConfirmApproveOpen(false);
+        } catch (err) {
+            setError(err.message || "Erreur lors de l'approbation");
+            setConfirmApproveOpen(false);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleReject = async () => {
+        setActionLoading(true);
+        setError(null);
+        try {
+            await rejectReport(id);
+            const updated = await getReportById(id);
+            setReport(updated);
+            setConfirmRejectOpen(false);
+        } catch (err) {
+            setError(err.message || "Erreur lors du rejet");
+            setConfirmRejectOpen(false);
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const parsedCampagnes = (() => {
         try { return JSON.parse(report.campagnesCommunication || '[]'); }
@@ -119,7 +160,28 @@ const ReportDetails = () => {
                     </button>
                     <h1 className="text-2xl font-black tracking-tighter text-gray-900 uppercase">Détails du Rapport</h1>
                 </div>
-                <StatusBadge status={report.reportStatus} />
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                    <StatusBadge status={report.reportStatus} />
+                    {user?.role === 'ADMIN' && report?.reportStatus === 'SUBMITTED' && (
+                        <div className="flex items-center gap-2 mt-2 sm:mt-0">
+                            <Button
+                                onClick={() => setConfirmApproveOpen(true)}
+                                disabled={actionLoading}
+                                className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl px-4 py-2 h-auto"
+                            >
+                                {actionLoading ? 'En cours...' : 'Approuver'}
+                            </Button>
+                            <Button
+                                onClick={() => setConfirmRejectOpen(true)}
+                                disabled={actionLoading}
+                                variant="destructive"
+                                className="text-[10px] font-black uppercase tracking-widest rounded-xl px-4 py-2 h-auto bg-red-500 hover:bg-red-600"
+                            >
+                                {actionLoading ? 'En cours...' : 'Rejeter'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Premium Hero Banner */}
@@ -203,7 +265,7 @@ const ReportDetails = () => {
                                     <div className="flex flex-wrap gap-2">
                                         {parsedCampagnes.map((c, i) => (
                                             <span key={i} className="px-4 py-1.5 bg-gray-50 text-gray-600 font-bold text-[11px] rounded-full border border-gray-100 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all cursor-default">
-                                                <span>{c}</span>
+                                                <span>{c === 'Autre(s)' && report.autreCampagnePrecision ? `Autre: ${report.autreCampagnePrecision}` : c}</span>
                                             </span>
                                         ))}
                                     </div>
@@ -215,54 +277,80 @@ const ReportDetails = () => {
                                 <QuestionRow icon={BookOpen} label="Partage du guide bâtiment ?" boolValue={report.guidePartageCommande} />
                                 <QuestionRow icon={Zap} label="Amélioration performance équipements ?" boolValue={report.guidePartagePerformance} />
                                 <QuestionRow icon={FileX} label="Résiliation contrat électricité ?" boolValue={report.procedureResiliation} />
-                                <QuestionRow icon={Settings} label="Modification puissance souscrite ?" boolValue={report.modificationPuissance} />
-                                <QuestionRow 
+                                <QuestionRow
+                                    icon={Settings}
+                                    label="Modification puissance souscrite ?"
+                                    boolValue={report.modificationPuissance}
+                                    customSubNode={
+                                        report.pieceJustificativeModificationName ? (
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1">Pièce Justificative</span>
+                                                    <span className="text-[11px] font-black text-primary bg-white px-3 py-1.5 rounded-lg border border-gray-50 flex items-center gap-2 truncate shadow-sm">
+                                                        <FileText size={12} className="shrink-0" />
+                                                        <span className="truncate">{report.pieceJustificativeModificationName}</span>
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => downloadReport(report.id, 'pieceJustificativeModification', report.pieceJustificativeModificationName)}
+                                                    className="shrink-0 flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary hover:bg-primary hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all"
+                                                >
+                                                    <Download size={14} />
+                                                    <span>Télécharger</span>
+                                                </button>
+                                            </div>
+                                        ) : null
+                                    }
+                                />
+                                <QuestionRow
                                     icon={EyeOff}
-                                    label="Consommations nulles identifiées ?" 
-                                    boolValue={report.consommationsNullesIdentifiees} 
+                                    label="Consommations nulles identifiées ?"
+                                    boolValue={report.consommationsNullesIdentifiees}
                                     subLabel="Action menée"
-                                    subValue={report.actionMeneeConsoNulles}
+                                    subValue={report.actionConsommationsNulles}
                                 />
-                                <QuestionRow 
+                                <QuestionRow
                                     icon={Edit3}
-                                    label="Estimations recensées ?" 
-                                    boolValue={report.estimationsRecensees} 
+                                    label="Estimations recensées ?"
+                                    boolValue={report.estimationsRecensees}
                                     subLabel="Action menée"
-                                    subValue={report.actionMeneeEstimations}
+                                    subValue={report.actionEstimations}
                                 />
-                                <QuestionRow 
+                                <QuestionRow
                                     icon={Battery}
-                                    label="Batteries condensateurs installées ?" 
-                                    boolValue={report.batteriesCondensateursInstallees} 
+                                    label="Batteries condensateurs installées ?"
+                                    boolValue={report.batteriesCondensateursInstallees}
                                     subLabel="Quantité"
-                                    subValue={report.nombreBatteries}
+                                    subValue={report.nombreBatteriesCondensateurs}
                                 />
                                 <QuestionRow icon={Map} label="Cadastre énergétique réalisé ?" boolValue={report.cadastreEnergetiqueRealise} />
-                                <QuestionRow 
+                                <QuestionRow
                                     icon={Hash}
-                                    label="Index de consommation transmis ?" 
-                                    boolValue={report.indexTransmis} 
+                                    label="Index de consommation transmis ?"
+                                    boolValue={report.indexTransmis}
                                     customSubNode={
-                                        <div className="flex items-center gap-8 w-full">
-                                            <div className="flex items-center gap-3">
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-8 w-full">
+                                            <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
                                                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest"><span>Date :</span></span>
-                                                <span className="text-[11px] font-black text-primary bg-white px-2 py-1 rounded-lg border border-gray-50"><span>{report.dateIndex ? new Date(report.dateIndex).toLocaleDateString() : '—'}</span></span>
+                                                <span className="text-[11px] font-black text-primary bg-white px-3 py-1.5 sm:px-2 sm:py-1 rounded-lg border border-gray-50"><span>{report.dateIndexTransmis ? new Date(report.dateIndexTransmis).toLocaleDateString() : '—'}</span></span>
                                             </div>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
                                                 <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest"><span>Index :</span></span>
-                                                <span className="text-[11px] font-black text-primary bg-white px-2 py-1 rounded-lg border border-gray-50"><span>{report.valeurIndex || '—'}</span></span>
+                                                <span className="text-[11px] font-black text-primary bg-white px-3 py-1.5 sm:px-2 sm:py-1 rounded-lg border border-gray-50 break-all"><span>{report.indexConsommation || '—'}</span></span>
                                             </div>
                                         </div>
                                     }
                                 />
-                                <QuestionRow 
+                                <QuestionRow
                                     icon={Layout}
-                                    label="Plateforme digitale existante ?" 
-                                    boolValue={report.plateformeDigitale} 
+                                    label="Plateforme digitale existante ?"
+                                    boolValue={report.plateformeDigitale}
                                     customSubNode={
-                                        <div className="flex items-center justify-between w-full">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full gap-3">
                                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Assure-t-il le suivi de l'interface ?</span>
-                                            <BoolIndicator value={report.suiviPlateforme} />
+                                            <div className="flex justify-start">
+                                                <BoolIndicator value={report.suiviPlateformeDigitale} />
+                                            </div>
                                         </div>
                                     }
                                 />
@@ -275,7 +363,7 @@ const ReportDetails = () => {
                                         {parsedAutresActivites.map((a, i) => (
                                             <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:bg-primary/5 hover:border-primary/20 transition-all duration-300" key={i}>
                                                 <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0 shadow-lg shadow-primary/20" />
-                                                <span className="text-[11px] font-bold text-gray-700 leading-relaxed uppercase tracking-tight">{a}</span>
+                                                <span className="text-[11px] font-bold text-gray-700 leading-relaxed uppercase tracking-tight">{a === 'Autre(s)' && report.autreActivitePrecision ? `Autre: ${report.autreActivitePrecision}` : a}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -364,7 +452,7 @@ const ReportDetails = () => {
                                                 <p className="text-xs font-black text-gray-900 truncate uppercase tracking-tight">{report.illustrationsName}</p>
                                             </div>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => downloadReport(report.id, 'illustrations', report.illustrationsName)}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
                                         >
@@ -386,7 +474,7 @@ const ReportDetails = () => {
                                                 <p className="text-xs font-black text-gray-900 truncate uppercase tracking-tight">{report.autresDocumentsName}</p>
                                             </div>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => downloadReport(report.id, 'autresDocuments', report.autresDocumentsName)}
                                             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/5 transition-all"
                                         >
@@ -419,6 +507,32 @@ const ReportDetails = () => {
                     </div>
                 </div>
             </div>
+
+            {user?.role === 'ADMIN' && (
+                <>
+                    <ConfirmDialog
+                        open={confirmApproveOpen}
+                        onOpenChange={setConfirmApproveOpen}
+                        title="Approuver le rapport"
+                        description="Voulez-vous vraiment approuver ce rapport ?"
+                        confirmLabel="Approuver"
+                        cancelLabel="Annuler"
+                        loading={actionLoading}
+                        onConfirm={handleApprove}
+                    />
+                    <ConfirmDialog
+                        open={confirmRejectOpen}
+                        onOpenChange={setConfirmRejectOpen}
+                        title="Rejeter le rapport"
+                        description="Voulez-vous vraiment rejeter ce rapport ?"
+                        confirmLabel="Rejeter"
+                        cancelLabel="Annuler"
+                        destructive={true}
+                        loading={actionLoading}
+                        onConfirm={handleReject}
+                    />
+                </>
+            )}
         </div>
     );
 };
