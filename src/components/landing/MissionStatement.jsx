@@ -2,7 +2,7 @@ import React from 'react';
 
 const MissionStatement = () => {
     return (
-        <section id="mission" className="w-full bg-gray-50 py-24 lg:py-32 border-t border-gray-100">
+        <section id="projet-gestionnaires" className="w-full bg-gray-50 py-24 lg:py-32 border-t border-gray-100">
             <div className="mx-auto max-w-7xl px-6 lg:px-8">
                 <div className="flex flex-col lg:flex-row gap-16 items-start">
                     

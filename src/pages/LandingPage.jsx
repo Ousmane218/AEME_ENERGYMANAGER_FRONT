@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import LandingHeader from '../components/landing/LandingHeader';
 import LandingHero from '../components/landing/LandingHero';
 import MissionStatement from '../components/landing/MissionStatement';
-import PlatformCapabilities from '../components/landing/PlatformCapabilities';
+import LocalisationSection from '../components/landing/LocalisationSection';
 import ImpactOverview from '../components/landing/ImpactOverview';
-import InstitutionalFooter from '../components/landing/InstitutionalFooter';
+import ContactSection from '../components/landing/ContactSection';
 
 const LandingPage = () => {
     // Scroll to top on mount
@@ -18,10 +18,10 @@ const LandingPage = () => {
             <main className="flex-1 flex flex-col">
                 <LandingHero />
                 <MissionStatement />
-                <PlatformCapabilities />
+                <LocalisationSection />
                 <ImpactOverview />
             </main>
-            <InstitutionalFooter />
+            <ContactSection />
         </div>
     );
 };

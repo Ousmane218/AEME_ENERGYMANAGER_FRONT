@@ -1,7 +1,6 @@
 import React from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const LandingHero = () => {
@@ -22,7 +21,7 @@ const LandingHero = () => {
             <div className="w-full md:w-[55%] flex flex-col justify-center px-8 md:px-16 lg:px-24 py-20 z-10 bg-white">
                 <div className="max-w-2xl animate-in slide-in-from-bottom-8 duration-1000 fade-in">
                     <h1 className="font-heading text-4xl md:text-5xl lg:text-[4rem] leading-[1.1] tracking-tight text-gray-900 mb-8">
-                        Piloter la performance énergétique des bâtiments publics
+                        Plateforme Nationale des Gestionnaires de l’Énergie
                     </h1>
                     <p className="text-lg md:text-xl text-gray-600 font-sans leading-relaxed mb-12 max-w-xl">
                         La plateforme nationale dédiée au suivi, à la coordination et à l’amélioration des consommations énergétiques des structures de l’État.
@@ -33,7 +32,7 @@ const LandingHero = () => {
                         className="group flex items-center gap-4 text-primary font-bold text-sm uppercase tracking-widest hover:text-accent transition-colors"
                     >
                         <span className="border-b-2 border-primary group-hover:border-accent transition-colors pb-1">
-                            Accéder à l’espace gestionnaire
+                            ACCÉDER À ENERGY MANAGER
                         </span>
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -51,11 +50,7 @@ const LandingHero = () => {
                 {/* Elegant Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/40 mix-blend-multiply" />
 
-                {/* Decorative Annotation */}
-                <div className="absolute bottom-12 left-8 bg-white/90 backdrop-blur px-4 py-2 flex flex-col shadow-sm border border-white/50 animate-in fade-in zoom-in duration-1000 delay-500">
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-primary">Structure Publique</span>
-                    <span className="text-sm font-serif text-gray-800">Données Consolidées</span>
-                </div>
+
             </div>
         </section>
     );

@@ -27,7 +27,7 @@ const ImpactOverview = () => {
                     <div className="border-b border-r border-gray-200 p-8 md:p-12 flex flex-col justify-between hover:bg-gray-50 transition-colors">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-12">Réseau d'experts</span>
                         <div>
-                            <span className="font-heading text-5xl md:text-6xl text-gray-900 block mb-2">~250</span>
+                            <span className="font-heading text-5xl md:text-6xl text-gray-900 block mb-2">255</span>
                             <span className="text-xs text-gray-500 uppercase tracking-widest">Gestionnaires actifs</span>
                         </div>
                     </div>
