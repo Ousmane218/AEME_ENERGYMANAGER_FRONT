@@ -6,10 +6,10 @@ const MissionStatement = () => {
         <section id="projet-gestionnaires" className="w-full bg-white py-24 lg:py-32 border-t border-gray-100 relative overflow-hidden">
             {/* Background Accent */}
             <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl opacity-70 pointer-events-none" />
-            
+
             <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
                 <div className="flex flex-col lg:flex-row gap-16">
-                    
+
                     {/* Left: Intro & Perspectives */}
                     <div className="w-full lg:w-[40%] flex flex-col gap-10 animate-in slide-in-from-left-8 duration-1000 fade-in">
                         <div>
@@ -18,7 +18,7 @@ const MissionStatement = () => {
                                 <span className="text-[10px] font-black tracking-[0.2em] text-primary uppercase">Le Projet</span>
                             </div>
                             <h2 className="font-heading text-3xl md:text-5xl text-gray-900 leading-tight mb-6">
-                                Déploiement National des Gestionnaires de l'Énergie
+                                Mission des Gestionnaires de l'Énergie
                             </h2>
                             <p className="text-base text-gray-600 leading-relaxed font-sans mb-4">
                                 L’AEME développe le projet de mise en place de gestionnaires de l’énergie au niveau national qui est également inscrit dans son nouveau <strong>Plan Stratégique de Développement (PSD) 2025-2029</strong>.
@@ -27,7 +27,7 @@ const MissionStatement = () => {
                                 Ce projet constitue une priorité des autorités comme en atteste les décisions n°02 et n°04 de la réunion interministérielle sur l’économie d’énergie du 30 août 2025, avec un objectif global de <strong>9000 gestionnaires de l’énergie</strong> à mettre en place.
                             </p>
                         </div>
-                        
+
                         {/* Perspectives section */}
                         <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 shadow-sm relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700" />
@@ -61,11 +61,11 @@ const MissionStatement = () => {
                             <p className="text-base text-gray-600 leading-relaxed font-sans mb-6 pb-6 border-b border-gray-100">
                                 Les gestionnaires de l’énergie sont spécialement destinés aux bâtiments, infrastructures et édifices administratifs en vue d’accompagner la politique de l’État pour la rationalisation des dépenses publiques d’électricité. Ils servent de garants des installations (climatisation, éclairage, bureautique, etc.) et aux différentes énergies et fluides pour en assurer le suivi et la gestion efficiente.
                             </p>
-                            
+
                             <p className="text-sm font-semibold text-gray-900 mb-6">
                                 Leurs interventions consistent notamment à :
                             </p>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                 {[
                                     "La mise en place d’un cadastre énergétique",
