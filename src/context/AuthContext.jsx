@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import keycloak from '../Keycloak';
 import { getCurrentProfile } from '../services/profileService';
 
@@ -10,11 +10,16 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [profileError, setProfileError] = useState(null);
+  const isRun = React.useRef(false);
 
   useEffect(() => {
+    if (isRun.current) return;
+    isRun.current = true;
+
     keycloak
       .init({
         onLoad: 'check-sso',
+        silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
         checkLoginIframe: false,
       })
       .then(async (authenticated) => {
@@ -51,7 +56,9 @@ export const AuthProvider = ({ children }) => {
           } catch (error) {
             const status = error.response?.status;
             if (status === 401) {
-              keycloak.logout({ redirectUri: window.location.origin });
+              keycloak.clearToken();
+              setUser(null);
+              setProfileError('Session expirée. Veuillez vous reconnecter.');
             } else if (status === 403) {
               setUser(null);
               setProfileError('Accès interdit ou profil inactif');
@@ -80,7 +87,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = () => {
-    keycloak.login();
+    keycloak.login({ redirectUri: window.location.origin + '/dashboard' });
   };
 
   return (
