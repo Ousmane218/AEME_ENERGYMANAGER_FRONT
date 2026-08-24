@@ -15,12 +15,16 @@ import MapPage from './pages/MapPage';
 import LandingPage from './pages/LandingPage';
 import Users from './pages/admin/Users';
 import Structures from './pages/admin/Structures';
+import Ministeres from './pages/admin/Ministeres';
+import Cohortes from './pages/admin/Cohortes';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import UserReports from './pages/admin/UserReports';
 import ErrorBoundary from './components/ErrorBoundary';
+import { Toaster } from '@/components/ui/sonner';
 import { cn } from './lib/utils';
 
 import RoleGuard from './components/RoleGuard';
+import NotificationBell from './components/NotificationBell';
 
 const ProtectedLayout = ({ children }) => {
     const { isAuthenticated, isLoading } = useAuth();
@@ -48,8 +52,15 @@ const ProtectedLayout = ({ children }) => {
                 {/* Mobile Top Bar */}
                 <header className="h-16 md:hidden bg-white border-b flex items-center justify-between px-6 sticky top-0 z-50">
                     <img src="/logo.png" alt="AEME Logo" className="h-8 w-auto" />
-                    <Navbar isMobileOnly />
+                    <div className="flex items-center gap-2">
+                        <NotificationBell />
+                        <Navbar isMobileOnly />
+                    </div>
                 </header>
+
+                <div className="hidden md:flex justify-end px-8 pt-4 pb-0 shrink-0">
+                    <NotificationBell />
+                </div>
 
                 <main className={cn(
                     "flex-1 overflow-hidden",
@@ -70,6 +81,7 @@ const ProtectedLayout = ({ children }) => {
 function App() {
     return (
         <ErrorBoundary>
+            <Toaster position="top-right" richColors />
             <Routes>
                 <Route path="/" element={<LandingPage />} />
 
@@ -81,7 +93,7 @@ function App() {
                             <Route path="/reports/new" element={<RoleGuard allowedRoles={['GESTIONNAIRE']}><NewReport /></RoleGuard>} />
                             <Route path="/reports/:id" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportDetails /></RoleGuard>} />
                             <Route path="/meetings" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><MeetingsList /></RoleGuard>} />
-                            <Route path="/meetings/new" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><NewMeeting /></RoleGuard>} />
+                            <Route path="/meetings/new" element={<RoleGuard allowedRoles={['ADMIN']}><NewMeeting /></RoleGuard>} />
                             <Route path="/meetings/:id" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><MeetingRoom /></RoleGuard>} />
                             <Route path="/chat" element={<Chat />} />
                             <Route path="/map" element={<MapPage />} />
@@ -96,6 +108,14 @@ function App() {
                             <Route
                                 path="/admin/structures"
                                 element={<RoleGuard allowedRoles={['ADMIN']}><Structures /></RoleGuard>}
+                            />
+                            <Route
+                                path="/admin/ministeres"
+                                element={<RoleGuard allowedRoles={['ADMIN']}><Ministeres /></RoleGuard>}
+                            />
+                            <Route
+                                path="/admin/cohortes"
+                                element={<RoleGuard allowedRoles={['ADMIN']}><Cohortes /></RoleGuard>}
                             />
                             <Route
                                 path="/admin/users/:userId"
