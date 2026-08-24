@@ -3,11 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     User, ArrowLeft, MessageSquare, Shield,
     FileText, CheckCircle, XCircle, Loader2, TrendingUp,
-    Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, Map, MapPin
+    Phone, Briefcase, Calendar, Users, Building2, Mail, GraduationCap, MapPin
 } from 'lucide-react';
-import { getReportsByUser, approveReport, rejectReport, getUserById, updateUserActivation } from '../../services/adminService';
+import { getReportsByUser, approveReport, rejectReport, getUserById, updateUserActivation, resendUserInvitation } from '../../services/adminService';
 import { getOrCreateConversation } from '../../services/chatService';
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { toast } from 'sonner';
 
 const AdminUserDetail = () => {
     const { userId } = useParams();
@@ -17,6 +19,8 @@ const AdminUserDetail = () => {
     const [score, setScore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [showResendConfirm, setShowResendConfirm] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -65,6 +69,20 @@ const AdminUserDetail = () => {
         } catch (err) {
             const message = err.response?.data?.message || err.response?.data?.error || err.message || 'Erreur lors de la modification';
             alert(message);
+        }
+    };
+
+    const handleResendInvitation = async () => {
+        try {
+            setResendLoading(true);
+            await resendUserInvitation(userId);
+            toast.success("Invitation renvoyée avec succès");
+            setShowResendConfirm(false);
+        } catch (err) {
+            const message = err.response?.data?.message || err.response?.data?.error || err.message || 'Erreur lors du renvoi de l\'invitation';
+            toast.error(message);
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -188,6 +206,14 @@ const AdminUserDetail = () => {
                                         <MessageSquare size={16} /> <span>Chat Direct</span>
                                     </button>
                                 )}
+                                {user?.invitationPending === true && (
+                                    <button
+                                        onClick={() => setShowResendConfirm(true)}
+                                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-amber-500 text-white rounded-2xl shadow-xl shadow-amber-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                                    >
+                                        <Mail size={16} /> <span>Renvoyer l'invitation</span>
+                                    </button>
+                                )}
                                 <button
                                     onClick={handleToggleActivation}
                                     className={cn("w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 rounded-2xl hover:text-white transition-all group font-black text-[10px] uppercase tracking-widest border", user?.actif ? "bg-red-50 text-red-500 hover:bg-red-500 border-red-100/50" : "bg-green-50 text-green-500 hover:bg-green-500 border-green-100/50")}
@@ -215,17 +241,13 @@ const AdminUserDetail = () => {
                         { label: 'Poste occupé',      value: user?.posteOccupe,    icon: Briefcase },
                         { label: 'Date de nomination',value: user?.dateNomination, icon: Calendar },
                     ]},
-                    { title: "3. Formation & Expertise", icon: GraduationCap, fields: [
+                    user?.role === 'GESTIONNAIRE' && { title: "3. Formation & Expertise", icon: GraduationCap, fields: [
                         { label: 'Cohorte',           value: user?.cohorte?.name || user?.cohorte?.nom,        icon: GraduationCap },
                         { label: 'Mise à niveau',     value: user?.derniereMiseANiveau, icon: TrendingUp },
                         { label: "Date d'installation",value: user?.dateInstallation,icon: Calendar },
                         { label: 'Date de formation', value: user?.dateFormation,  icon: Calendar },
-                    ]},
-                    { title: "4. Périmètre de Gestion", icon: Map, fields: [
-                        { label: 'Sites gérés',       value: user?.nombreSitesGeres, icon: Map },
-                        { label: 'Type de bâtiment',  value: user?.typeBatiment,     icon: Building2 },
                     ]}
-                ].map((section, idx) => (
+                ].filter(Boolean).map((section, idx) => (
                     <div key={idx} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-black/5 transition-all duration-500">
                         <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
                             <div className="flex items-center gap-3">
@@ -333,6 +355,17 @@ const AdminUserDetail = () => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmDialog
+                open={showResendConfirm}
+                onOpenChange={setShowResendConfirm}
+                onConfirm={handleResendInvitation}
+                title="Renvoyer l'invitation"
+                description="Renvoyer une nouvelle invitation à cet utilisateur ?"
+                confirmLabel="Renvoyer"
+                cancelLabel="Annuler"
+                loading={resendLoading}
+            />
         </div>
     );
 };

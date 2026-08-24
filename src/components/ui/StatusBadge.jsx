@@ -1,6 +1,7 @@
 import { Badge } from "./badge";
 import { cn } from "@/lib/utils";
 import { REPORT_STATUS } from "@/lib/constants";
+import { getReportStatusLabel } from "@/lib/displayMap";
 
 export const StatusBadge = ({ status, className }) => {
     const getStyles = () => {
@@ -13,5 +14,5 @@ export const StatusBadge = ({ status, className }) => {
             default: return 'bg-gray-50 text-gray-600 border-gray-100 shadow-sm';
         }
     };
-    return <Badge className={cn("text-[10px] font-black uppercase tracking-tight px-3 h-6 rounded-lg", getStyles(), className)}>{status || 'PENDING'}</Badge>;
+    return <Badge className={cn("text-[10px] font-black uppercase tracking-tight px-3 h-6 rounded-lg", getStyles(), className)}>{getReportStatusLabel(status)}</Badge>;
 };

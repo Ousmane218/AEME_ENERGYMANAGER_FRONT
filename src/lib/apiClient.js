@@ -37,7 +37,7 @@ api.interceptors.request.use(
     (config) => {
         // Fast-fail if the circuit is open
         if (isCircuitOpen) {
-            return Promise.reject(new Error('Circuit Breaker is OPEN: Backend is currently unresponsive.'));
+            return Promise.reject(new Error('Le serveur est actuellement indisponible.'));
         }
 
         if (keycloak && keycloak.token) {

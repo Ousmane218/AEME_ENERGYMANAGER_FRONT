@@ -2,7 +2,6 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
 const LandingHero = () => {
@@ -28,8 +27,8 @@ const LandingHero = () => {
                     <p className="text-lg md:text-xl text-gray-600 font-sans leading-relaxed mb-12 max-w-xl">
                         La plateforme nationale dédiée au suivi, à la coordination et à l’amélioration des consommations énergétiques des structures de l’État.
                     </p>
-                    
-                    <button 
+
+                    <button
                         onClick={handleAction}
                         className="group flex items-center gap-4 text-primary font-bold text-sm uppercase tracking-widest hover:text-accent transition-colors"
                     >
@@ -44,14 +43,14 @@ const LandingHero = () => {
             {/* Right Visual (45%) */}
             <div className="w-full md:w-[45%] min-h-[400px] md:min-h-full relative bg-white hidden md:block">
                 {/* Placeholder Image: Solar installation in Africa / Admin building */}
-                <div 
+                <div
                     className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-transform duration-[10000ms] hover:scale-[1.03]"
-                    style={{ backgroundImage: "url('/laanding1.jpeg')" }} 
+                    style={{ backgroundImage: "url('/laanding1.jpeg')" }}
                 />
-                
+
                 {/* Elegant Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-l from-transparent to-white/40 mix-blend-multiply" />
-                
+
                 {/* Decorative Annotation */}
                 <div className="absolute bottom-12 left-8 bg-white/90 backdrop-blur px-4 py-2 flex flex-col shadow-sm border border-white/50 animate-in fade-in zoom-in duration-1000 delay-500">
                     <span className="text-[10px] uppercase font-bold tracking-widest text-primary">Structure Publique</span>

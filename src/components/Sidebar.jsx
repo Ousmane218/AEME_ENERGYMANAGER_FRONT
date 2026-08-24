@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-    LayoutDashboard, 
-    FileText, 
-    Video, 
-    MessageSquare, 
-    User, 
-    ShieldCheck, 
-    LogOut, 
+import {
+    LayoutDashboard,
+    FileText,
+    Video,
+    MessageSquare,
+    User,
+    ShieldCheck,
+    LogOut,
     ChevronRight,
     MapPin,
     PanelLeftClose,
     PanelLeftOpen,
-    Building2
+    Building2,
+    GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { cn } from '@/lib/utils';
+import { getRoleLabel } from '@/lib/displayMap';
 
 const Sidebar = () => {
     const location = useLocation();
@@ -25,16 +27,18 @@ const Sidebar = () => {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const navItems = [
-        { name: 'Tableau de Bord', path: '/dashboard', icon: LayoutDashboard },
-        { name: 'Mes Rapports',     path: '/reports',   icon: FileText },
-        { name: 'Visioconférence', path: '/meetings',  icon: Video },
+        { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+        { name: user?.role === 'GESTIONNAIRE' ? 'Mes Rapports' : 'Rapports', path: '/reports', icon: FileText },
+        { name: 'Réunions', path: '/meetings',  icon: Video },
         { name: 'Messagerie',       path: '/chat',      icon: MessageSquare },
         { name: 'Carte',            path: '/map',       icon: MapPin },
     ];
 
     if (user?.role === 'ADMIN') {
         navItems.push({ name: 'Gestionnaires', path: '/admin/users', icon: ShieldCheck });
+        navItems.push({ name: 'Ministères', path: '/admin/ministeres', icon: Building2 });
         navItems.push({ name: 'Structures',   path: '/admin/structures', icon: Building2 });
+        navItems.push({ name: 'Cohortes',     path: '/admin/cohortes', icon: GraduationCap });
     }
 
     const isActive = (path) => {
@@ -48,7 +52,7 @@ const Sidebar = () => {
             isCollapsed ? "w-24" : "w-64"
         )}>
             {/* Toggle Button */}
-            <button 
+            <button
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 className="absolute -right-4 top-10 h-8 w-8 bg-white border border-gray-200 shadow-md rounded-full flex items-center justify-center text-gray-500 hover:text-primary hover:scale-105 transition-all z-50 focus:outline-none"
             >
@@ -143,7 +147,7 @@ const Sidebar = () => {
                                 {isLoading ? '...' : (user?.fullName ?? 'Utilisateur')}
                             </p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-60">
-                                {user?.role?.replace('_', ' ') || 'Energy Manager'}
+                                {getRoleLabel(user?.role)}
                             </p>
                         </div>
                     )}

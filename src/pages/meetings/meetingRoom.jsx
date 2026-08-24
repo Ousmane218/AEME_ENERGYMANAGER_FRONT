@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getMeetingById, updateMeetingStatus, updateManagedMeetingStatus, isManagedMeeting } from '../../services/meetingService';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const MeetingRoom = () => {
-    const { id } = useParams(); // URL param is likely 'id' if matching user snippet, or meetingId. If my route is /meetings/:id. Let's use id. Or if my router expects meetingId? I'll use id based on user snippet
+    const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const jitsiContainerRef = useRef(null);
@@ -16,6 +18,11 @@ const MeetingRoom = () => {
     const [meeting, setMeeting] = useState(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [showLocalLeaveDialog, setShowLocalLeaveDialog] = useState(false);
+    const [showGlobalEndDialog, setShowGlobalEndDialog] = useState(false);
+
+    const leaveHandledRef = useRef(false);
+    const endMeetingInProgressRef = useRef(false);
 
     useEffect(() => {
         fetchMeeting();
@@ -27,16 +34,44 @@ const MeetingRoom = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
-
     const handleStatusUpdate = async (meetingData, status) => {
         const isDirectCreator = meetingData.type === 'DIRECT' && meetingData.createdByUserId === user?.keycloakId;
         const isManagedAdmin = isManagedMeeting(meetingData) && user?.role === 'ADMIN';
-
 
         if (isDirectCreator) {
             await updateMeetingStatus(id, status);
         } else if (isManagedAdmin) {
             await updateManagedMeetingStatus(id, status);
+        }
+    };
+
+    const handleLocalLeave = () => {
+        if (leaveHandledRef.current) return;
+        leaveHandledRef.current = true;
+
+        if (jitsiApiRef.current) {
+            try {
+                jitsiApiRef.current.dispose();
+            } catch {
+                // Ignore safe disposal errors
+            }
+            jitsiApiRef.current = null;
+        }
+        navigate('/meetings');
+    };
+
+    const confirmGlobalEnd = async () => {
+        if (endMeetingInProgressRef.current) return;
+
+        endMeetingInProgressRef.current = true;
+        try {
+            await handleStatusUpdate(meeting, 'ENDED');
+            toast.success("Réunion terminée avec succès.");
+            setShowGlobalEndDialog(false);
+            handleLocalLeave();
+        } catch {
+            toast.error("Impossible de terminer la réunion. Veuillez réessayer.");
+            endMeetingInProgressRef.current = false;
         }
     };
 
@@ -49,6 +84,7 @@ const MeetingRoom = () => {
             }
             loadJitsiScript(data);
         } catch {
+            toast.error("Impossible de charger la réunion.");
             navigate('/meetings');
         } finally {
             setLoading(false);
@@ -93,18 +129,12 @@ const MeetingRoom = () => {
             },
         });
 
-        // Redirige dès que le user quitte — avant que la page JaaS s'affiche
-        api.addEventListener('videoConferenceLeft', async () => {
-            api.dispose();
-            jitsiApiRef.current = null;
-            await handleStatusUpdate(meetingData, 'ENDED');
-            navigate('/meetings');
+        api.addEventListener('videoConferenceLeft', () => {
+            handleLocalLeave();
         });
 
-        // Fallback
-        api.addEventListener('readyToClose', async () => {
-            await handleStatusUpdate(meetingData, 'ENDED');
-            navigate('/meetings');
+        api.addEventListener('readyToClose', () => {
+            handleLocalLeave();
         });
 
         api.addEventListener('videoConferenceJoined', () => setLoading(false));
@@ -119,6 +149,11 @@ const MeetingRoom = () => {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const isAuthorizedToEnd = meeting && (
+        (meeting.type === 'DIRECT' && meeting.createdByUserId === user?.keycloakId) ||
+        (isManagedMeeting(meeting) && user?.role === 'ADMIN')
+    );
+
     return (
         <div className="fixed inset-0 bg-neutral-900 z-50 flex flex-col animate-in fade-in duration-500">
             {/* Minimal Header */}
@@ -128,11 +163,7 @@ const MeetingRoom = () => {
                         variant="ghost"
                         size="icon"
                         className="text-white/70 hover:text-white hover:bg-white/10"
-                        onClick={() => {
-                            if (window.confirm("Voulez-vous vraiment quitter la réunion ?")) {
-                                navigate('/meetings');
-                            }
-                        }}
+                        onClick={() => setShowLocalLeaveDialog(true)}
                     >
                         <ArrowLeft size={20} />
                     </Button>
@@ -148,6 +179,15 @@ const MeetingRoom = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    {isAuthorizedToEnd && (
+                        <Button
+                            variant="destructive"
+                            className="h-8 text-[10px] uppercase font-black tracking-widest px-4"
+                            onClick={() => setShowGlobalEndDialog(true)}
+                        >
+                            Terminer la réunion
+                        </Button>
+                    )}
                     <Button
                         variant="outline"
                         className="h-8 text-[10px] uppercase font-black tracking-widest bg-transparent text-white border-white/20 hover:bg-white/10"
@@ -171,6 +211,31 @@ const MeetingRoom = () => {
                 )}
                 <div ref={jitsiContainerRef} id="jitsi-container" className="h-full w-full" />
             </main>
+
+            <ConfirmDialog
+                open={showLocalLeaveDialog}
+                onOpenChange={setShowLocalLeaveDialog}
+                title="Quitter la réunion ?"
+                description="Vous pourrez rejoindre à nouveau cette réunion tant qu’elle n’a pas été terminée."
+                confirmLabel="Quitter"
+                cancelLabel="Rester"
+                onConfirm={() => {
+                    setShowLocalLeaveDialog(false);
+                    handleLocalLeave();
+                }}
+            />
+
+            <ConfirmDialog
+                open={showGlobalEndDialog}
+                onOpenChange={setShowGlobalEndDialog}
+                title="Terminer la réunion ?"
+                description="Cette action terminera la réunion pour tous les participants et la déplacera dans l’historique."
+                confirmLabel="Terminer la réunion"
+                cancelLabel="Annuler"
+                destructive={true}
+                loading={endMeetingInProgressRef.current}
+                onConfirm={confirmGlobalEnd}
+            />
         </div>
     );
 };

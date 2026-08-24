@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { FileText, Plus, Trash2, Filter, Download, MoreHorizontal, ChevronRight, Calendar, Building2 } from 'lucide-react';
 import { getMyReports, deleteReport, getAllReports } from '../../services/reportService';
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,30 +23,26 @@ const ReportsList = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const targetedUserId = searchParams.get('userId');
+    const { user } = useAuth();
     const [reports, setReports] = useState([]);
     const [filter, setFilter] = useState('All');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchReports();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const fetchReports = async () => {
+    const fetchReports = useCallback(async () => {
         try {
             setLoading(true);
             // If we have a targeted user, we load ALL reports and then filter.
-            // (Assuming permissions allow or the backend handles it gracefully)
-            const data = targetedUserId ? await getAllReports() : await getMyReports();
-            
+            // For ADMIN and DAGE, we also load ALL reports.
+            const data = (targetedUserId || user?.role === 'ADMIN' || user?.role === 'DAGE') ? await getAllReports() : await getMyReports();
+
             let filteredData = data || [];
             if (targetedUserId) {
                 // Filter specifically by the ID we want
                 // Note: The structure of report might have user.id or createdBy
                 // Based on previous analysis, we'll try to match by some identifier or trust the backend's result if we had a specific endpoint.
                 // Since there is no getReportsByUserId, we filter the full list.
-                // We'll check for user.id or a similar field. 
+                // We'll check for user.id or a similar field.
                 // In AdminUserDetail it used reportsData directly from getReportsByUser(userId).
                 // I'll add getReportsByUser to reportService if needed, but let's try filtering first.
                 filteredData = (data || []).filter(r => r.createdByUserId === targetedUserId);
@@ -58,7 +55,11 @@ const ReportsList = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [targetedUserId, user?.role]);
+
+    useEffect(() => {
+        fetchReports();
+    }, [fetchReports]);
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
@@ -84,20 +85,22 @@ const ReportsList = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
-                        <span>Archives des Rapports</span>
+                        <span>{user?.role === 'GESTIONNAIRE' ? 'Mes Rapports' : 'Rapports'}</span>
                         {!loading && <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[10px] font-bold px-2 py-0"><span>{reports.length}</span></Badge>}
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium">
-                        <span>Historique complet de vos soumissions et relevés énergétiques.</span>
+                        <span>{user?.role === 'GESTIONNAIRE' ? 'Historique complet de vos soumissions et relevés énergétiques.' : 'Historique complet des soumissions et relevés énergétiques.'}</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button 
-                        onClick={() => navigate('/reports/new')}
-                        className="h-10 gap-2 shadow-xl font-bold bg-primary hover:bg-primary/95 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        <Plus size={18} /> <span>Nouveau Rapport</span>
-                    </Button>
+                    {user?.role === 'GESTIONNAIRE' && (
+                        <Button
+                            onClick={() => navigate('/reports/new')}
+                            className="h-10 gap-2 shadow-xl font-bold bg-primary hover:bg-primary/95 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <Plus size={18} /> <span>Nouveau Rapport</span>
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -118,8 +121,8 @@ const ReportsList = () => {
                                     )}
                                 >
                                     <span>
-                                        {status === 'All' ? 'Tous' : 
-                                         status === 'Submitted' ? 'Soumis' : 
+                                        {status === 'All' ? 'Tous' :
+                                         status === 'Submitted' ? 'Soumis' :
                                          status === 'Approved' ? 'Approuvés' : 'Rejetés'}
                                     </span>
                                 </button>
@@ -170,7 +173,7 @@ const ReportsList = () => {
                                 </TableHeader>
                                 <TableBody>
                                     {filteredReports.map((report) => (
-                                        <TableRow 
+                                        <TableRow
                                             key={report.id}
                                             className="group cursor-pointer hover:bg-primary/[0.02] transition-all border-b-gray-50 last:border-0"
                                             onClick={() => navigate(`/reports/${report.id}`)}
@@ -203,14 +206,16 @@ const ReportsList = () => {
                                             </TableCell>
                                             <TableCell className="px-8 py-5 text-right">
                                                 <div className="flex items-center justify-end gap-3" onClick={e => e.stopPropagation()}>
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        size="icon" 
-                                                        className="h-10 w-10 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-xl border border-transparent hover:border-red-100"
-                                                        onClick={(e) => handleDelete(e, report.id)}
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </Button>
+                                                    {user?.role === 'GESTIONNAIRE' && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-10 w-10 text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all rounded-xl border border-transparent hover:border-red-100"
+                                                            onClick={(e) => handleDelete(e, report.id)}
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </Button>
+                                                    )}
                                                     <div className="h-10 w-10 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                                                         <ChevronRight size={20} />
                                                     </div>

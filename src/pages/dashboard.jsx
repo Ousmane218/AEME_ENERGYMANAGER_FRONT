@@ -38,20 +38,22 @@ const Dashboard = () => {
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight text-gray-900 flex items-center gap-3">
                         {loading ? <Skeleton className="h-9 w-48" /> : <span>Tableau de Bord</span>}
-                        {!loading && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5 px-2 py-0"><span>LIVE</span></Badge>}
+                        {!loading && <Badge variant="outline" className="text-[10px] border-primary/20 text-primary bg-primary/5 px-2 py-0"><span>EN DIRECT</span></Badge>}
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium">
-                        Heureux de vous revoir, <span className="text-primary font-bold">{profile?.firstName || 'Utilisateur'}</span>.
+                        Heureux de vous revoir, <span className="text-primary font-bold">{profile?.prenom || profile?.firstName || profile?.name || 'Utilisateur'}</span>.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="default" size="sm" className="h-10 px-4 gap-2 text-sm font-bold shadow-md bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02]" onClick={() => navigate('/reports/new')}>
-                        <Plus size={16} /> Nouveau Rapport
-                    </Button>
+                    {user?.role === 'GESTIONNAIRE' && (
+                        <Button variant="default" size="sm" className="h-10 px-4 gap-2 text-sm font-bold shadow-md bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02]" onClick={() => navigate('/reports/new')}>
+                            <Plus size={16} /> Nouveau Rapport
+                        </Button>
+                    )}
                 </div>
             </div>
 
-            
+
             {/* Ressources & Documents */}
             <div className="space-y-4 pt-4">
                 <h2 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground/40 px-1">Ressources & Documents</h2>
@@ -67,9 +69,9 @@ const Dashboard = () => {
                                     Téléchargez le référentiel complet du cadastre énergétique national (Format Excel).
                                 </p>
                                 <div className="pt-3 flex items-center gap-3">
-                                    <a 
-                                        href="/documents/cadastre_energetique.xlsx" 
-                                        download 
+                                    <a
+                                        href="/documents/cadastre_energetique.xlsx"
+                                        download
                                         className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-green-600 hover:text-green-700 transition-colors"
                                     >
                                         <FileText size={14} /> Télécharger maintenant
@@ -109,9 +111,9 @@ const Dashboard = () => {
                 <Card className="border-none shadow-sm overflow-hidden bg-white group flex flex-col">
                     <CardHeader className="border-b bg-gray-50/30 flex flex-row items-center justify-between py-4">
                         <CardTitle className="text-xs font-bold flex items-center gap-2 uppercase tracking-widest text-muted-foreground">
-                            <TrendingUp size={14} className="text-primary" /> <span>Performance</span>
+                            <TrendingUp size={14} className="text-primary" /> <span>Performances</span>
                         </CardTitle>
-                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black"><span>TOP 5%</span></Badge>
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-none text-[9px] font-black"><span>5 % LES PLUS PERFORMANTS</span></Badge>
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col items-center justify-center py-10 relative overflow-hidden">
                         <div className="absolute -right-8 -bottom-8 text-primary opacity-[0.03] rotate-12">
@@ -187,24 +189,28 @@ const Dashboard = () => {
 
             {/* Action Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
-                <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-primary/30 hover:bg-primary/5 group transition-all rounded-2xl" onClick={() => navigate('/reports/new')}>
-                    <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
-                        <FileText size={22} />
-                    </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold text-gray-900"><span>Nouveau Rapport</span></p>
-                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Saisie mensuelle</span></p>
-                    </div>
-                </Button>
-                <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-accent/30 hover:bg-accent/5 group transition-all rounded-2xl" onClick={() => navigate('/meetings/new')}>
-                    <div className="h-11 w-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
-                        <Calendar size={22} />
-                    </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold text-gray-900"><span>Planifier Réunion</span></p>
-                        <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Agenda administratif</span></p>
-                    </div>
-                </Button>
+                {user?.role === 'GESTIONNAIRE' && (
+                    <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-primary/30 hover:bg-primary/5 group transition-all rounded-2xl" onClick={() => navigate('/reports/new')}>
+                        <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-100 transition-colors">
+                            <FileText size={22} />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-bold text-gray-900"><span>Nouveau Rapport</span></p>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Saisie mensuelle</span></p>
+                        </div>
+                    </Button>
+                )}
+                {user?.role === 'ADMIN' && (
+                    <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-accent/30 hover:bg-accent/5 group transition-all rounded-2xl" onClick={() => navigate('/meetings/new')}>
+                        <div className="h-11 w-11 rounded-xl bg-accent/10 text-accent flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
+                            <Calendar size={22} />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-bold text-gray-900"><span>Planifier Réunion</span></p>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest opacity-60"><span>Agenda administratif</span></p>
+                        </div>
+                    </Button>
+                )}
                 <Button variant="outline" className="h-20 justify-start gap-4 bg-white border-2 border-gray-100 shadow-sm hover:border-primary/30 hover:bg-primary/5 group transition-all rounded-2xl" onClick={() => navigate('/chat')}>
                     <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:bg-amber-100 transition-colors">
                         <MessageSquare size={22} />

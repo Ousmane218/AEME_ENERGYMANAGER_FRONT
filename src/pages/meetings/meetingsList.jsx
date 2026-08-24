@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Video, Plus, Copy, Check, Trash2, Calendar,
@@ -171,12 +171,7 @@ const MeetingsList = () => {
     const [copiedId, setCopiedId] = useState(null);
     const [references, setReferences] = useState({ ministeres: [], structures: [], cohortes: [] });
 
-    useEffect(() => {
-        fetchMeetings();
-        fetchReferences();
-    }, []);
-
-    const fetchReferences = async () => {
+    const fetchReferences = useCallback(async () => {
         try {
             const [min, str, coh] = await Promise.all([
                 getAllMinisteres().catch(() => []),
@@ -187,9 +182,9 @@ const MeetingsList = () => {
         } catch (err) {
             console.error("Erreur references", err);
         }
-    };
+    }, []);
 
-    const fetchMeetings = async () => {
+    const fetchMeetings = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getMyMeetings();
@@ -200,7 +195,12 @@ const MeetingsList = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchMeetings();
+        fetchReferences();
+    }, [fetchMeetings, fetchReferences]);
 
     const handleCopy = (jitsiUrl, id) => {
         navigator.clipboard.writeText(jitsiUrl);
@@ -237,18 +237,20 @@ const MeetingsList = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">Coordination & Meetings</h1>
+                    <h1 className="text-3xl font-black tracking-tight text-gray-900 uppercase">Coordination & Réunions</h1>
                     <div className="flex items-center gap-2 mt-1">
                         <Badge variant="outline" className="text-primary border-primary/20 font-bold uppercase tracking-tighter bg-primary/5">Visioconférence</Badge>
                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Plateforme de visioconférence sécurisée</p>
                     </div>
                 </div>
-                <Button
-                    onClick={() => navigate('/meetings/new')}
-                    className="bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest h-12 px-6 shadow-lg shadow-primary/20"
-                >
-                    <Plus size={18} className="mr-2" /> Planifier une Réunion
-                </Button>
+                {user?.role === 'ADMIN' && (
+                    <Button
+                        onClick={() => navigate('/meetings/new')}
+                        className="bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest h-12 px-6 shadow-lg shadow-primary/20"
+                    >
+                        <Plus size={18} className="mr-2" /> Planifier une Réunion
+                    </Button>
+                )}
             </div>
 
             {loading ? (
@@ -275,7 +277,9 @@ const MeetingsList = () => {
                             <Card className="border-2 border-dashed border-gray-100 bg-gray-50/30 p-12 text-center rounded-3xl">
                                 <VideoIcon size={32} className="mx-auto text-gray-300 mb-3" />
                                 <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Aucune réunion programmée</p>
-                                <Button variant="link" onClick={() => navigate('/meetings/new')} className="mt-2 text-primary font-bold uppercase text-[10px]">Planifier maintenant</Button>
+                                {user?.role === 'ADMIN' && (
+                                    <Button variant="link" onClick={() => navigate('/meetings/new')} className="mt-2 text-primary font-bold uppercase text-[10px]">Planifier maintenant</Button>
+                                )}
                             </Card>
                         ) : (
                             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import L from 'leaflet';
-import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, Building2, Building2 as HQIcon } from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
+import { Loader2, MapPin, RefreshCw, MessageSquare, FileText, User, Building2, Building2 as HQIcon, Search, X } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet';
 import { getAllUsers, getStatsByRegion } from '../services/adminService';
 import { getAllStructures } from '../services/structureService';
 import { SENEGAL_CENTER, SENEGAL_BOUNDS, REFERENCE_MARKERS } from '../lib/mapUtils';
@@ -9,9 +9,19 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getOrCreateConversation } from '../services/chatService';
+import { getOrCreateConversation, searchChatUsers } from '../services/chatService';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const MapController = ({ selectedCoords }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (selectedCoords) {
+            map.flyTo(selectedCoords, 14, { duration: 1.5 });
+        }
+    }, [selectedCoords, map]);
+    return null;
+};
 
 const MapPage = () => {
     const navigate = useNavigate();
@@ -22,6 +32,36 @@ const MapPage = () => {
     const [error, setError]     = useState(null);
     const [regionalStats, setRegionalStats] = useState([]);
     const [statsLoading, setStatsLoading] = useState(true);
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCoords, setSelectedCoords] = useState(null);
+    const markerRefs = useRef({});
+
+    const filteredMarkers = searchQuery.trim().length > 0
+        ? markers.filter(m => {
+            const q = searchQuery.toLowerCase().trim();
+            if (m.name?.toLowerCase().includes(q)) return true;
+            if (m.ministere?.toLowerCase().includes(q)) return true;
+            if (m.region?.toLowerCase().includes(q)) return true;
+            if (m.members?.some(mem =>
+                mem.name?.toLowerCase().includes(q) ||
+                mem.email?.toLowerCase().includes(q)
+            )) return true;
+            return false;
+        }).slice(0, 8)
+        : [];
+
+    const handleSelectResult = (m) => {
+        setSelectedCoords(m.coords);
+        setSearchQuery('');
+
+        // Wait for flyTo to complete roughly before opening popup
+        setTimeout(() => {
+            if (markerRefs.current[m.id]) {
+                markerRefs.current[m.id].openPopup();
+            }
+        }, 1500);
+    };
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -45,32 +85,54 @@ const MapPage = () => {
 
             const isAdmin = currentUser?.role === 'ADMIN' || currentUser?.isAdmin;
 
-            // DAGE and GESTIONNAIRE only fetch structures. Admin fetches structures + users.
-            const [structures, usersData] = await Promise.all([
-                getAllStructures(),
-                isAdmin ? getAllUsers(0, 2000).catch(() => null) : Promise.resolve(null)
+            const structuresPromise = getAllStructures().catch(() => []);
+
+            const fetchAllAdminUsers = async () => {
+                let collectedUsers = [];
+                let page = 0;
+                let hasMore = true;
+                while (hasMore && page < 20) {
+                    try {
+                        const res = await getAllUsers(page, 100);
+                        const content = res?.content || res?.users || [];
+                        collectedUsers = [...collectedUsers, ...content];
+                        if (content.length < 100) hasMore = false;
+                        page++;
+                    } catch (err) {
+                        console.error("Failed to fetch users page", page, err);
+                        break;
+                    }
+                }
+                return collectedUsers;
+            };
+
+            const [structures, fetchedUsers] = await Promise.all([
+                structuresPromise,
+                isAdmin ? fetchAllAdminUsers() : Promise.resolve([])
             ]);
 
             const allStructures = structures || [];
-            const allUsers = usersData?.content || usersData?.users || [];
+            const allUsers = fetchedUsers || [];
 
             const structureMarkers = allStructures
-                .filter(s => s.latitudeV2 && s.longitudeV2)
+                .filter(s => s.latitude && s.longitude)
                 .map(s => {
-                    const lat = parseFloat(s.latitudeV2);
-                    const lng = parseFloat(s.longitudeV2);
+                    const lat = parseFloat(s.latitude);
+                    const lng = parseFloat(s.longitude);
 
                     if (isNaN(lat) || isNaN(lng)) return null;
 
                     const members = isAdmin ? allUsers.filter(u => u.structure?.id === s.id).map(u => ({
                         id: u.id,
+                        keycloakId: u.keycloakId,
+                        email: u.email,
                         name: `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email,
                         role: u.role
                     })) : [];
 
                     return {
                         id: s.id,
-                        name: s.nom,
+                        name: s.name || s.nom,
                         ministere: s.ministere?.nom || '',
                         region: s.region || '',
                         coords: [lat, lng],
@@ -133,6 +195,73 @@ const MapPage = () => {
                     </Button>
                 </div>
 
+                {/* Search Overlay */}
+                <div className="absolute top-4 left-4 z-[1000] w-[calc(100%-80px)] max-w-sm">
+                    <div className="relative">
+                        <div className="flex items-center gap-2 px-3 py-3 bg-white shadow-xl border border-gray-100 rounded-2xl focus-within:border-primary/50 focus-within:ring-4 ring-primary/10 transition-all">
+                            <Search size={18} className="text-gray-400 flex-shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Rechercher une structure ou un gestionnaire..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="flex-1 bg-transparent text-sm outline-none text-gray-700 placeholder-gray-400 font-medium w-full"
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="p-1 hover:bg-gray-100 rounded-full">
+                                    <X size={14} className="text-gray-400" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search Results Dropdown */}
+                        {searchQuery.trim().length > 0 && (
+                            <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[1000] overflow-hidden max-h-[300px] overflow-y-auto">
+                                {filteredMarkers.length === 0 ? (
+                                    <div className="p-4 text-center">
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Aucun résultat</p>
+                                    </div>
+                                ) : (
+                                    filteredMarkers.map((m, idx) => {
+                                        const q = searchQuery.toLowerCase().trim();
+                                        const matchedMember = m.members?.find(mem =>
+                                            mem.name?.toLowerCase().includes(q) || mem.email?.toLowerCase().includes(q)
+                                        );
+
+                                        return (
+                                            <button
+                                                key={idx}
+                                                onClick={() => handleSelectResult(m)}
+                                                className="w-full text-left px-4 py-3 hover:bg-primary/5 transition-colors border-b border-gray-50 last:border-0"
+                                            >
+                                                <div className="flex items-start gap-3">
+                                                    <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                                                        <Building2 size={14} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-bold text-gray-900 truncate">
+                                                            {m.name}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{m.region || 'Sénégal'}</span>
+                                                        </div>
+                                                        {matchedMember && (
+                                                            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+                                                                <User size={12} className="text-primary/60" />
+                                                                <span className="text-gray-600 font-medium truncate">{matchedMember.name}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Map */}
                 <div className="relative w-full h-[600px]">
                     {loading ? (
@@ -161,6 +290,7 @@ const MapPage = () => {
                             zoomControl={false}
                         >
                             <ZoomControl position="bottomright" />
+                            <MapController selectedCoords={selectedCoords} />
                             <TileLayer
                                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -200,7 +330,11 @@ const MapPage = () => {
                             ))}
 
                             {markers.map((m, i) => (
-                                <Marker key={i} position={m.coords}>
+                                <Marker
+                                    key={i}
+                                    position={m.coords}
+                                    ref={(r) => { if (r) markerRefs.current[m.id] = r; }}
+                                >
                                     <Popup>
                                         <div className="text-sm min-w-[220px] p-1">
                                             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
@@ -242,15 +376,26 @@ const MapPage = () => {
                                                                         variant="ghost"
                                                                         className="flex-1 h-7 text-[9px] font-black uppercase tracking-widest gap-2 bg-white text-primary hover:bg-primary/10 hover:text-primary border border-gray-100 shadow-sm"
                                                                         onClick={async () => {
+                                                                            if (!member.email) {
+                                                                                alert('Aucun email disponible pour cet utilisateur.');
+                                                                                return;
+                                                                            }
                                                                             try {
-                                                                                const conv = await getOrCreateConversation(member.id);
+                                                                                const results = await searchChatUsers(member.email);
+                                                                                const targetUser = results?.find(u => u.email === member.email) || (results?.length > 0 ? results[0] : null);
+                                                                                if (!targetUser?.userId) {
+                                                                                    alert('Utilisateur introuvable dans le module Chat.');
+                                                                                    return;
+                                                                                }
+                                                                                const conv = await getOrCreateConversation(targetUser.userId);
                                                                                 navigate('/chat', { state: { conversationId: conv.id } });
-                                                                            } catch {
+                                                                            } catch (err) {
+                                                                                console.error(err);
                                                                                 alert('Erreur lors de la création du chat');
                                                                             }
                                                                         }}
                                                                     >
-                                                                        <MessageSquare size={12} /> <span>Chat</span>
+                                                                        <MessageSquare size={12} /> <span>Messagerie</span>
                                                                     </Button>
                                                                     <Button
                                                                         variant="ghost"

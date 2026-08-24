@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Video, MessageSquare, User, Menu, X, LogOut, ShieldCheck, ChevronRight, MapPin, Building2 } from 'lucide-react';
+import { LayoutDashboard, FileText, Video, MessageSquare, User, Menu, X, LogOut, ShieldCheck, ChevronRight, MapPin, Building2, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
+import { getRoleLabel } from '@/lib/displayMap';
 
 const Navbar = ({ isMobileOnly = false }) => {
     const location = useLocation();
@@ -19,9 +20,9 @@ const Navbar = ({ isMobileOnly = false }) => {
                     <Link to="/dashboard">
                         <img src="/logo.png" alt="AEME Logo" className="h-10 w-auto" />
                     </Link>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setIsMobileMenuOpen(true)}
                         className="h-10 w-10 text-primary hover:bg-primary/5"
                     >
@@ -31,9 +32,9 @@ const Navbar = ({ isMobileOnly = false }) => {
             );
         } else {
             return (
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setIsMobileMenuOpen(true)}
                     className="h-10 w-10 text-primary hover:bg-primary/5"
                 >
@@ -44,8 +45,8 @@ const Navbar = ({ isMobileOnly = false }) => {
     }
 
     const navItems = [
-        { name: 'Tableau de Bord', path: '/dashboard', icon: LayoutDashboard },
-        { name: 'Mes Rapports',     path: '/reports',   icon: FileText },
+        { name: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard },
+        { name: user?.role === 'GESTIONNAIRE' ? 'Mes Rapports' : 'Rapports', path: '/reports', icon: FileText },
         { name: 'Réunions',         path: '/meetings',  icon: Video },
         { name: 'Messagerie',       path: '/chat',      icon: MessageSquare },
         { name: 'Carte',            path: '/map',       icon: MapPin },
@@ -53,7 +54,9 @@ const Navbar = ({ isMobileOnly = false }) => {
 
     if (user?.isAdmin) {
         navItems.push({ name: 'Gestionnaires', path: '/admin/users', icon: ShieldCheck });
+        navItems.push({ name: 'Ministères', path: '/admin/ministeres', icon: Building2 });
         navItems.push({ name: 'Structures',   path: '/admin/structures', icon: Building2 });
+        navItems.push({ name: 'Cohortes',     path: '/admin/cohortes', icon: GraduationCap });
     }
 
     const isActive = (path) => {
@@ -69,9 +72,9 @@ const Navbar = ({ isMobileOnly = false }) => {
                     {/* Overlay Header */}
                     <div className="flex items-center justify-between px-6 py-6 border-b">
                         <img src="/logo.png" alt="AEME Logo" className="h-12 w-auto" />
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => setIsMobileMenuOpen(false)}
                             className="h-10 w-10 text-gray-400 hover:text-primary transition-colors"
                         >
@@ -134,13 +137,13 @@ const Navbar = ({ isMobileOnly = false }) => {
                                     {isLoading ? '...' : (user?.fullName ?? 'Utilisateur')}
                                 </p>
                                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
-                                    {user?.role?.replace('_', ' ') || 'Energy Manager'}
+                                    {getRoleLabel(user?.role)}
                                 </p>
                             </div>
                         </div>
 
-                        <Button 
-                            variant="destructive" 
+                        <Button
+                            variant="destructive"
                             className="w-full h-14 rounded-2xl font-bold uppercase tracking-[0.2em] shadow-lg shadow-red-100"
                             onClick={() => {
                                 setIsMobileMenuOpen(false);

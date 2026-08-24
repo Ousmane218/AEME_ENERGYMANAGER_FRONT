@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, CheckCircle2, XCircle, Download, Loader2, Calendar, User, Info, CheckCircle } from 'lucide-react';
 import { getReportsByUser, approveReport, rejectReport } from '../../services/adminService';
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { cn, formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const UserReports = () => {
     const { userId } = useParams();
@@ -17,11 +17,7 @@ const UserReports = () => {
     const [actionLoading, setActionLoading] = useState(null);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchReports();
-    }, [userId]);
-
-    const fetchReports = async () => {
+    const fetchReports = useCallback(async () => {
         try {
             setLoading(true);
             const data = await getReportsByUser(userId);
@@ -31,7 +27,11 @@ const UserReports = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userId]);
+
+    useEffect(() => {
+        fetchReports();
+    }, [fetchReports]);
 
     const handleApprove = async (reportId) => {
         try {
@@ -73,9 +73,9 @@ const UserReports = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
                 <div className="flex items-center gap-5">
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
+                    <Button
+                        variant="outline"
+                        size="icon"
                         onClick={() => navigate('/admin/users')}
                         className="h-11 w-11 rounded-xl shadow-sm hover:bg-primary hover:text-white transition-all group"
                     >
@@ -107,7 +107,7 @@ const UserReports = () => {
                     <Card key={report.id} className="border-none shadow-sm hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 bg-white overflow-hidden group">
                         <div className={cn(
                             "absolute top-0 left-0 w-1.5 h-full transition-colors",
-                            report.reportStatus === 'APPROVED' ? 'bg-green-500' : 
+                            report.reportStatus === 'APPROVED' ? 'bg-green-500' :
                             report.reportStatus === 'REJECTED' ? 'bg-red-500' : 'bg-primary'
                         )} />
                         <CardContent className="p-0">
@@ -115,7 +115,7 @@ const UserReports = () => {
                                 <div className="p-6 flex-1 flex items-center gap-6">
                                     <div className={cn(
                                         "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover:scale-110",
-                                        report.reportStatus === 'APPROVED' ? 'bg-green-50 text-green-600' : 
+                                        report.reportStatus === 'APPROVED' ? 'bg-green-50 text-green-600' :
                                         report.reportStatus === 'REJECTED' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                                     )}>
                                         <FileText size={28} />
@@ -145,7 +145,7 @@ const UserReports = () => {
                                         <Download size={16} className="mr-2" />
                                         PDF
                                     </Button>
-                                    
+
                                     {(!report.reportStatus || report.reportStatus === 'PENDING' || report.reportStatus === 'EN ATTENTE' || report.reportStatus === 'SUBMITTED') && (
                                         <div className="flex items-center gap-2">
                                             <Button
@@ -156,7 +156,7 @@ const UserReports = () => {
                                                 {actionLoading === report.id ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle size={16} className="mr-2" />}
                                                 Approuver
                                             </Button>
-                                            
+
                                             <Button
                                                 variant="destructive"
                                                 onClick={() => handleReject(report.id)}
@@ -168,7 +168,7 @@ const UserReports = () => {
                                             </Button>
                                         </div>
                                     )}
-                                    
+
                                     <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-300 hover:text-primary rounded-xl">
                                         <Info size={20} />
                                     </Button>

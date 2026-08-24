@@ -157,10 +157,10 @@ export const AdminGroupsModal = ({ onClose }) => {
                                         }}
                                         className="w-full h-10 px-3 border border-gray-200 rounded-lg text-sm"
                                     >
-                                        <option value="GLOBAL">GLOBAL</option>
-                                        <option value="MINISTERE">MINISTERE</option>
-                                        <option value="COHORT">COHORT</option>
-                                        <option value="STRUCTURE">STRUCTURE</option>
+                                        <option value="GLOBAL">Global</option>
+                                        <option value="MINISTERE">Ministère</option>
+                                        <option value="COHORT">Cohorte</option>
+                                        <option value="STRUCTURE">Structure</option>
                                     </select>
                                 </div>
                                 <div className="space-y-2">

@@ -1,13 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, Fragment } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle, Users, Briefcase, GraduationCap, Settings } from 'lucide-react';
+import { Search, Send, User, Plus, X, ArrowLeft, MoreVertical, ShieldCheck, Clock, MessageSquare, CheckCircle, Users, Briefcase, GraduationCap, Settings, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
     getMyConversations,
     getMessages,
     getOrCreateConversation,
     deleteConversation,
-        getConversationCounterpart
+    getConversationCounterpart,
+    searchChatUsers
 } from '../../services/chatService';
 import {
     connectWebSocket,
@@ -53,18 +54,14 @@ const Chat = () => {
     const [messages, setMessages] = useState([]);
     const [messageInput, setMessageInput] = useState('');
     const [search, setSearch] = useState('');
-    const [newUserId, setNewUserId] = useState('');
-    const [showNewConv, setShowNewConv] = useState(false);
+    const [remoteUsers, setRemoteUsers] = useState([]);
+    const [searchingRemote, setSearchingRemote] = useState(false);
     const [showAdminModal, setShowAdminModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [counterpartNames, setCounterpartNames] = useState({});
     const fetchingCounterparts = useRef(new Set());
     const [showMobileMessages, setShowMobileMessages] = useState(false);
     const messagesEndRef = useRef(null);
-
-    useEffect(() => {
-        fetchConversations();
-    }, [fetchConversations]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -75,6 +72,15 @@ const Chat = () => {
         fetchMessages(selectedConv.id);
         connectWebSocket(selectedConv.id, (newMessage) => {
             setMessages(prev => [...prev, newMessage]);
+            setConversations(prev => {
+                const idx = prev.findIndex(c => c.id === selectedConv.id);
+                if (idx > 0) {
+                    const next = [...prev];
+                    const [conv] = next.splice(idx, 1);
+                    return [conv, ...next];
+                }
+                return prev;
+            });
         });
         return () => disconnectWebSocket();
     }, [selectedConv]);
@@ -140,17 +146,15 @@ const Chat = () => {
     };
 
     const fetchCounterpart = useCallback(async (convId) => {
-        if (!convId || counterpartNames[convId] || fetchingCounterparts.current.has(convId)) return;
+        if (!convId || fetchingCounterparts.current.has(convId)) return;
         fetchingCounterparts.current.add(convId);
         try {
             const data = await getConversationCounterpart(convId);
             setCounterpartNames(prev => ({ ...prev, [convId]: data?.data?.fullName || data?.fullName || 'Utilisateur' }));
         } catch {
             setCounterpartNames(prev => ({ ...prev, [convId]: 'Utilisateur' }));
-        } finally {
-            fetchingCounterparts.current.delete(convId);
         }
-    }, [counterpartNames]);
+    }, []);
 
     const fetchConversations = useCallback(async () => {
         try {
@@ -184,6 +188,38 @@ const Chat = () => {
         }
     }, [fetchCounterpart, location.state?.conversationId]);
 
+    useEffect(() => {
+        fetchConversations();
+    }, [fetchConversations]);
+
+    useEffect(() => {
+        if (!search.trim()) {
+            setRemoteUsers([]);
+            return;
+        }
+        let isSubscribed = true;
+
+        const timeoutId = setTimeout(async () => {
+            try {
+                setSearchingRemote(true);
+                const results = await searchChatUsers(search.trim());
+                if (isSubscribed) {
+                    setRemoteUsers(results || []);
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                if (isSubscribed) {
+                    setSearchingRemote(false);
+                }
+            }
+        }, 300);
+        return () => {
+            isSubscribed = false;
+            clearTimeout(timeoutId);
+        };
+    }, [search]);
+
     const fetchMessages = async (conversationId) => {
         try {
             const data = await getMessages(conversationId);
@@ -205,25 +241,40 @@ const Chat = () => {
         if (!messageInput.trim() || !selectedConv) return;
         sendWebSocketMessage(selectedConv.id, messageInput.trim());
         setMessageInput('');
+        setConversations(prev => {
+            const idx = prev.findIndex(c => c.id === selectedConv.id);
+            if (idx > 0) {
+                const next = [...prev];
+                const [conv] = next.splice(idx, 1);
+                return [conv, ...next];
+            }
+            return prev;
+        });
     };
 
-    const handleNewConversation = async () => {
-        if (!newUserId.trim()) return;
+    const handleSelectRemoteUser = async (userResult) => {
+        const uid = userResult.userId;
+        const fullName = `${userResult.prenom || ''} ${userResult.nom || ''}`.trim() || 'Utilisateur';
+
         try {
-            const conv = await getOrCreateConversation(newUserId.trim());
+            const conv = await getOrCreateConversation(uid);
             setConversations(prev => {
                 const exists = prev.find(c => c.id === conv.id);
-                return exists ? prev : [conv, ...prev];
+                if (exists) {
+                    const next = prev.filter(c => c.id !== conv.id);
+                    return [conv, ...next];
+                }
+                return [conv, ...prev];
             });
-            if (isDirectConversation(conv)) {
-                fetchCounterpart(conv.id);
-            }
+            // Resolve display name locally immediately to avoid UUID flicker
+            setCounterpartNames(prev => ({ ...prev, [conv.id]: fullName }));
+
             setSelectedConv(conv);
-            setShowNewConv(false);
-            setNewUserId('');
+            setSearch('');
+            setRemoteUsers([]);
             setShowMobileMessages(true);
         } catch {
-            alert('Utilisateur introuvable');
+            alert('Erreur lors de la création de la conversation');
         }
     };
 
@@ -248,6 +299,22 @@ const Chat = () => {
         hour: '2-digit', minute: '2-digit'
     });
 
+    const formatDateSeparator = (dateStr) => {
+        if (!dateStr) return '';
+        const msgDate = new Date(dateStr);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (msgDate.toLocaleDateString() === today.toLocaleDateString()) {
+            return "Aujourd'hui";
+        }
+        if (msgDate.toLocaleDateString() === yesterday.toLocaleDateString()) {
+            return "Hier";
+        }
+        return msgDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    };
+
     const filteredConversations = conversations.filter(conv => {
         const displayName = getConversationDisplayName(conv);
         const searchLower = search.toLowerCase();
@@ -260,6 +327,18 @@ const Chat = () => {
         }
 
         return false;
+    });
+
+    const existingCounterparts = new Set(
+        conversations
+            .filter(c => isDirectConversation(c))
+            .flatMap(c => [c.userOneId, c.userTwoId])
+            .filter(id => id && id !== user?.keycloakId)
+    );
+
+    const filteredRemoteUsers = remoteUsers.filter(u => {
+        const uid = u.userId;
+        return uid && !existingCounterparts.has(uid);
     });
 
     return (
@@ -285,37 +364,9 @@ const Chat = () => {
                                 <Settings size={20} />
                             </button>
                         )}
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => setShowNewConv(!showNewConv)}
-                            className="h-10 w-10 rounded-xl border-gray-200 hover:bg-primary/5 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
-                        >
-                            <Plus size={18} />
-                        </Button>
                     </div>
                 </div>
 
-                {/* New Conversation Modal/Overlay (simplified directly in sidebar) */}
-                {showNewConv && (
-                    <div className="px-6 py-4 bg-primary/5 border-b border-primary/10 animate-in slide-in-from-top duration-300">
-                        <label className="text-[10px] font-bold text-primary uppercase tracking-widest mb-2 block px-1">Nouvel Interlocuteur (UUID)</label>
-                        <div className="flex gap-2">
-                            <Input
-                                value={newUserId}
-                                onChange={(e) => setNewUserId(e.target.value)}
-                                placeholder="Coller l'identifiant..."
-                                className="h-10 bg-white border-2 border-transparent focus:border-primary/20 rounded-xl text-sm"
-                            />
-                            <Button
-                                onClick={handleNewConversation}
-                                className="bg-primary hover:bg-primary/90 h-10 px-4 rounded-xl font-bold"
-                            >
-                                <Plus size={18} />
-                            </Button>
-                        </div>
-                    </div>
-                )}
 
                 {/* Search */}
                 <div className="px-6 py-4">
@@ -337,7 +388,7 @@ const Chat = () => {
                             <div className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-40">Synchronisation...</p>
                         </div>
-                    ) : filteredConversations.length === 0 ? (
+                    ) : filteredConversations.length === 0 && (!search.trim() || (!searchingRemote && filteredRemoteUsers.length === 0)) ? (
                         <div className="py-12 px-6 text-center">
                             <div className="h-16 w-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-gray-300">
                                 <MessageSquare className="h-8 w-8" />
@@ -346,68 +397,116 @@ const Chat = () => {
                             <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight mt-1 opacity-60">Commencez une nouvelle discussion</p>
                         </div>
                     ) : (
-                        filteredConversations.map((conv) => {
-                            const isDirect = isDirectConversation(conv);
-                            const displayName = getConversationDisplayName(conv);
-                            const isSelected = selectedConv?.id === conv.id;
-                            const typeLabel = getConversationTypeLabel(conv?.type);
+                        <>
+                            {filteredConversations.map((conv) => {
+                                const isDirect = isDirectConversation(conv);
+                                const displayName = getConversationDisplayName(conv);
+                                const isSelected = selectedConv?.id === conv.id;
+                                const typeLabel = getConversationTypeLabel(conv?.type);
 
-                            return (
-                                <div
-                                    key={conv.id}
-                                    onClick={() => handleSelectConversation(conv)}
-                                    className={cn(
-                                        "group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2",
-                                        isSelected
-                                            ? "bg-white border-primary/10 shadow-lg shadow-black/5 -translate-y-0.5"
-                                            : "border-transparent hover:bg-white hover:border-gray-100"
-                                    )}
-                                >
-                                    <div className="relative">
-                                        {isDirect ? (
-                                            <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                                                <AvatarFallback className={cn(
-                                                    "font-bold text-xs",
-                                                    isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary"
+                                return (
+                                    <div
+                                        key={conv.id}
+                                        onClick={() => handleSelectConversation(conv)}
+                                        className={cn(
+                                            "group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2",
+                                            isSelected
+                                                ? "bg-white border-primary/10 shadow-lg shadow-black/5 -translate-y-0.5"
+                                                : "border-transparent hover:bg-white hover:border-gray-100"
+                                        )}
+                                    >
+                                        <div className="relative">
+                                            {isDirect ? (
+                                                <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                                    <AvatarFallback className={cn(
+                                                        "font-bold text-xs",
+                                                        isSelected ? "bg-primary text-white" : "bg-primary/5 text-primary"
+                                                    )}>
+                                                        {(displayName || 'C').charAt(0)}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            ) : (
+                                                <div className={cn(
+                                                    "h-12 w-12 rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-gray-100",
+                                                    isSelected ? "bg-primary/10" : "bg-gray-50"
                                                 )}>
-                                                    {(displayName || 'C').charAt(0)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                        ) : (
-                                            <div className={cn(
-                                                "h-12 w-12 rounded-full flex items-center justify-center border-2 border-white shadow-sm ring-1 ring-gray-100",
-                                                isSelected ? "bg-primary/10" : "bg-gray-50"
-                                            )}>
-                                                {renderGroupAvatar(conv)}
+                                                    {renderGroupAvatar(conv)}
+                                                </div>
+                                            )}
+                                            <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white ring-1 ring-black/5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className={cn(
+                                                    "font-bold text-sm truncate",
+                                                    isSelected ? "text-primary" : "text-gray-900"
+                                                )}>
+                                                    {displayName}
+                                                </p>
+                                                <Clock size={10} className="text-gray-300" />
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-60">
+                                                {typeLabel}
+                                            </p>
+                                        </div>
+                                        {conv.type === 'DIRECT' && (
+                                            <button
+                                                onClick={(e) => handleDeleteConversation(e, conv.id)}
+                                                className="opacity-0 group-hover:opacity-100 transition-all p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            {search.trim() && (() => {
+                                if (filteredRemoteUsers.length === 0 && !searchingRemote) return null;
+
+                                return (
+                                    <div className="mt-4 pt-4 border-t border-gray-100">
+                                        {filteredRemoteUsers.length > 0 && (
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">
+                                                Personnes
+                                            </p>
+                                        )}
+                                        {filteredRemoteUsers.map(u => {
+                                            const roleLabel = u.role || 'UTILISATEUR';
+                                            const orgLabel = u.structureName || u.ministereName || '';
+                                            const subLabel = orgLabel ? `${roleLabel} · ${orgLabel}` : roleLabel;
+                                            const fullName = `${u.prenom || ''} ${u.nom || ''}`.trim() || 'Utilisateur';
+
+                                            return (
+                                                <div
+                                                    key={u.userId}
+                                                    onClick={() => handleSelectRemoteUser(u)}
+                                                    className="group flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2 border-transparent hover:bg-white hover:border-gray-100"
+                                                >
+                                                    <Avatar className="h-12 w-12 border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                                        <AvatarFallback className="bg-gray-50 text-gray-500 font-bold text-xs group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                                                            {fullName.charAt(0)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-bold text-sm text-gray-900 truncate">{fullName}</p>
+                                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-60">
+                                                            {subLabel}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {searchingRemote && (
+                                            <div className="flex items-center justify-center py-4 text-gray-400 gap-2">
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Recherche...</span>
                                             </div>
                                         )}
-                                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-white ring-1 ring-black/5" />
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <p className={cn(
-                                                "font-bold text-sm truncate",
-                                                isSelected ? "text-primary" : "text-gray-900"
-                                            )}>
-                                                {displayName}
-                                            </p>
-                                            <Clock size={10} className="text-gray-300" />
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter truncate opacity-60">
-                                            {typeLabel}
-                                        </p>
-                                    </div>
-                                    {conv.type === 'DIRECT' && (
-                                        <button
-                                            onClick={(e) => handleDeleteConversation(e, conv.id)}
-                                            className="opacity-0 group-hover:opacity-100 transition-all p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })
+                                );
+                            })()}
+                        </>
                     )}
                 </div>
             </div>
@@ -485,14 +584,35 @@ const Chat = () => {
                                     const isMe = msg.senderId === user?.keycloakId;
                                     const senderName = getMessageSenderName(msg, selectedConv);
 
+                                    let showDateSeparator = false;
+                                    if (idx === 0) {
+                                        showDateSeparator = true;
+                                    } else {
+                                        const prevMsg = messages[idx - 1];
+                                        if (msg.sentAt && prevMsg.sentAt) {
+                                            const currDate = new Date(msg.sentAt).toLocaleDateString();
+                                            const prevDate = new Date(prevMsg.sentAt).toLocaleDateString();
+                                            showDateSeparator = currDate !== prevDate;
+                                        }
+                                    }
+
                                     return (
-                                        <div
-                                            key={msg.id || idx}
-                                            className={cn(
-                                                "flex flex-col gap-1.5 animate-in slide-in-from-bottom-2 duration-300",
-                                                isMe ? "items-end" : "items-start"
+                                        <Fragment key={msg.id || idx}>
+                                            {showDateSeparator && (
+                                                <div className="flex items-center gap-3 my-5 w-full max-w-md mx-auto">
+                                                    <div className="flex-1 h-px bg-gray-100" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">
+                                                        {formatDateSeparator(msg.sentAt)}
+                                                    </span>
+                                                    <div className="flex-1 h-px bg-gray-100" />
+                                                </div>
                                             )}
-                                        >
+                                            <div
+                                                className={cn(
+                                                    "flex flex-col gap-1.5 animate-in slide-in-from-bottom-2 duration-300",
+                                                    isMe ? "items-end" : "items-start"
+                                                )}
+                                            >
                                             <div className={cn(
                                                 "max-w-[85%] md:max-w-[70%] p-4 rounded-2xl shadow-sm text-sm font-medium leading-relaxed transition-all hover:shadow-md",
                                                 isMe
@@ -516,6 +636,7 @@ const Chat = () => {
                                                 </div>
                                             </div>
                                         </div>
+                                        </Fragment>
                                     );
                                 })
                             )}
