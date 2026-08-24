@@ -6,12 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SENEGAL_CENTER } from '@/lib/mapUtils';
 import L from 'leaflet';
+import { getAllMinisteres } from '../../services/referenceService';
 
 // Component to handle map clicks for coordinate selection
-const LocationPicker = ({ position, setPosition }) => {
+const LocationPicker = ({ position, setPosition, setFormData }) => {
     useMapEvents({
         click(e) {
-            setPosition([e.latlng.lat, e.latlng.lng]);
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            setPosition([lat, lng]);
+            setFormData(prev => ({
+                ...prev,
+                latitude: lat.toFixed(6),
+                longitude: lng.toFixed(6)
+            }));
         },
     });
 
@@ -20,9 +28,12 @@ const LocationPicker = ({ position, setPosition }) => {
 
 export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) => {
     const [loading, setLoading] = useState(false);
+    const [ministeres, setMinisteres] = useState([]);
+    const [loadingMinisteres, setLoadingMinisteres] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         ministere: '',
+        ministereId: '',
         region: '',
         zone: '',
         latitude: '',
@@ -31,10 +42,28 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
     const [mapPosition, setMapPosition] = useState(null);
 
     useEffect(() => {
+        if (isOpen) {
+            const fetchMinisteres = async () => {
+                setLoadingMinisteres(true);
+                try {
+                    const data = await getAllMinisteres();
+                    setMinisteres(data || []);
+                } catch (err) {
+                    console.error("Impossible de charger les ministères", err);
+                } finally {
+                    setLoadingMinisteres(false);
+                }
+            };
+            fetchMinisteres();
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
         if (structure) {
             setFormData({
                 name: structure.name || '',
                 ministere: structure.ministere || '',
+                ministereId: structure.ministereV2?.id || structure.ministereId || '',
                 region: structure.region || '',
                 zone: structure.zone || '',
                 latitude: structure.latitude || '',
@@ -47,6 +76,7 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
             setFormData({
                 name: '',
                 ministere: '',
+                ministereId: '',
                 region: '',
                 zone: '',
                 latitude: '',
@@ -56,22 +86,41 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
         }
     }, [structure, isOpen]);
 
-    // Update form when map position changes
-    useEffect(() => {
-        if (mapPosition) {
-            setFormData(prev => ({
-                ...prev,
-                latitude: mapPosition[0].toFixed(6),
-                longitude: mapPosition[1].toFixed(6)
-            }));
-        }
-    }, [mapPosition]);
+
+    const normalizeCoordinate = (val) => {
+        if (!val) return "";
+        return String(val).trim().replace(',', '.');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        let latNorm = normalizeCoordinate(formData.latitude);
+        let lngNorm = normalizeCoordinate(formData.longitude);
+
+        if (latNorm || lngNorm) {
+            const latNum = parseFloat(latNorm);
+            const lngNum = parseFloat(lngNorm);
+
+            if (isNaN(latNum) || latNum < -90 || latNum > 90) {
+                alert("La latitude doit être un nombre entre -90 et 90");
+                return;
+            }
+            if (isNaN(lngNum) || lngNum < -180 || lngNum > 180) {
+                alert("La longitude doit être un nombre entre -180 et 180");
+                return;
+            }
+        }
+
+        const payload = {
+            ...formData,
+            latitude: latNorm,
+            longitude: lngNorm
+        };
+
         try {
             setLoading(true);
-            await onSave(formData);
+            await onSave(payload);
             onClose();
         } catch (err) {
             alert(err.message);
@@ -105,7 +154,7 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label>Nom de la structure</Label>
-                                <Input 
+                                <Input
                                     required
                                     placeholder="ex: Direction de l'Énergie"
                                     value={formData.name}
@@ -114,16 +163,36 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
                             </div>
                             <div className="space-y-2">
                                 <Label>Ministère de tutelle</Label>
-                                <Input 
-                                    placeholder="ex: Ministère de l'Énergie"
-                                    value={formData.ministere}
-                                    onChange={e => setFormData({...formData, ministere: e.target.value})}
-                                />
+                                {loadingMinisteres ? (
+                                    <div className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm opacity-50 items-center">
+                                        <Loader2 className="animate-spin mr-2 h-4 w-4" /> Chargement des ministères...
+                                    </div>
+                                ) : (
+                                    <select
+                                        required
+                                        className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.ministereId}
+                                        onChange={e => {
+                                            const minId = e.target.value;
+                                            const minObj = ministeres.find(m => String(m.id) === String(minId));
+                                            setFormData({
+                                                ...formData,
+                                                ministereId: minId,
+                                                ministere: minObj ? minObj.nom : ''
+                                            });
+                                        }}
+                                    >
+                                        <option value="" disabled>-- Sélectionner un ministère --</option>
+                                        {ministeres.map((m) => (
+                                            <option key={m.id} value={m.id}>{m.nom}</option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>Région</Label>
-                                    <Input 
+                                    <Input
                                         placeholder="ex: Dakar"
                                         value={formData.region}
                                         onChange={e => setFormData({...formData, region: e.target.value})}
@@ -131,7 +200,7 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Zone</Label>
-                                    <Input 
+                                    <Input
                                         placeholder="ex: Centre-Ville"
                                         value={formData.zone}
                                         onChange={e => setFormData({...formData, zone: e.target.value})}
@@ -142,28 +211,40 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dashed">
                                 <div className="space-y-2">
                                     <Label>Latitude</Label>
-                                    <Input 
-                                        type="number"
-                                        step="any"
+                                    <Input
+                                        type="text"
+                                        inputMode="decimal"
                                         value={formData.latitude}
-                                        onChange={e => {
-                                            setFormData({...formData, latitude: e.target.value});
-                                            if (e.target.value && formData.longitude) {
-                                                setMapPosition([parseFloat(e.target.value), parseFloat(formData.longitude)]);
+                                        onChange={e => setFormData({...formData, latitude: e.target.value})}
+                                        onBlur={(e) => {
+                                            const latNorm = normalizeCoordinate(e.target.value);
+                                            const lngNorm = normalizeCoordinate(formData.longitude);
+                                            if (latNorm && lngNorm) {
+                                                const latNum = parseFloat(latNorm);
+                                                const lngNum = parseFloat(lngNorm);
+                                                if (!isNaN(latNum) && latNum >= -90 && latNum <= 90 && !isNaN(lngNum) && lngNum >= -180 && lngNum <= 180) {
+                                                    setMapPosition([latNum, lngNum]);
+                                                }
                                             }
                                         }}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Longitude</Label>
-                                    <Input 
-                                        type="number"
-                                        step="any"
+                                    <Input
+                                        type="text"
+                                        inputMode="decimal"
                                         value={formData.longitude}
-                                        onChange={e => {
-                                            setFormData({...formData, longitude: e.target.value});
-                                            if (formData.latitude && e.target.value) {
-                                                setMapPosition([parseFloat(formData.latitude), parseFloat(e.target.value)]);
+                                        onChange={e => setFormData({...formData, longitude: e.target.value})}
+                                        onBlur={(e) => {
+                                            const latNorm = normalizeCoordinate(formData.latitude);
+                                            const lngNorm = normalizeCoordinate(e.target.value);
+                                            if (latNorm && lngNorm) {
+                                                const latNum = parseFloat(latNorm);
+                                                const lngNum = parseFloat(lngNorm);
+                                                if (!isNaN(latNum) && latNum >= -90 && latNum <= 90 && !isNaN(lngNum) && lngNum >= -180 && lngNum <= 180) {
+                                                    setMapPosition([latNum, lngNum]);
+                                                }
                                             }
                                         }}
                                     />
@@ -178,13 +259,13 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
                                 Position sur la carte (Cliquez pour définir)
                             </Label>
                             <div className="h-[300px] md:h-full min-h-[300px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner relative">
-                                <MapContainer 
-                                    center={mapPosition || SENEGAL_CENTER} 
-                                    zoom={mapPosition ? 15 : 7} 
+                                <MapContainer
+                                    center={mapPosition || SENEGAL_CENTER}
+                                    zoom={mapPosition ? 15 : 7}
                                     className="h-full w-full"
                                 >
                                     <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                    <LocationPicker position={mapPosition} setPosition={setMapPosition} />
+                                    <LocationPicker position={mapPosition} setPosition={setMapPosition} setFormData={setFormData} />
                                 </MapContainer>
                             </div>
                         </div>
@@ -194,7 +275,7 @@ export const StructureModal = ({ isOpen, onClose, onSave, structure = null }) =>
                         <Button type="button" variant="outline" onClick={onClose}>
                             Annuler
                         </Button>
-                        <Button type="submit" disabled={loading} className="gap-2 min-w-[120px]">
+                        <Button type="submit" disabled={loading || loadingMinisteres || !formData.ministereId} className="gap-2 min-w-[120px]">
                             {loading ? <Loader2 className="animate-spin" size={16} /> : null}
                             Enregistrer
                         </Button>

@@ -1,30 +1,28 @@
 import { useState, useEffect } from 'react';
-import { 
-    Building2, Search, Loader2, Plus, Trash2, MapPin, 
+import {
+    Building2, Search, Loader2, Plus, Trash2, MapPin,
     Filter, MoreHorizontal, Map as MapIcon, Shield
 } from 'lucide-react';
 import { getAllStructures, createStructure, updateStructure, deleteStructure } from '../../services/structureService';
 import { StructureModal } from '@/components/admin/StructureModal';
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
 const Structures = () => {
     const [structures, setStructures] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [selectedStructure, setSelectedStructure] = useState(null);
 
@@ -38,23 +36,19 @@ const Structures = () => {
             const data = await getAllStructures();
             setStructures(data || []);
         } catch (err) {
-            setError(err.message);
+            console.error(err.message);
         } finally {
             setLoading(false);
         }
     };
 
     const handleSave = async (formData) => {
-        try {
-            if (selectedStructure) {
-                await updateStructure(selectedStructure.id, formData);
-            } else {
-                await createStructure(formData);
-            }
-            fetchStructures();
-        } catch (err) {
-            throw err;
+        if (selectedStructure) {
+            await updateStructure(selectedStructure.id, formData);
+        } else {
+            await createStructure(formData);
         }
+        fetchStructures();
     };
 
     const handleDelete = async (id) => {
@@ -67,7 +61,7 @@ const Structures = () => {
         }
     };
 
-    const filteredStructures = structures.filter(s => 
+    const filteredStructures = structures.filter(s =>
         s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.ministere?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -84,7 +78,7 @@ const Structures = () => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button 
+                    <Button
                         onClick={() => { setSelectedStructure(null); setShowModal(true); }}
                         className="gap-2 rounded-xl shadow-lg shadow-primary/20"
                     >
@@ -138,8 +132,8 @@ const Structures = () => {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="relative w-full md:max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <Input 
-                                placeholder="Rechercher une structure, une région..." 
+                            <Input
+                                placeholder="Rechercher une structure, une région..."
                                 className="pl-10 h-11 bg-white border-gray-100 rounded-xl"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -216,16 +210,16 @@ const Structures = () => {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <Button 
-                                                        variant="ghost" 
+                                                    <Button
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => { setSelectedStructure(structure); setShowModal(true); }}
                                                         className="h-9 w-9 p-0 hover:bg-primary/5 hover:text-primary rounded-lg"
                                                     >
                                                         <MoreHorizontal size={18} />
                                                     </Button>
-                                                    <Button 
-                                                        variant="ghost" 
+                                                    <Button
+                                                        variant="ghost"
                                                         size="sm"
                                                         onClick={() => handleDelete(structure.id)}
                                                         className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-500 rounded-lg"
@@ -243,7 +237,7 @@ const Structures = () => {
                 </CardContent>
             </Card>
 
-            <StructureModal 
+            <StructureModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
                 onSave={handleSave}

@@ -88,7 +88,7 @@ export const CohorteSelector = ({ onSelect, selectedId = null, className = "" })
                     <div className="p-3 border-b bg-gray-50/50">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                            <inpu
+                            <input
                                 autoFocus
                                 className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-gray-100 rounded-lg outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                                 placeholder="Filtrer par nom ou code..."
