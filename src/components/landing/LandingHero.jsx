@@ -32,7 +32,7 @@ const LandingHero = () => {
                         className="group flex items-center gap-4 text-primary font-bold text-sm uppercase tracking-widest hover:text-accent transition-colors"
                     >
                         <span className="border-b-2 border-primary group-hover:border-accent transition-colors pb-1">
-                            ACCÉDER À ENERGY MANAGER
+                            ACCÉDER A LA PLATEFORME DES GESTIONNAIRES
                         </span>
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                     </button>
