@@ -41,7 +41,7 @@ const MapPage = () => {
         ? markers.filter(m => {
             const q = searchQuery.toLowerCase().trim();
             if (m.name?.toLowerCase().includes(q)) return true;
-            if (m.ministere?.toLowerCase().includes(q)) return true;
+            if ((m.ministereNom || m.ministere)?.toLowerCase().includes(q)) return true;
             if (m.region?.toLowerCase().includes(q)) return true;
             if (m.members?.some(mem =>
                 mem.name?.toLowerCase().includes(q) ||
@@ -133,7 +133,8 @@ const MapPage = () => {
                     return {
                         id: s.id,
                         name: s.name || s.nom,
-                        ministere: s.ministere?.nom || '',
+                        ministere: s.ministere || '',
+                        ministereNom: s.ministereNom || '',
                         region: s.region || '',
                         coords: [lat, lng],
                         type: 'STRUCTURE',
@@ -348,7 +349,7 @@ const MapPage = () => {
                                                     <div className="flex items-center gap-2 mt-0.5">
                                                         <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">{m.region}</span>
                                                         <span className="h-0.5 w-0.5 rounded-full bg-gray-200" />
-                                                        <span className="text-[8px] text-gray-500 font-medium truncate">{m.ministere}</span>
+                                                        <span className="text-[8px] text-gray-500 font-medium truncate">{m.ministereNom || m.ministere || 'Aucun ministère'}</span>
                                                     </div>
                                                 </div>
                                             </div>

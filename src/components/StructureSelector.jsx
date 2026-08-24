@@ -49,7 +49,7 @@ export const StructureSelector = ({ onSelect, selectedId = null, className = "" 
     const filtered = structures.filter(s => 
         s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.ministere?.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.ministereNom || s.ministere)?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleSelect = (structure) => {
@@ -76,7 +76,7 @@ export const StructureSelector = ({ onSelect, selectedId = null, className = "" 
                                 {selectedStructure.name}
                             </span>
                             <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest truncate">
-                                {selectedStructure.region} • {selectedStructure.ministere}
+                                {selectedStructure.region} • {selectedStructure.ministereNom || selectedStructure.ministere || 'Aucun ministère'}
                             </span>
                         </div>
                     ) : (
@@ -122,7 +122,7 @@ export const StructureSelector = ({ onSelect, selectedId = null, className = "" 
                                         <div className="flex items-center gap-2 mt-0.5">
                                             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{s.region}</span>
                                             <span className="h-1 w-1 rounded-full bg-gray-200" />
-                                            <span className="text-[9px] text-gray-400 truncate">{s.ministere}</span>
+                                            <span className="text-[9px] text-gray-400 truncate">{s.ministereNom || s.ministere || 'Aucun ministère'}</span>
                                         </div>
                                     </div>
                                 </div>

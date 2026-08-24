@@ -64,7 +64,7 @@ const Structures = () => {
     const filteredStructures = structures.filter(s =>
         s.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.region?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.ministere?.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.ministereNom || s.ministere)?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -186,7 +186,7 @@ const Structures = () => {
                                                     </div>
                                                     <div>
                                                         <p className="font-bold text-gray-900 leading-none">{structure.name}</p>
-                                                        <p className="text-xs text-gray-500 mt-1">{structure.ministere || 'Aucun ministère'}</p>
+                                                        <p className="text-xs text-gray-500 mt-1">{structure.ministereNom || structure.ministere || 'Aucun ministère'}</p>
                                                     </div>
                                                 </div>
                                             </TableCell>
