@@ -51,14 +51,14 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-            <Card className="w-full max-w-md shadow-2xl border-none overflow-hidden animate-in zoom-in-95 duration-200">
-                <CardHeader className="bg-gray-50 border-b pb-4">
+            <Card className="w-full max-w-md shadow-2xl border-none overflow-visible animate-in zoom-in-95 duration-200">
+                <CardHeader className="bg-gray-50 border-b pb-4 rounded-t-xl">
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Nouvel Utilisateur</CardTitle>
                             <CardDescription>Invitez un nouveau membre sur la plateforme.</CardDescription>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+                        <Button type="button" variant="ghost" size="icon" onClick={onClose} className="rounded-full">
                             <X size={18} />
                         </Button>
                     </div>
@@ -67,7 +67,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                     <CardContent className="p-6 space-y-4">
                         <div className="space-y-2">
                             <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Email Professionnel</label>
-                            <Inpu
+                            <Input
                                 type="email"
                                 required
                                 className="h-10 text-sm border-gray-200 focus:ring-primary shadow-sm"
@@ -79,7 +79,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Prénom</label>
-                                <Inpu
+                                <Input
                                     type="text"
                                     required
                                     className="h-10 text-sm border-gray-200 focus:ring-primary shadow-sm"
@@ -89,7 +89,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Nom</label>
-                                <Inpu
+                                <Input
                                     type="text"
                                     required
                                     className="h-10 text-sm border-gray-200 focus:ring-primary shadow-sm"
@@ -167,7 +167,7 @@ export const CreateUserModal = ({ show, onClose, onCreated }) => {
                         )}
 
                     </CardContent>
-                    <div className="p-6 bg-gray-50 border-t flex gap-3">
+                    <div className="p-6 bg-gray-50 border-t flex gap-3 rounded-b-xl">
                         <Button
                             type="button"
                             variant="outline"

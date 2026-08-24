@@ -35,6 +35,11 @@ export const updateUserActivation = async (userId, actif) => {
     await api.patch(`${API_ROOT_URL}/api/v2/admin/utilisateurs/${userId}/activation`, { actif });
 };
 
+export const resendUserInvitation = async (userId) => {
+    const data = await api.post(`${API_ROOT_URL}/api/v2/admin/utilisateurs/${userId}/resend-invitation`);
+    return data;
+};
+
 // REPORTS MANAGEMENT
 export const getReportsByUser = async (userId) => {
     try {

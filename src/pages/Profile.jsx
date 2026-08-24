@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
+import {
     ArrowLeft, Mail, User, Building2, Shield, LogOut,
     Loader2, Check, X,
     Edit2, Phone, Briefcase, Calendar, Users, FileText, CheckCircle, GraduationCap, Map
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getCurrentProfile, updateMyProfile } from '../services/profileService';
+import { getRoleLabel } from '../lib/displayMap';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -26,6 +27,13 @@ const Profile = () => {
 
     useEffect(() => {
         let mounted = true;
+
+        const formatDateForInput = (dateString) => {
+            if (!dateString) return '';
+            const match = dateString.toString().match(/^\d{4}-\d{2}-\d{2}/);
+            return match ? match[0] : '';
+        };
+
         getCurrentProfile()
             .then(data => {
                 if (!mounted) return;
@@ -34,16 +42,16 @@ const Profile = () => {
                     prenom:                   data.prenom                   || '',
                     nom:                      data.nom                      || '',
                     genre:                    data.genre                    || '',
-                    dateNaissance:            data.dateNaissance            || '',
+                    dateNaissance:            formatDateForInput(data.dateNaissance),
                     telephonePrincipal:       data.telephonePrincipal       || '',
                     telephoneSecondaire:      data.telephoneSecondaire      || '',
                     emailSecondaire:          data.emailSecondaire          || '',
                     departementAdministratif: data.departementAdministratif || '',
                     posteOccupe:              data.posteOccupe              || '',
-                    dateNomination:           data.dateNomination           || '',
-                    dateInstallation:         data.dateInstallation         || '',
-                    dateFormation:            data.dateFormation            || '',
-                    derniereMiseANiveau:      data.derniereMiseANiveau      || ''
+                    dateNomination:           formatDateForInput(data.dateNomination),
+                    dateInstallation:         formatDateForInput(data.dateInstallation),
+                    dateFormation:            formatDateForInput(data.dateFormation),
+                    derniereMiseANiveau:      formatDateForInput(data.derniereMiseANiveau)
                 });
             })
             .catch(err => { if (mounted) setError(err.message); })
@@ -73,18 +81,31 @@ const Profile = () => {
     const RoleBadge = ({ role }) => {
         if (role === 'ADMIN') return (
             <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                <Shield size={14} /> Admin
+                <Shield size={14} /> {getRoleLabel(role)}
+            </span>
+        );
+        if (role === 'DAGE') return (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                <Shield size={14} /> {getRoleLabel(role)}
+            </span>
+        );
+        if (role === 'GESTIONNAIRE') return (
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                <User size={14} /> {getRoleLabel(role)}
             </span>
         );
         return (
-            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                <User size={14} /> Utilisateur
+            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-800 border border-gray-200">
+                <User size={14} /> {getRoleLabel(role)}
             </span>
         );
     };
 
     const displayService = profile?.structure?.name || profile?.structure?.nom || profile?.ministere?.nom || "Aucun service assigné";
-    const profileComplete = profile?.genre && profile?.telephonePrincipal && profile?.posteOccupe;
+    const isGestionnaire = profile?.role === 'GESTIONNAIRE';
+    const baseComplete = profile?.genre && profile?.telephonePrincipal && profile?.posteOccupe;
+    const gestionnaireComplete = isGestionnaire ? (profile?.dateInstallation && profile?.dateFormation) : true;
+    const profileComplete = baseComplete && gestionnaireComplete;
     const displayName = `${profile?.prenom || ''} ${profile?.nom || ''}`.trim() || 'Utilisateur';
 
     if (loading) return (
@@ -104,7 +125,7 @@ const Profile = () => {
                             <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
                             <span>Retour</span>
                         </button>
-                        <h1 className="text-2xl font-black tracking-tighter text-gray-900 uppercase"><span>Mon Dossier</span></h1>
+                        <h1 className="text-2xl font-black tracking-normal text-gray-900 uppercase"><span>MON DOSSIER</span></h1>
                     </div>
                     <button onClick={() => setShowEditModal(true)} className="flex items-center gap-2 bg-primary text-white font-black px-6 py-3 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-[10px]">
                         <Edit2 size={16} /> <span>Éditer la Fiche</span>
@@ -197,17 +218,13 @@ const Profile = () => {
                             { label: 'Poste occupé',         value: profile?.posteOccupe,      icon: Briefcase },
                             { label: 'Date de nomination',   value: profile?.dateNomination,   icon: Calendar },
                         ]},
-                        { title: "3. Expertise & Formations", icon: GraduationCap, fields: [
+                        isGestionnaire ? { title: "3. Expertise & Formations", icon: GraduationCap, fields: [
                             { label: 'Cohorte',                 value: profile?.cohorte?.name || profile?.cohorte?.nom,             icon: GraduationCap },
                             { label: 'Date d\'installation',    value: profile?.dateInstallation,    icon: Calendar },
                             { label: 'Date de formation',       value: profile?.dateFormation,       icon: Calendar },
                             { label: 'Dernière mise à niveau',  value: profile?.derniereMiseANiveau, icon: Calendar },
-                        ]},
-                        { title: "4. Périmètre & Carto", icon: Map, fields: [
-                            { label: 'Sites gérés', value: profile?.nombreSitesGeres, icon: Map },
-                            { label: 'Bâtiment',   value: profile?.typeBatiment,     icon: Building2 },
-                        ]}
-                    ].map((section, idx) => (
+                        ]} : null
+                    ].filter(Boolean).map((section, idx) => (
                         <div key={idx} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden flex flex-col group hover:shadow-xl hover:shadow-black/5 transition-all duration-500">
                             <div className="px-8 py-5 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
                                 <div className="flex items-center gap-3">
@@ -267,7 +284,7 @@ const Profile = () => {
                         </div>
 
                         <div className="p-6 space-y-8 max-h-[70vh] overflow-y-auto">
-                            
+
                             {/* Section 1 */}
                             <div className="space-y-4">
                                 <h4 className="text-sm font-bold text-primary border-b pb-2">1. Informations Identitaires et Contact</h4>
@@ -324,24 +341,26 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Section 3 */}
-                            <div className="space-y-4">
-                                <h4 className="text-sm font-bold text-primary border-b pb-2">3. Parcours & Certifications</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Date d'installation</label>
-                                        <input type="date" value={editForm.dateInstallation} onChange={e => setEditForm({ ...editForm, dateInstallation: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Date de formation</label>
-                                        <input type="text" placeholder="ex: du XX au XX /année" value={editForm.dateFormation} onChange={e => setEditForm({ ...editForm, dateFormation: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
-                                    </div>
-                                    <div className="md:col-span-2">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Dernière mise à niveau</label>
-                                        <input type="date" value={editForm.derniereMiseANiveau} onChange={e => setEditForm({ ...editForm, derniereMiseANiveau: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                            {/* Section 3 (Gestionnaires only) */}
+                            {isGestionnaire && (
+                                <div className="space-y-4">
+                                    <h4 className="text-sm font-bold text-primary border-b pb-2">3. Parcours & Certifications</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Date d'installation</label>
+                                            <input type="date" value={editForm.dateInstallation} onChange={e => setEditForm({ ...editForm, dateInstallation: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Date de formation</label>
+                                            <input type="date" value={editForm.dateFormation} onChange={e => setEditForm({ ...editForm, dateFormation: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1.5">Dernière mise à niveau</label>
+                                            <input type="date" value={editForm.derniereMiseANiveau} onChange={e => setEditForm({ ...editForm, derniereMiseANiveau: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 focus:ring-2" />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white z-10">

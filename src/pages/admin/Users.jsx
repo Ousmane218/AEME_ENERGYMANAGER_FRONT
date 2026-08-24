@@ -32,11 +32,11 @@ const Users = () => {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const navigate = useNavigate();
 
-    const fetchUsers = useCallback(async (page = 0, search = searchTerm) => {
+    const fetchUsers = useCallback(async (page = 0) => {
         try {
             setLoading(true);
             const first = page * pageSize;
-            const data = await getAllUsers(first, pageSize, search);
+            const data = await getAllUsers(first, pageSize);
 
             // Handle the paginated response structure
             setUsers(data.content || []);
@@ -46,15 +46,27 @@ const Users = () => {
         } finally {
             setLoading(false);
         }
-    }, [pageSize, searchTerm]);
+    }, [pageSize]);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchUsers(0, searchTerm);
-            setCurrentPage(0);
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchTerm, pageSize, fetchUsers]);
+        fetchUsers(0);
+        setCurrentPage(0);
+    }, [pageSize, fetchUsers]);
+
+    const filteredUsers = users.filter(user => {
+        const term = searchTerm.trim().toLowerCase();
+        if (!term) return true;
+        const prenom = user.prenom || '';
+        const nom = user.nom || '';
+        const fullName = `${prenom} ${nom}`.trim().toLowerCase();
+        const email = (user.email || '').toLowerCase();
+        const role = (user.role || '').toLowerCase();
+        return prenom.toLowerCase().includes(term) ||
+               nom.toLowerCase().includes(term) ||
+               fullName.includes(term) ||
+               email.includes(term) ||
+               role.includes(term);
+    });
 
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
@@ -119,7 +131,7 @@ const Users = () => {
                         <div className="relative w-full md:w-96">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                             <Input
-                                placeholder="Rechercher par nom, email..."
+                                placeholder="Rechercher par nom, e-mail..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10 h-10 text-sm bg-white shadow-sm border-gray-200"
@@ -145,7 +157,7 @@ const Users = () => {
                             <p className="font-medium">{error}</p>
                             <Button variant="outline" size="sm" onClick={() => fetchUsers(currentPage)}>Réessayer</Button>
                         </div>
-                    ) : users.length === 0 ? (
+                    ) : filteredUsers.length === 0 ? (
                         <div className="p-20 text-center text-muted-foreground">
                             <User size={48} className="mx-auto mb-4 opacity-10" />
                             <p className="text-lg font-medium">Aucun utilisateur trouvé</p>
@@ -158,13 +170,13 @@ const Users = () => {
                                 <TableHeader className="bg-gray-50/50">
                                     <TableRow>
                                         <TableHead className="w-[300px] font-bold text-gray-900">Utilisateur</TableHead>
-                                        <TableHead className="font-bold text-gray-900">Email & Service</TableHead>
+                                        <TableHead className="font-bold text-gray-900">Adresse e-mail & Service</TableHead>
                                         <TableHead className="font-bold text-gray-900">Rôle & Statut</TableHead>
                                         <TableHead className="text-right font-bold text-gray-900">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                {users.map((user) => (
+                                {filteredUsers.map((user) => (
                                     <TableRow
                                         key={user.id}
                                         className="hover:bg-gray-50/80 transition-colors group"
@@ -206,7 +218,7 @@ const Users = () => {
                                                             : "bg-primary/20 text-primary border-primary/20 hover:bg-primary/30"
                                                     )}
                                                 >
-                                                    {user.role === 'ADMIN' ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
+                                                    {user.role || 'UTILISATEUR'}
                                                 </Badge>
                                                 {user.isActive !== false && (
                                                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -241,7 +253,7 @@ const Users = () => {
 
                         {/* Mobile Card View */}
                         <div className="md:hidden divide-y divide-gray-100">
-                            {users.map((user) => (
+                            {filteredUsers.map((user) => (
                                 <div key={user.id} className="p-5 space-y-4 hover:bg-gray-50/50 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <Avatar className="h-12 w-12 border shadow-sm">
@@ -268,7 +280,7 @@ const Users = () => {
                                                     : "bg-primary/10 text-primary"
                                             )}
                                         >
-                                            {user.role === 'ADMIN' ? 'ADMIN' : 'EXPERT'}
+                                            {user.role || 'UTILISATEUR'}
                                         </Badge>
                                         <div className="text-[9px] text-primary/70 font-black uppercase tracking-tight flex items-center gap-1.5 bg-gray-50 px-2 py-0.5 rounded-md">
                                             <Shield size={10} />
@@ -283,7 +295,7 @@ const Users = () => {
                                             className="flex-1 font-bold text-xs h-10 rounded-xl"
                                             onClick={() => navigate(`/admin/users/${user.id}`)}
                                         >
-                                            Gérer l'Exper
+                                            Gérer l'utilisateur
                                         </Button>
                                         <Button
                                             variant="ghost"
