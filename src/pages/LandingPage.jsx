@@ -5,7 +5,6 @@ import LandingHeader from '../components/landing/LandingHeader';
 import LandingHero from '../components/landing/LandingHero';
 import MissionStatement from '../components/landing/MissionStatement';
 import LocalisationSection from '../components/landing/LocalisationSection';
-import ImpactOverview from '../components/landing/ImpactOverview';
 import ContactSection from '../components/landing/ContactSection';
 
 const LandingPage = () => {
@@ -39,7 +38,6 @@ const LandingPage = () => {
                 <LandingHero />
                 <MissionStatement />
                 <LocalisationSection />
-                <ImpactOverview />
             </main>
             <ContactSection />
         </div>
