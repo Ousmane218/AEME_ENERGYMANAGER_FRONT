@@ -87,7 +87,10 @@ const Dashboard = () => {
                         </div>
                     </Card>
 
-                    <Card className="border-2 border-dashed border-gray-200 bg-gray-50/30 hover:border-blue-500/30 hover:bg-blue-50/10 transition-all group relative overflow-hidden">
+                    <Card
+                        className="border-2 border-dashed border-gray-200 bg-gray-50/30 hover:border-blue-500/30 hover:bg-blue-50/10 transition-all group relative overflow-hidden cursor-pointer"
+                        onClick={() => navigate('/guide')}
+                    >
                         <div className="p-6 flex items-start gap-5">
                             <div className="h-14 w-14 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform duration-500">
                                 <Zap size={28} />
@@ -97,8 +100,10 @@ const Dashboard = () => {
                                 <p className="text-[11px] text-muted-foreground font-medium leading-relaxed max-w-[280px]">
                                     Manuel complet d'utilisation de la plateforme Energy Manager.
                                 </p>
-                                <div className="pt-3 flex items-center gap-3 text-gray-400">
-                                    <span className="text-[10px] font-black uppercase tracking-widest italic opacity-60">Bientôt disponible</span>
+                                <div className="pt-3 flex items-center gap-3">
+                                    <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-blue-600 transition-colors">
+                                        Consulter le guide <ChevronRight size={14} />
+                                    </span>
                                 </div>
                             </div>
                         </div>

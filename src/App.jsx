@@ -25,6 +25,7 @@ import { cn } from './lib/utils';
 
 import RoleGuard from './components/RoleGuard';
 import NotificationBell from './components/NotificationBell';
+import Guide from './pages/Guide';
 
 const ProtectedLayout = ({ children }) => {
     const { isAuthenticated, isLoading } = useAuth();
@@ -89,6 +90,7 @@ function App() {
                     <ProtectedLayout>
                         <Routes>
                             <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/guide" element={<Guide />} />
                             <Route path="/reports" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportsList /></RoleGuard>} />
                             <Route path="/reports/new" element={<RoleGuard allowedRoles={['GESTIONNAIRE']}><NewReport /></RoleGuard>} />
                             <Route path="/reports/:id" element={<RoleGuard allowedRoles={['ADMIN', 'DAGE', 'GESTIONNAIRE']}><ReportDetails /></RoleGuard>} />
