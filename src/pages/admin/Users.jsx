@@ -35,8 +35,7 @@ const Users = () => {
     const fetchUsers = useCallback(async (page = 0) => {
         try {
             setLoading(true);
-            const first = page * pageSize;
-            const data = await getAllUsers(first, pageSize);
+            const data = await getAllUsers(page, pageSize);
 
             // Handle the paginated response structure
             setUsers(data.content || []);
